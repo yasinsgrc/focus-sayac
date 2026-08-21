@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/nocturne-c396629d-c55e-430c-bb1f-d7bf0190fa36/styles.css">
+<script src="_ds/nocturne-c396629d-c55e-430c-bb1f-d7bf0190fa36/_ds_bundle.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<style>
+body{margin:0;background:var(--color-neutral-900)}
+@keyframes flick{0%{transform:scale(1) translateY(0);opacity:.92}50%{transform:scale(1.07) translateY(-3px);opacity:1}100%{transform:scale(1) translateY(0);opacity:.92}}
+@keyframes glow{0%{opacity:.35}50%{opacity:.7}100%{opacity:.35}}
+</style></helmet>
+
+<div style="padding:56px 60px 80px;font-family:var(--font-body);color:var(--color-text)">
+  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:40px;max-width:760px">
+    <div style="font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent)">FocusSayaç · v0.1 prototip</div>
+    <h1 style="font:500 40px/1.1 var(--font-heading);letter-spacing:-.02em;margin:0">Sınav geri sayımı + pomodoro</h1>
+    <p style="margin:8px 0 0;font-size:14px;line-height:1.6;color:var(--color-neutral-400)">Sekiz ekran, Nocturne tokenlarıyla. Chip'lere, oynat/duraklat düğmesine, şablon seçicisine ve kilitli rozetlere tıklayabilirsin. Flutter tarafında bu ekranlar <span style="font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--color-accent-300)">features/</span> altındaki modüllere birebir karşılık gelir.</p>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:44px;align-items:flex-start">
+
+    <!-- 1 · ONBOARDING -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--color-accent-900);color:var(--color-accent-300);border-radius:5px">01</span><span style="font-size:12px;color:var(--color-neutral-400)">Onboarding + izin akışı</span></div>
+      <div style="width:390px;height:844px;background:var(--color-bg);border:1px solid var(--color-neutral-800);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative">
+        <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:11.5px;color:var(--color-neutral-500);flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:12px"><i class="ph ph-cell-signal-full"></i><i class="ph ph-wifi-high"></i><i class="ph ph-battery-full"></i></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:40px 28px 28px;gap:0">
+          <div style="width:52px;height:52px;border-radius:16px;border:1px solid var(--color-accent-700);display:flex;align-items:center;justify-content:center;background:var(--color-accent-900)"><i class="ph-fill ph-flame" style="font-size:24px;color:var(--color-accent)"></i></div>
+          <h2 style="font:500 30px/1.15 var(--font-heading);letter-spacing:-.02em;margin:28px 0 0">Serini kurmadan<br>başlama.</h2>
+          <p style="margin:14px 0 0;font-size:14.5px;line-height:1.6;color:var(--color-neutral-400)">Sınavına kalan süreyi gör, 25 dakikalık odak seansları tut, meşaleni büyüt. Tüm veriler cihazında kalır.</p>
+          <div style="margin-top:34px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm)"><i class="ph ph-bell-ringing" style="font-size:20px;color:var(--color-accent);margin-top:1px"></i><div><div style="font:500 14px var(--font-heading)">Bildirim izni</div><div style="font-size:12.5px;line-height:1.5;color:var(--color-neutral-500);margin-top:3px">Seans bitişini ve seri hatırlatmasını haber verelim.</div></div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm)"><i class="ph ph-alarm" style="font-size:20px;color:var(--color-accent);margin-top:1px"></i><div><div style="font:500 14px var(--font-heading)">Tam zamanlı alarm</div><div style="font-size:12.5px;line-height:1.5;color:var(--color-neutral-500);margin-top:3px">Sayaç arka planda da doğru anda bitsin.</div></div></div>
+          </div>
+          <div style="flex:1"></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button style="height:52px;border-radius:14px;border:1px solid var(--color-accent);background:transparent;color:var(--color-accent);font:500 15px var(--font-heading);cursor:pointer" style-hover="background:var(--color-accent-900)">İzin ver ve başla</button>
+            <button style="height:48px;border-radius:14px;border:1px solid transparent;background:transparent;color:var(--color-neutral-500);font:500 14px var(--font-heading);cursor:pointer" style-hover="color:var(--color-neutral-300)">Şimdi değil</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 · COUNTDOWN -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--color-accent-900);color:var(--color-accent-300);border-radius:5px">02</span><span style="font-size:12px;color:var(--color-neutral-400)">Geri sayım — sınav chip'ine tıkla</span></div>
+      <div style="width:390px;height:844px;background:var(--color-bg);border:1px solid var(--color-neutral-800);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative">
+        <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:11.5px;color:var(--color-neutral-500);flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:12px"><i class="ph ph-cell-signal-full"></i><i class="ph ph-wifi-high"></i><i class="ph ph-battery-full"></i></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:8px 24px 0;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <button onClick="{{ openSheet }}" style="display:flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--color-accent-700);background:var(--color-accent-900);color:var(--color-accent-200);font:500 13.5px var(--font-heading);cursor:pointer" style-hover="border-color:var(--color-accent)"><i class="ph ph-exam" style="font-size:15px"></i>{{ examLabel }}<i class="ph ph-caret-down" style="font-size:13px;opacity:.7"></i></button>
+            <div style="width:38px;height:38px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:var(--color-neutral-400)"><i class="ph ph-plus" style="font-size:18px"></i></div>
+          </div>
+          <div style="margin-top:6px;font-size:11.5px;color:var(--color-neutral-600);letter-spacing:.04em">{{ examSession }}</div>
+
+          <div style="margin-top:22px;align-self:center;position:relative;width:290px;height:290px;display:flex;align-items:center;justify-content:center">
+            <div style="position:absolute;inset:34px;border-radius:999px;background:radial-gradient(circle,var(--color-accent-900) 0%,transparent 70%);opacity:.8"></div>
+            <svg width="290" height="290" viewBox="0 0 290 290" style="position:absolute;inset:0"><circle cx="145" cy="145" r="128" fill="none" stroke="var(--color-neutral-800)" stroke-width="14"></circle><circle cx="145" cy="145" r="128" fill="none" stroke="var(--color-accent)" stroke-width="14" stroke-linecap="round" stroke-dasharray="{{ ringDash }}" transform="rotate(-90 145 145)"></circle></svg>
+            <div style="position:relative;display:flex;flex-direction:column;align-items:center">
+              <div style="font:700 76px/1 var(--font-heading);font-variant-numeric:tabular-nums;letter-spacing:-.03em">{{ days }}</div>
+              <div style="margin-top:6px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-500)">gün kaldı</div>
+              <div style="margin-top:14px;width:26px;height:1px;background:var(--color-accent)"></div>
+              <div style="margin-top:12px;font-size:12.5px;color:var(--color-neutral-500)">{{ examDateText }}</div>
+            </div>
+          </div>
+
+          <div style="margin-top:26px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div style="padding:14px 0;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font:600 26px/1 var(--font-heading);font-variant-numeric:tabular-nums">14</div><div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-600)">saat</div></div>
+            <div style="padding:14px 0;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font:600 26px/1 var(--font-heading);font-variant-numeric:tabular-nums">06</div><div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-600)">dakika</div></div>
+            <div style="padding:14px 0;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font:600 26px/1 var(--font-heading);font-variant-numeric:tabular-nums;color:var(--color-accent-300)">{{ secs }}</div><div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-600)">saniye</div></div>
+          </div>
+
+          <div style="margin-top:18px;padding:16px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:14px">
+            <i class="ph-fill ph-flame" style="font-size:22px;color:var(--color-accent)"></i>
+            <div style="flex:1"><div style="font:500 14px var(--font-heading)">Bugün 3 pomodoro · 1 sa 15 dk</div><div style="font-size:12px;color:var(--color-neutral-500);margin-top:2px">Serin 6 gün — 1 seans daha kalırsa 7'ye çıkar.</div></div>
+            <i class="ph ph-caret-right" style="color:var(--color-neutral-600)"></i>
+          </div>
+
+          <div style="flex:1"></div>
+          <div style="height:52px;border-radius:10px;border:1px dashed var(--color-neutral-800);display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Adaptive banner · 320×50</div>
+        </div>
+        <div style="height:66px;flex:none;border-top:1px solid var(--color-neutral-900);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding-bottom:8px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--color-accent)"><i class="ph-fill ph-timer" style="font-size:20px"></i><span style="font-size:10px">Geri sayım</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--color-neutral-600)"><i class="ph ph-flame" style="font-size:20px"></i><span style="font-size:10px">Odak</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--color-neutral-600)"><i class="ph ph-medal" style="font-size:20px"></i><span style="font-size:10px">Rozet</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--color-neutral-600)"><i class="ph ph-chart-bar" style="font-size:20px"></i><span style="font-size:10px">İstatistik</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--color-neutral-600)"><i class="ph ph-gear" style="font-size:20px"></i><span style="font-size:10px">Ayarlar</span></div>
+        </div>
+
+        <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end">
+            <div style="width:100%;background:var(--color-surface);border-radius:24px 24px 44px 44px;padding:20px 24px 30px;box-shadow:var(--shadow-lg)">
+              <div style="width:36px;height:4px;border-radius:999px;background:var(--color-neutral-700);margin:0 auto 18px"></div>
+              <div style="font:500 18px var(--font-heading)">Sınav seç</div>
+              <div style="font-size:12.5px;color:var(--color-neutral-500);margin-top:4px">Tarihler resmî takvimden doğrulanmalıdır.</div>
+              <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ exams }}" as="e" hint-placeholder-count="4">
+                  <button onClick="{{ e.pick }}" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1px solid {{ e.border }};background:{{ e.bg }};color:var(--color-text);text-align:left;cursor:pointer" style-hover="border-color:var(--color-accent-600)">
+                    <i class="{{ e.icon }}" style="font-size:20px;color:var(--color-accent)"></i>
+                    <span style="flex:1"><span style="display:block;font:500 14.5px var(--font-heading)">{{ e.name }}</span><span style="display:block;font-size:12px;color:var(--color-neutral-500);margin-top:2px">{{ e.sub }}</span></span>
+                    <span style="font:600 14px var(--font-heading);font-variant-numeric:tabular-nums;color:var(--color-accent-300)">{{ e.days }}g</span>
+                  </button>
+                </sc-for>
+              </div>
+              <button style="margin-top:16px;width:100%;height:48px;border-radius:14px;border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-neutral-300);font:500 14px var(--font-heading);cursor:pointer" style-hover="border-color:var(--color-accent);color:var(--color-accent)">Kendi sınavımı ekle</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- 3 · POMODORO -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--color-accent-900);color:var(--color-accent-300);border-radius:5px">03</span><span style="font-size:12px;color:var(--color-neutral-400)">Pomodoro + Başarı Meşalesi — oynat/duraklat</span></div>
+      <div style="width:390px;height:844px;background:var(--color-bg);border:1px solid var(--color-neutral-800);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative">
+        <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:11.5px;color:var(--color-neutral-500);flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:12px"><i class="ph ph-cell-signal-full"></i><i class="ph ph-wifi-high"></i><i class="ph ph-battery-full"></i></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:8px 24px 0">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font:500 17px var(--font-heading)">Odak seansı</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--color-neutral-500)"><i class="ph ph-eye-slash" style="font-size:14px"></i>banner gizli</div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:6px;align-items:center">
+            <span style="height:26px;display:flex;align-items:center;padding:0 11px;border-radius:999px;background:var(--color-accent-900);color:var(--color-accent-200);font:500 11.5px var(--font-heading);letter-spacing:.04em">ODAK · 3/4</span>
+            <span style="height:26px;display:flex;align-items:center;padding:0 11px;border-radius:999px;border:1px solid var(--color-neutral-800);color:var(--color-neutral-500);font-size:11.5px">sonra 5 dk mola</span>
+          </div>
+
+          <div style="margin-top:26px;align-self:center;position:relative;width:300px;height:300px;display:flex;align-items:center;justify-content:center">
+            <div style="position:absolute;inset:40px;border-radius:999px;background:radial-gradient(circle,var(--color-accent-800) 0%,transparent 68%);animation:glow 3.4s ease-in-out infinite;filter:{{ flameFilter }}"></div>
+            <svg width="300" height="300" viewBox="0 0 300 300" style="position:absolute;inset:0"><circle cx="150" cy="150" r="134" fill="none" stroke="var(--color-neutral-800)" stroke-width="14"></circle><circle cx="150" cy="150" r="134" fill="none" stroke="{{ ringColor }}" stroke-width="14" stroke-linecap="round" stroke-dasharray="{{ focusDash }}" transform="rotate(-90 150 150)"></circle></svg>
+            <div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:2px">
+              <div style="height:96px;display:flex;align-items:flex-end;justify-content:center;filter:{{ flameFilter }}">
+                <div style="position:relative;width:56px;height:88px;animation:flick 1.6s ease-in-out infinite">
+                  <div style="position:absolute;left:8px;top:0;width:40px;height:76px;border-radius:50% 50% 46% 46% / 66% 66% 34% 34%;background:linear-gradient(to top,var(--color-accent-600),var(--color-accent-300))"></div>
+                  <div style="position:absolute;left:19px;top:26px;width:18px;height:44px;border-radius:50% 50% 46% 46% / 62% 62% 38% 38%;background:var(--color-accent-100);opacity:.85"></div>
+                  <div style="position:absolute;left:4px;bottom:0;width:48px;height:10px;border-radius:999px;background:var(--color-accent-800);opacity:.7;filter:blur(3px)"></div>
+                </div>
+              </div>
+              <div style="font:700 58px/1 var(--font-heading);font-variant-numeric:tabular-nums;letter-spacing:-.02em">{{ focusClock }}</div>
+              <div style="margin-top:4px;font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-500)">{{ phaseLabel }}</div>
+            </div>
+          </div>
+
+          <div style="margin-top:30px;display:flex;align-items:center;justify-content:center;gap:18px">
+            <button style="width:56px;height:56px;border-radius:999px;border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-neutral-400);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:#ef4444;color:#ef4444"><i class="ph ph-x" style="font-size:20px"></i></button>
+            <button onClick="{{ toggleRun }}" style="width:84px;height:84px;border-radius:999px;border:1px solid var(--color-accent);background:var(--color-accent-900);color:var(--color-accent);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="background:var(--color-accent-800)"><i class="{{ playIcon }}" style="font-size:30px"></i></button>
+            <button style="width:56px;height:56px;border-radius:999px;border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-neutral-400);cursor:pointer;display:flex;align-items:center;justify-content:center" style-hover="border-color:var(--color-accent);color:var(--color-accent)"><i class="ph ph-skip-forward" style="font-size:19px"></i></button>
+          </div>
+          <div style="margin-top:20px;display:flex;justify-content:center;gap:7px">
+            <span style="width:9px;height:9px;border-radius:999px;background:var(--color-accent)"></span>
+            <span style="width:9px;height:9px;border-radius:999px;background:var(--color-accent)"></span>
+            <span style="width:9px;height:9px;border-radius:999px;background:var(--color-accent);opacity:.55"></span>
+            <span style="width:9px;height:9px;border-radius:999px;background:var(--color-neutral-800)"></span>
+          </div>
+          <div style="flex:1"></div>
+          <div style="margin-bottom:20px;text-align:center;font-size:12px;color:var(--color-neutral-600)">{{ hintLine }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 · BADGES -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--color-accent-900);color:var(--color-accent-300);border-radius:5px">04</span><span style="font-size:12px;color:var(--color-neutral-400)">Rozetler — bir rozete tıkla</span></div>
+      <div style="width:390px;height:844px;background:var(--color-bg);border:1px solid var(--color-neutral-800);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative">
+        <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:11.5px;color:var(--color-neutral-500);flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:12px"><i class="ph ph-cell-signal-full"></i><i class="ph ph-wifi-high"></i><i class="ph ph-battery-full"></i></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:8px 24px 0;overflow:hidden">
+          <div style="font:500 22px var(--font-heading)">Rozetler</div>
+          <div style="font-size:12.5px;color:var(--color-neutral-500);margin-top:4px">3 / 7 açıldı · seri 6 gün</div>
+          <div style="margin-top:18px;height:6px;border-radius:999px;background:var(--color-neutral-800);overflow:hidden"><div style="width:43%;height:100%;background:var(--color-accent)"></div></div>
+          <div style="margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <sc-for list="{{ badges }}" as="b" hint-placeholder-count="6">
+              <button onClick="{{ b.tap }}" style="padding:18px 14px;border-radius:16px;background:var(--color-surface);border:1px solid {{ b.border }};display:flex;flex-direction:column;gap:10px;cursor:pointer;text-align:left" style-hover="border-color:var(--color-accent-600)">
+                <span style="width:42px;height:42px;border-radius:12px;background:{{ b.iconBg }};display:flex;align-items:center;justify-content:center"><i class="{{ b.icon }}" style="font-size:21px;color:{{ b.iconColor }}"></i></span>
+                <span style="display:block;font:500 14px var(--font-heading);color:{{ b.titleColor }}">{{ b.name }}</span>
+                <span style="display:block;font-size:11.5px;line-height:1.45;color:var(--color-neutral-600)">{{ b.rule }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <sc-if value="{{ unlockOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeUnlock }}" style="position:absolute;inset:0;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center;padding:32px">
+            <div style="width:100%;background:var(--color-surface);border-radius:22px;padding:28px 24px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;align-items:center;text-align:center">
+              <div style="position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center"><div style="position:absolute;inset:0;border-radius:999px;background:radial-gradient(circle,var(--color-accent-800),transparent 70%);animation:glow 2.6s ease-in-out infinite"></div><i class="ph-fill ph-medal" style="font-size:46px;color:var(--color-accent);position:relative"></i></div>
+              <div style="margin-top:14px;font:500 20px var(--font-heading)">{{ unlockName }}</div>
+              <div style="margin-top:8px;font-size:13px;line-height:1.55;color:var(--color-neutral-400)">{{ unlockRule }}</div>
+              <button style="margin-top:22px;width:100%;height:50px;border-radius:14px;border:1px solid var(--color-accent);background:transparent;color:var(--color-accent);font:500 15px var(--font-heading);cursor:pointer" style-hover="background:var(--color-accent-900)">Başarı kartını oluştur</button>
+              <button style="margin-top:8px;height:44px;border:0;background:transparent;color:var(--color-neutral-500);font:500 13.5px var(--font-heading);cursor:pointer">Kapat</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- 5 · STORY CARD -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--color-accent-900);color:var(--color-accent-300);border-radius:5px">05</span><span style="font-size:12px;color:var(--color-neutral-400)">Story kartı — şablonları değiştir</span></div>
+      <div style="width:390px;height:844px;background:var(--color-bg);border:1px solid var(--color-neutral-800);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative">
+        <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:11.5px;color:var(--color-neutral-500);flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:12px"><i class="ph ph-cell-signal-full"></i><i class="ph ph-wifi-high"></i><i class="ph ph-battery-full"></i></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:8px 24px 24px">
+          <div style="display:flex;align-items:center;gap:12px"><i class="ph ph-arrow-left" style="font-size:19px;color:var(--color-neutral-400)"></i><div style="font:500 17px var(--font-heading)">Başarı kartı</div></div>
+          <div style="margin-top:16px;align-self:center;width:236px;height:420px;border-radius:18px;overflow:hidden;background:{{ cardBg }};box-shadow:var(--shadow-md);position:relative;display:flex;flex-direction:column;padding:26px 22px">
+            <div style="position:absolute;inset:0;background:{{ cardGlow }}"></div>
+            <div style="position:relative;flex:1;display:flex;flex-direction:column">
+              <div style="font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:{{ cardKicker }}">{{ cardTag }}</div>
+              <div style="margin-top:auto"></div>
+              <div style="font:700 {{ cardBigSize }}/0.95 var(--font-heading);font-variant-numeric:tabular-nums;letter-spacing:-.03em;color:{{ cardBigColor }}">{{ cardBig }}</div>
+              <div style="margin-top:10px;font:500 15px/1.35 var(--font-heading);color:var(--color-neutral-100)">{{ cardLine1 }}</div>
+              <div style="margin-top:6px;font-size:12.5px;line-height:1.45;color:{{ cardKicker }}">{{ cardLine2 }}</div>
+              <div style="margin-top:20px;display:flex;align-items:center;gap:7px;font-size:10.5px;color:{{ cardKicker }}"><i class="ph-fill ph-flame" style="font-size:13px;color:var(--color-accent)"></i>focussayac.app</div>
+            </div>
+          </div>
+          <div style="margin-top:18px;display:flex;gap:8px;justify-content:center">
+            <sc-for list="{{ templates }}" as="t" hint-placeholder-count="3">
+              <button onClick="{{ t.pick }}" style="height:32px;padding:0 13px;border-radius:999px;border:1px solid {{ t.border }};background:{{ t.bg }};color:{{ t.color }};font:500 12.5px var(--font-heading);cursor:pointer">{{ t.name }}</button>
+            </sc-for>
+          </div>
+          <div style="flex:1"></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button style="height:52px;border-radius:14px;border:1px solid var(--color-accent);background:transparent;color:var(--color-accent);font:500 15px var(--font-heading);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px" style-hover="background:var(--color-accent-900)"><i class="ph ph-share-network" style="font-size:19px"></i>Paylaş</button>
+            <div style="display:flex;gap:10px">
+              <button style="flex:1;height:48px;border-radius:14px;border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-neutral-300);font:500 13.5px var(--font-heading);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px" style-hover="border-color:var(--color-accent);color:var(--color-accent)"><i class="ph ph-download-simple" style="font-size:17px"></i>Galeriye kaydet</button>
+              <button style="flex:1;height:48px;border-radius:14px;border:1px solid var(--color-neutral-700);background:transparent;color:var(--color-neutral-300);font:500 13.5px var(--font-heading);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px" style-hover="border-color:var(--color-accent);color:var(--color-accent)"><i class="ph ph-copy" style="font-size:17px"></i>Kopyala</button>
+            </div>
+            <div style="text-align:center;font-size:11px;color:var(--color-neutral-600)">Çıktı 1080×1920 px PNG</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6 · STATS -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--color-accent-900);color:var(--color-accent-300);border-radius:5px">06</span><span style="font-size:12px;color:var(--color-neutral-400)">İstatistik</span></div>
+      <div style="width:390px;height:844px;background:var(--color-bg);border:1px solid var(--color-neutral-800);border-radius:44px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:11.5px;color:var(--color-neutral-500);flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:12px"><i class="ph ph-cell-signal-full"></i><i class="ph ph-wifi-high"></i><i class="ph ph-battery-full"></i></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:8px 24px 0">
+          <div style="font:500 22px var(--font-heading)">İstatistik</div>
+          <div style="font-size:12.5px;color:var(--color-neutral-500);margin-top:4px">Son 7 gün</div>
+          <div style="margin-top:22px;padding:20px 18px 14px;border-radius:16px;background:var(--color-surface);box-shadow:var(--shadow-sm)">
+            <div style="display:flex;align-items:flex-end;gap:12px;height:150px">
+              <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;justify-content:flex-end;height:100%">
+                  <div style="font-size:10px;color:var(--color-neutral-600);font-variant-numeric:tabular-nums">{{ d.val }}</div>
+                  <div style="width:100%;height:{{ d.h }};border-radius:6px;background:{{ d.color }}"></div>
+                  <div style="font-size:10.5px;color:var(--color-neutral-500)">{{ d.day }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="padding:16px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm)"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-600)">Toplam odak</div><div style="margin-top:8px;font:600 24px var(--font-heading);font-variant-numeric:tabular-nums">42 sa</div></div>
+            <div style="padding:16px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm)"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-600)">Günlük ort.</div><div style="margin-top:8px;font:600 24px var(--font-heading);font-variant-numeric:tabular-nums">1 sa 48</div></div>
+            <div style="padding:16px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm)"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-600)">En uzun seri</div><div style="margin-top:8px;font:600 24px var(--font-heading);font-variant-numeric:tabular-nums;color:var(--color-accent-300)">11 gün</div></div>
+            <div style="padding:16px;border-radius:14px;background:var(--color-surface);box-shadow:var(--shadow-sm)"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-600)">Tamamlanma</div><div style="margin-top:8px;font:600 24px var(--font-heading);font-variant-numeric:tabular-nums">%86</div></div>
+          </div>
+          <div style="margin-top:16px;padding:16px;border-radius:14px;border:1px solid var(--color-neutral-800);display:flex;align-items:center;gap:12px"><i class="ph ph-lightning" style="font-size:20px;color:var(--color-accent)"></i><div style="font-size:12.5px;line-height:1.5;color:var(--color-neutral-400)">En verimli saatin <span style="color:var(--color-text)">20:00–22:00</span>. Bu aralıkta tamamlanma oranın %94.</div></div>
+          <div style="flex:1"></div>
+          <div style="height:52px;border-radius:10px;border:1px dashed var(--color-neutral-800);display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:14px">Adaptive banner · 320×50</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7 · SETTINGS -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--color-accent-900);color:var(--color-accent-300);border-radius:5px">07</span><span style="font-size:12px;color:var(--color-neutral-400)">Ayarlar</span></div>
+      <div style="width:390px;height:844px;background:var(--color-bg);border:1px solid var(--color-neutral-800);border-radius:44px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:11.5px;color:var(--color-neutral-500);flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:12px"><i class="ph ph-cell-signal-full"></i><i class="ph ph-wifi-high"></i><i class="ph ph-battery-full"></i></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;padding:8px 24px 0;gap:0">
+          <div style="font:500 22px var(--font-heading)">Ayarlar</div>
+          <div style="margin-top:20px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-600)">Süreler</div>
+          <div style="margin-top:10px;padding:18px;border-radius:16px;background:var(--color-surface);box-shadow:var(--shadow-sm);display:flex;flex-direction:column;gap:16px">
+            <div><div style="display:flex;justify-content:space-between;font-size:13.5px"><span>Odak</span><span style="color:var(--color-accent-300);font-variant-numeric:tabular-nums">25 dk</span></div><div style="margin-top:9px;height:4px;border-radius:999px;background:var(--color-neutral-800);position:relative"><div style="width:28%;height:100%;border-radius:999px;background:var(--color-accent)"></div><div style="position:absolute;left:28%;top:-6px;width:16px;height:16px;border-radius:999px;background:var(--color-accent);transform:translateX(-50%)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:13.5px"><span>Kısa mola</span><span style="color:var(--color-accent-300);font-variant-numeric:tabular-nums">5 dk</span></div><div style="margin-top:9px;height:4px;border-radius:999px;background:var(--color-neutral-800);position:relative"><div style="width:14%;height:100%;border-radius:999px;background:var(--color-accent)"></div><div style="position:absolute;left:14%;top:-6px;width:16px;height:16px;border-radius:999px;background:var(--color-accent);transform:translateX(-50%)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:13.5px"><span>Uzun mola</span><span style="color:var(--color-accent-300);font-variant-numeric:tabular-nums">15 dk</span></div><div style="margin-top:9px;height:4px;border-radius:999px;background:var(--color-neutral-800);position:relative"><div style="width:48%;height:100%;border-radius:999px;background:var(--color-accent)"></div><div style="position:absolute;left:48%;top:-6px;width:16px;height:16px;border-radius:999px;background:var(--color-accent);transform:translateX(-50%)"></div></div></div>
+          </div>
+          <div style="margin-top:22px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-600)">Uygulama</div>
+          <div style="margin-top:10px;border-radius:16px;background:var(--color-surface);box-shadow:var(--shadow-sm);overflow:hidden">
+            <sc-for list="{{ settings }}" as="s" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:13px;padding:15px 18px;border-bottom:1px solid var(--color-neutral-900)">
+                <i class="{{ s.icon }}" style="font-size:19px;color:var(--color-neutral-400)"></i>
+                <span style="flex:1;font-size:13.5px">{{ s.label }}</span>
+                <span style="font-size:12.5px;color:{{ s.valColor }}">{{ s.value }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:14px;padding:16px 18px;border-radius:16px;border:1px solid var(--color-neutral-800);display:flex;align-items:center;gap:13px;opacity:.6"><i class="ph ph-seal-check" style="font-size:19px;color:var(--color-accent)"></i><span style="flex:1;font-size:13.5px">Reklamları kaldır</span><span style="font-size:11.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--color-neutral-700);color:var(--color-neutral-400)">Yakında</span></div>
+          <div style="margin-top:14px;font-size:11.5px;line-height:1.55;color:var(--color-neutral-600)">Bu uygulama bağımsız bir çalışma aracıdır; ÖSYM, MEB veya herhangi bir resmî kurumla bağlantılı değildir.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8 · EMPTY STATE -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:baseline;gap:9px"><span style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:var(--color-accent-900);color:var(--color-accent-300);border-radius:5px">08</span><span style="font-size:12px;color:var(--color-neutral-400)">Sınav tarihi geçti — boş durum</span></div>
+      <div style="width:390px;height:844px;background:var(--color-bg);border:1px solid var(--color-neutral-800);border-radius:44px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:11.5px;color:var(--color-neutral-500);flex:none"><span>9:41</span><span style="display:flex;gap:6px;font-size:12px"><i class="ph ph-cell-signal-full"></i><i class="ph ph-wifi-high"></i><i class="ph ph-battery-full"></i></span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center">
+          <div style="width:88px;height:88px;border-radius:999px;border:1px dashed var(--color-neutral-700);display:flex;align-items:center;justify-content:center"><i class="ph ph-calendar-x" style="font-size:34px;color:var(--color-neutral-600)"></i></div>
+          <div style="margin-top:20px;font:500 20px var(--font-heading)">Sınavın geçti</div>
+          <div style="margin-top:10px;font-size:13.5px;line-height:1.6;color:var(--color-neutral-500);max-width:250px">2026 YKS tarihi geride kaldı. Yeni bir sınav seç, sayaç oradan devam etsin.</div>
+          <button style="margin-top:26px;height:50px;padding:0 22px;border-radius:14px;border:1px solid var(--color-accent);background:transparent;color:var(--color-accent);font:500 14.5px var(--font-heading);cursor:pointer" style-hover="background:var(--color-accent-900)">Yeni sınav seç</button>
+          <div style="margin-top:14px;font-size:12.5px;color:var(--color-neutral-600)">Odak geçmişin ve rozetlerin korunur.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1800,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  state = { sheetOpen: false, running: true, tpl: 0, unlock: null, exam: 0 };
+
+  examData() {
+    return [
+      { name: "YKS 2027", sub: "TYT Oturumu · 19 Haziran 2027", icon: "ph ph-exam", date: Date.UTC(2027, 5, 19, 7, 0) },
+      { name: "KPSS 2027", sub: "Lisans · 12 Eylül 2027", icon: "ph ph-briefcase", date: Date.UTC(2027, 8, 12, 7, 0) },
+      { name: "LGS 2027", sub: "Merkezi sınav · 6 Haziran 2027", icon: "ph ph-student", date: Date.UTC(2027, 5, 6, 7, 0) },
+      { name: "ALES 2027", sub: "1. dönem · 9 Mayıs 2027", icon: "ph ph-graduation-cap", date: Date.UTC(2027, 4, 9, 7, 0) }
+    ];
+  }
+  daysTo(ms) { return Math.max(0, Math.ceil((ms - Date.now()) / 86400000)); }
+
+  badgeData() {
+    return [
+      { name: "İlk Kıvılcım", rule: "İlk tamamlanan pomodoro", icon: "ph-fill ph-sparkle", on: true },
+      { name: "Odak Meşalesi", rule: "Tek günde 4 pomodoro", icon: "ph-fill ph-flame", on: true },
+      { name: "Sabah Yıldızı", rule: "08:00 öncesi bir seans", icon: "ph-fill ph-sun-horizon", on: true },
+      { name: "Gece Nöbeti", rule: "23:00 sonrası bir seans", icon: "ph ph-moon-stars", on: false },
+      { name: "Haftalık Seri", rule: "7 gün üst üste ≥1 seans", icon: "ph ph-calendar-check", on: false },
+      { name: "Maraton", rule: "Tek günde 8 pomodoro", icon: "ph ph-person-simple-run", on: false },
+      { name: "100 Saat Kulübü", rule: "Kümülatif 100 saat odak", icon: "ph ph-trophy", on: false }
+    ];
+  }
+
+  renderVals() {
+    const R = 128, C = 2 * Math.PI * R;
+    const exams = this.examData();
+    const ex = exams[this.state.exam];
+    const days = this.daysTo(ex.date);
+    const ratio = Math.min(1, Math.max(0.04, 1 - days / 400));
+    const focusRatio = 0.62, FR = 134, FC = 2 * Math.PI * FR;
+    const running = this.state.running;
+    const tpl = this.state.tpl;
+    const dstr = new Date(ex.date).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+
+    const tplNames = ["Gece Meşalesi", "Minimal Sayaç", "Seri Kartı"];
+    const cards = [
+      { bg: "var(--color-bg)", glow: "radial-gradient(circle at 50% 78%, var(--color-accent-800) 0%, transparent 62%)", tag: "Bugünün odağı", big: "2:15", bigSize: "56px", bigColor: "var(--color-accent-200)", l1: "Bugün 2 saat 15 dakika odaklandım.", l2: ex.name + "'e " + days + " gün kaldı" },
+      { bg: "var(--color-neutral-900)", glow: "none", tag: ex.name, big: String(days), bigSize: "88px", bigColor: "var(--color-text)", l1: "gün kaldı.", l2: dstr },
+      { bg: "var(--color-section)", glow: "radial-gradient(circle at 20% 20%, var(--color-section-glow) 0%, transparent 60%)", tag: "Seri", big: "6", bigSize: "88px", bigColor: "var(--color-accent-200)", l1: "gün üst üste odaklandım.", l2: "Yarın 7'ye çıkıyor" }
+    ];
+    const card = cards[tpl];
+
+    const week = [
+      { day: "Pzt", m: 95 }, { day: "Sal", m: 130 }, { day: "Çar", m: 50 },
+      { day: "Per", m: 145 }, { day: "Cum", m: 0 }, { day: "Cmt", m: 165 }, { day: "Paz", m: 75 }
+    ].map((d, i) => ({
+      day: d.day,
+      val: d.m ? Math.floor(d.m / 60) + "s" + (d.m % 60 ? " " + (d.m % 60) : "") : "—",
+      h: Math.max(4, Math.round((d.m / 165) * 110)) + "px",
+      color: i === 5 ? "var(--color-accent)" : d.m ? "var(--color-accent-700)" : "var(--color-neutral-800)"
+    }));
+
+    const b = this.state.unlock;
+
+    return {
+      examLabel: ex.name, examSession: ex.sub.toUpperCase(), examDateText: dstr,
+      days: String(days), secs: "42",
+      ringDash: (C * ratio).toFixed(1) + " " + C.toFixed(1),
+      exams: exams.map((e, i) => ({
+        name: e.name, sub: e.sub, icon: e.icon, days: this.daysTo(e.date),
+        border: i === this.state.exam ? "var(--color-accent)" : "var(--color-neutral-800)",
+        bg: i === this.state.exam ? "var(--color-accent-900)" : "transparent",
+        pick: () => this.setState({ exam: i, sheetOpen: false })
+      })),
+      sheetOpen: this.state.sheetOpen,
+      openSheet: () => this.setState({ sheetOpen: true }),
+      closeSheet: () => this.setState({ sheetOpen: false }),
+
+      focusDash: (FC * focusRatio).toFixed(1) + " " + FC.toFixed(1),
+      ringColor: running ? "var(--color-accent)" : "var(--color-neutral-600)",
+      flameFilter: running ? "none" : "saturate(0) brightness(.75)",
+      focusClock: running ? "09:24" : "09:24",
+      phaseLabel: running ? "odak sürüyor" : "duraklatıldı",
+      playIcon: running ? "ph-fill ph-pause" : "ph-fill ph-play",
+      hintLine: running ? "Ekran açık kalır · bitişte bildirim kurulu" : "Meşale soldu — devam etmek için oynat",
+      toggleRun: () => this.setState(s => ({ running: !s.running })),
+
+      badges: this.badgeData().map(x => ({
+        name: x.name, rule: x.rule, icon: x.icon,
+        border: x.on ? "var(--color-accent-800)" : "var(--color-neutral-900)",
+        iconBg: x.on ? "var(--color-accent-900)" : "var(--color-neutral-900)",
+        iconColor: x.on ? "var(--color-accent)" : "var(--color-neutral-700)",
+        titleColor: x.on ? "var(--color-text)" : "var(--color-neutral-600)",
+        tap: () => this.setState({ unlock: x })
+      })),
+      unlockOpen: !!b,
+      unlockName: b ? b.name : "",
+      unlockRule: b ? (b.on ? "Açıldı · " + b.rule : "Nasıl açılır: " + b.rule) : "",
+      closeUnlock: () => this.setState({ unlock: null }),
+
+      templates: tplNames.map((n, i) => ({
+        name: n,
+        border: i === tpl ? "var(--color-accent)" : "var(--color-neutral-800)",
+        bg: i === tpl ? "var(--color-accent-900)" : "transparent",
+        color: i === tpl ? "var(--color-accent-200)" : "var(--color-neutral-500)",
+        pick: () => this.setState({ tpl: i })
+      })),
+      cardBg: card.bg, cardGlow: card.glow, cardTag: card.tag, cardBig: card.big,
+      cardBigSize: card.bigSize, cardBigColor: card.bigColor,
+      cardLine1: card.l1, cardLine2: card.l2, cardKicker: "var(--color-neutral-400)",
+
+      week,
+      settings: [
+        { icon: "ph ph-bell", label: "Bildirimler", value: "Açık", valColor: "var(--color-accent-300)" },
+        { icon: "ph ph-speaker-high", label: "Sesli uyarı", value: "Açık", valColor: "var(--color-accent-300)" },
+        { icon: "ph ph-vibrate", label: "Titreşim", value: "Açık", valColor: "var(--color-accent-300)" },
+        { icon: "ph ph-translate", label: "Dil", value: "Türkçe", valColor: "var(--color-neutral-500)" },
+        { icon: "ph ph-star", label: "Uygulamayı değerlendir", value: "", valColor: "var(--color-neutral-500)" },
+        { icon: "ph ph-trash", label: "Verileri sıfırla", value: "", valColor: "var(--color-neutral-500)" },
+        { icon: "ph ph-shield-check", label: "Gizlilik politikası", value: "", valColor: "var(--color-neutral-500)" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
