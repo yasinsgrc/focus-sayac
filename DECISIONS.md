@@ -64,3 +64,22 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   işaretiyle sınırlandı. Sonuç: Inter 856KB→68KB/ağırlık, Space Grotesk 133KB→~30KB/ağırlık,
   Michroma 63KB→15KB. OFL lisans metinleri `assets/fonts/licenses/` altında referans için tutuluyor
   (build'e dahil değil, yalnızca dokümantasyon).
+
+## Faz 2 — core/ katmanı
+
+- `AppColors` tek koyu tema olarak modellendi (`AppColors.dark()`) — prototip yalnızca koyu zeminde
+  tasarlandı, açık tema hiçbir ekranda yok, bu yüzden `ThemeMode`/açık varyant eklenmedi.
+- Tipografi sabitleri (`AppTypography.display/kicker/body/counter`) `letterSpacing`'i `fontSize * em`
+  olarak hesaplıyor — CSS'teki `em` birimi font boyutuna göreli, Flutter'ın `letterSpacing`'i mutlak
+  piksel; birebir görsel eşleşme için bu dönüşüm gerekli. Ekrana özgü tam piksel boyutları (örn. büyük
+  sayaç 58px, istatistik rakamı 30px) ilgili ekranın fazında, prototipin o bölümü okunarak uygulanacak
+  — Faz 2 yalnızca aile/letter-spacing/tabular-figures altyapısını kuruyor.
+- `router`: Faz 2'de yalnızca tek geçici kök rota (`/`) var; gerçek ekranlar henüz yok. `RoutePaths`
+  sabitleri sonraki fazlarda kullanılacak yol adlarını şimdiden belgeliyor. Ekran 09 (mola) ve Ekran 10
+  (iptal onayı) ayrı rota değil — SPEC.md'nin "İptal → Ekran 10" ifadesi geri sayım niteliğinde bir
+  onay adımını tarif ediyor, prototipte tam ekran çerçevede gösterilse de gerçek uygulamada Ekran 03'ün
+  durum makinesi/dialog'u içinde ele alınması UX açısından daha doğru (Faz 5'te uygulanacak).
+- Ortak widget seti (`AppCard`, `KickerLabel`, `FadingDivider`, `AppPillButton`) prototipte tekrar eden
+  somut CSS kalıplarından (kart yüzeyi `rgba(30,32,48,.82)`, Michroma uppercase etiketler, Nocturne'ün
+  sönümlenen `.hr` çizgisi, hap buton `border+gradient-deep+role-color` üçlüsü) türetildi — icat edilmiş
+  bileşen değil, birden çok ekranda gözlenen kalıbın tekilleştirilmesi.
