@@ -142,3 +142,69 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
 - Test: `test/services/storage/app_database_test.dart`, `AppDatabase.forTesting(NativeDatabase.memory())`
   ile 4 DAO'yu ve `onCreate` seed'ini kapsıyor (11 test, hepsi geçiyor). Gerçek dosya tabanlı DB yerine
   bellek-içi DB kullanıldı — testler hızlı ve izole, disk temizliği gerekmiyor.
+
+## Faz 4 — Ekran 02 + 11 + 08
+
+- **`phosphor_flutter: ^2.1.0` eklendi.** Prototip tüm ekranlarda `@phosphor-icons/web` (`ph`/`ph-fill`/
+  `ph-duotone` sınıfları) kullanıyor ama Faz 0-3 hiç ikon çizmediği için paket eksikti. `flutter pub add`
+  ile eklendi, mevcut `meta`/`analyzer`/`sqlite3` pinleriyle çakışmadan çözüldü.
+- **Telefon çerçevesi (46px radius, `shadow-md`) ve sahte `9:41` durum çubuğu çizilmedi** — SPEC.md
+  Ekran 01'in "gerçek sistem çubuğu; sahte çubuğu çizme" kuralı, tasarım aracının kendi mockup çerçevesi
+  olduğu için tüm ekranlara genellendi; gerçek cihazda zaten `SafeArea`/sistem çubuğu var.
+- **Aurora zeminler ve kartlar BÖLÜM 6'nın performans kurallarına göre baştan inşa edildi** (Faz 14'ü
+  beklemeden): `BackdropFilter`/runtime blur hiç kullanılmadı, aurora parıltıları `RadialGradient`
+  (kenarda zaten saydama düşen) ile çizildi — SPEC.md §6 "Zorunlu uygulama" ifadesiyle "aynı görünen
+  ama daha ucuz" serbestliği (§0 kural 2) örtüşüyor; Faz 14 yalnızca `--profile` doğrulaması için var,
+  ekranları yanlış teknikle yazıp sonra değiştirmek gereksiz iş olurdu.
+- **Krom (chrome) tipografi Ekran 02'nin gün rakamında statik `ShaderMask` gradyanı** — `shimmer`
+  animasyonu SPEC.md §6.3 gereği yalnızca Ekran 01 başlığında çalışıyor.
+- **"Bugün" kartı `rgba(30,32,48,.72)` literal alfasıyla** çizildi, `AppCard`'ın varsayılan `.82`'si
+  yerine — prototip bu kartta farklı bir alfa kullanmış, "birebir taşı" kuralı `AppCard`'ı zorlamaktan
+  önceliklidir; bu yüzden burada `AppCard` yerine doğrudan `Container` kullanıldı.
+- **Alt gezinme çubuğu (`BottomNavBar`) rozetler/istatistik/ayarlar sekmelerinde no-op** — o ekranlar
+  Faz 7/9/12'de geliyor; var olmayan bir rotaya `go_router` ile gitmeye çalışmak çökerdi. Görsel olarak
+  prototipteki gibi duruyor, `onSelect` ileride bağlanacak.
+- **`streak_calculator.dart` (saf fonksiyon) ve `duration_formatter.dart` Faz 7/9'dan Faz 4'e çekildi.**
+  Ekran 02 gerçek "N gün seri" ve "H SA M DK" değerleri göstermek zorunda (DoD: "demo sayıların hiçbiri
+  kodda yok" — 6 gün seri prototipin demo verisi). Rozet açma/kilit mantığı hâlâ Faz 7'de; yalnızca IO'suz
+  saf hesaplama fonksiyonları öne çekildi.
+- **`lib/core/time/app_day.dart` sabit UTC+3 ofset kullanıyor**, `timezone` paketinin tam `TZDateTime`
+  altyapısı yerine — Türkiye 2016'dan beri DST uygulamıyor, bu yüzden 04:00 TSİ gün sınırı ve tarih
+  gösterimi için sabit ofset tam doğru ve çok daha ucuz. `timezone` paketi Faz 6'da bildirim
+  zamanlamasında kullanılacak (`zonedSchedule` gerçek `TZDateTime` ister).
+- **"25 DAKİKA ODAKLAN" butonu şimdilik no-op** — Ekran 03 (odak seansı) Faz 5'te geliyor; buton
+  prototipteki gibi etkin görünüyor ama henüz gidecek bir rota yok.
+- **Sınav seçici sheet'teki satır ikonu tek tip (`graduation-cap`), rol rengiyle boyanıyor.** Prototip
+  bu alanı `{{ e.icon }}` olarak veriye bağlamış ama somut bir değer vermemiş (yalnızca
+  `hint-placeholder-count`); icat edilmiş bir ikon-başına-sınav eşlemesi yerine tek, tutarlı bir seçim
+  yapıldı.
+- **`GoRouter.initialLocation` doğrudan `RoutePaths.countdown`'a alındı.** Ekran 01 (onboarding) Faz
+  10'da geliyor; o zamana kadar uygulama doğrudan geri sayımla açılıyor, eski `_BootstrapPlaceholder`
+  kaldırıldı.
+- **`main()` artık async**: `AppDatabase` + `SharedPreferences.getInstance()` açılışta kuruluyor,
+  `ProviderScope.overrides` ile `appDatabaseProvider`/`sharedPreferencesProvider`'a enjekte ediliyor
+  (Faz 3 `DECISIONS.md`'nin bıraktığı yer). `ExamSourceService.syncIfNeeded()` `unawaited` çağrılıyor —
+  SPEC.md §4 zaten sessiz/bloklamayan bir sözleşme tanımlıyor.
+- **`ProviderScope(overrides: [...])` listesi tip parametresiz bırakıldı** (`Override` sınıfı
+  `flutter_riverpod` paket barrel'ından dışa aktarılmıyor — riverpod 3.1.0'da iç bir tür); Dart'ın
+  yukarıdan-aşağı tip çıkarımı `ProviderScope.overrides`'ın beklediği türü zaten çözüyor.
+  Aynı sürümde `AsyncValue.valueOrNull` da yok — `.value` zaten `ValueT?` döndürüyor, doğrudan o kullanıldı.
+- **Ekran 11'de tarih/saat girişi TSİ duvar saati olarak alınıp UTC'ye çevriliyor** (`-3 saat`);
+  `Exam.timeOfDay` metni kullanıcının girdiği saat değerini birebir taşıyor.
+- **Yeni özel sınav kaydedilince otomatik aktif ediliyor.** SPEC.md Ekran 11 bunu açıkça yazmıyor ama
+  kullanıcı az önce hedef olarak eklediği bir sınavı takip etmek istiyor olmalı — makul bir UX çıkarımı,
+  `ActiveExamSwitcher` zaten Faz 4'ün kendi birleşik API'si.
+- **`test/widget_test.dart`, eski "FocusSayaç" placeholder smoke testinden Ekran 02'yi render eden
+  gerçek bir smoke testine dönüştürüldü.** `SharedPreferences` override'ı teste eklenmedi — Ekran 02'nin
+  render yolu `sharedPreferencesProvider`'ı hiç okumuyor (yalnızca `ExamSourceService`/`main.dart`
+  kullanıyor), gereksiz platform kanalı riski almaya değmedi. Test yüzeyi `tester.view.physicalSize`
+  ile 390×844'e sabitlendi — varsayılan ~800×600 test penceresi, telefon boyu için tasarlanmış Ekran
+  02'de dikey taşmaya yol açıyordu. **`database.close()` teste eklenmedi ve teardown'da
+  `pumpAndSettle()` kullanıldı** — ikisi birbirine bağlı, ayrıntılı gerekçe: `ProviderScope` kaldırılınca
+  Riverpod'un `StreamProvider`ları drift'in `.watch()` aboneliklerini iptal ediyor, drift de her
+  abonelik kapanışında `FakeAsync` bölgesinde sıfır-süreli bir temizlik `Timer`'ı zamanlıyor;
+  `database.close()`'u doğrudan `await` etmek (kare pompalamadan) bu sahte saat hiç ilerlemediği için
+  asla tamamlanmayan bir `Future`'a kilitleniyordu (gözlemlenen: çoklu dakikalık gerçek hang).
+  Kapatmayı hiç çağırmamak (bellek-içi test DB'si zaten process'le birlikte yok oluyor) ve teardown'un
+  ardından `pumpAndSettle()` ile bu zamanlayıcıları güvenle boşaltmak çözüm oldu — o noktada ekranın
+  kendi sonsuz-tekrarlı halka animasyonu zaten ağaçtan kalkmış olduğu için `pumpAndSettle` orada takılmıyor.

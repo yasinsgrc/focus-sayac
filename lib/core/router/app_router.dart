@@ -1,40 +1,33 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../theme/app_colors.dart';
-import '../theme/app_typography.dart';
+import '../../features/countdown/countdown_screen.dart';
+import '../../features/countdown/exam_expired_screen.dart';
+import '../../features/exams/add_exam_screen.dart';
+import 'route_paths.dart';
 
-/// Uygulamanın tek `GoRouter` örneği. Ekranlar hazırlandıkça (Faz 4+) buraya
-/// `GoRoute` girişleri eklenir; bu fazda yalnızca geçici bir başlangıç ekranı var.
+/// Uygulamanın tek `GoRouter` örneği. Ekran 01 (onboarding, Faz 10) henüz
+/// yok — başlangıç rotası doğrudan geri sayım (Ekran 02); onboarding
+/// eklendiğinde `initialLocation` ona alınacak (Faz 10 kararı).
 final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: RoutePaths.countdown,
     routes: <RouteBase>[
       GoRoute(
-        path: '/',
-        builder: (BuildContext context, GoRouterState state) => const _BootstrapPlaceholder(),
+        path: RoutePaths.countdown,
+        builder: (BuildContext context, GoRouterState state) {
+          return CountdownScreen(autoOpenSheet: state.extra as bool? ?? false);
+        },
+      ),
+      GoRoute(
+        path: RoutePaths.examExpired,
+        builder: (BuildContext context, GoRouterState state) => const ExamExpiredScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.addExam,
+        builder: (BuildContext context, GoRouterState state) => const AddExamScreen(),
       ),
     ],
   );
 });
-
-/// Faz 2 bitene kadar geçici kök ekran; Faz 4+'ta gerçek onboarding/geri sayım
-/// rotalarıyla değiştirilecek. Prototipte karşılığı yok — yalnızca iskelet.
-class _BootstrapPlaceholder extends StatelessWidget {
-  const _BootstrapPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    final AppColors colors = Theme.of(context).extension<AppColors>()!;
-    return Scaffold(
-      backgroundColor: colors.bg,
-      body: Center(
-        child: Text(
-          'FocusSayaç',
-          style: AppTypography.display(fontSize: 32, color: colors.text),
-        ),
-      ),
-    );
-  }
-}

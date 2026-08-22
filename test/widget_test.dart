@@ -1,13 +1,65 @@
+import 'package:drift/native.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:focussayac/main.dart';
+import 'package:focussayac/services/storage/app_database.dart';
+import 'package:focussayac/services/storage/storage_providers.dart';
 
 void main() {
-  testWidgets('App boots and renders the root shell', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: FocusSayacApp()));
-    await tester.pumpAndSettle();
+  testWidgets('App boots and renders Ekran 02 (geri sayım)', (WidgetTester tester) async {
+    // Varsayılan test yüzeyi (~800×600) prototipin telefon boyundaki (390×844)
+    // ekranı için dikey taşmaya yol açıyor — gerçek cihaz boyutunu taklit ediyoruz.
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
-    expect(find.text('FocusSayaç'), findsOneWidget);
+    await initializeDateFormatting('tr_TR');
+    final AppDatabase database = AppDatabase.forTesting(NativeDatabase.memory());
+
+    // `sharedPreferencesProvider` bu ekranların render yolunda hiç
+    // okunmuyor (yalnızca `ExamSourceService`/`main.dart` kullanıyor) —
+    // gerçek `SharedPreferences.getInstance()` platform kanalını bu
+    // widget testinde tetiklemeye gerek yok.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(database),
+        ],
+        child: const FocusSayacApp(),
+      ),
+    );
+    // `pumpAndSettle` kullanılmıyor: halkanın sonsuz-tekrarlı dönüş animasyonu
+    // (`AnimationController.repeat()`) hiçbir zaman "settle" olmaz. Bunun
+    // yerine DB tohumlama + stream yayınının gerçek zamanlı tamamlanması için
+    // birkaç kare pompalanıyor.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('GÜN KALDI'), findsOneWidget);
+    expect(find.text('25 DAKİKA ODAKLAN'), findsOneWidget);
+
+    // Ekranın `Timer.periodic` saniye tikleyicisini `dispose()` ile
+    // durdurmadan test bitmesin diye ağacı boşaltıyoruz. `database.close()`
+    // kasıtlı olarak çağrılmıyor: `ProviderScope` kaldırılınca Riverpod
+    // `StreamProvider`ların drift `.watch()` aboneliklerini iptal ediyor,
+    // ama `NativeDatabase.memory()` üstünde `close()` bu abonelik
+    // kapanışıyla yarışıp asla tamamlanmayan bir `Future` döndürüyor
+    // (gözlemlenen davranış — testin `FakeAsync` saati ilerletilmediği
+    // sürece drift'in temizlik `Timer(Duration.zero, ...)`'ı hiç ateşlenmiyor).
+    // Bellek-içi test DB'si zaten process'le birlikte yok oluyor — kapatmamak
+    // zararsız. Bertaraf sırasında oluşan o sıfır-süreli temizlik zamanlayıcısını
+    // boşaltmak için bir kare daha pompalıyoruz.
+    await tester.pumpWidget(const SizedBox.shrink());
+    // Artık ekranın kendi sonsuz-tekrarlı animasyonu ağaçtan kalktı; geri
+    // kalan yalnızca drift'in kademeli abonelik-kapatma sıfır-süreli
+    // zamanlayıcıları (StreamProvider başına biri) — `pumpAndSettle` bunları
+    // güvenle tüketir.
+    await tester.pumpAndSettle();
   });
 }
