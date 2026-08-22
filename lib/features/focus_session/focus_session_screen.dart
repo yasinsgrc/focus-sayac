@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
@@ -36,6 +37,10 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // SPEC §6 kural 4 / Ekran 03 ipucu satırı "Ekran açık kalır" — odak ve
+    // mola aynı ekranda (Faz 5 kararı) olduğu için wakelock, bu widget
+    // ağaçtayken (idle'a dönene kadar) açık kalır.
+    unawaited(WakelockPlus.enable());
     _startTicker();
   }
 
@@ -64,6 +69,7 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _ticker?.cancel();
+    unawaited(WakelockPlus.disable());
     super.dispose();
   }
 

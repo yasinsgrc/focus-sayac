@@ -294,3 +294,58 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
 - **`test/widget_test.dart`'a `sharedPreferencesProvider` override'ı eklendi** — Faz 4'ün "bu ekranların
   render yolunda hiç okunmuyor" notu artık geçersiz: `CountdownScreen` artık aktif seans kurtarma
   yönlendirmesi için `pomodoroControllerProvider`ı okuyor, o da `SharedPreferences`'a bağlı.
+
+## Faz 6 — Bildirimler (4 tip) + wakelock + izin akışı
+
+- **`NotificationService`, `AppDatabase`/`appDatabaseProvider` ile birebir aynı DI kalıbında** — elle
+  yazılmış statik bir singleton yerine `notificationServiceProvider` (varsayılanı
+  `UnimplementedError` fırlatan bir `Provider`) `main.dart`'ta gerçek örnekle override edilir
+  (SPEC §1 "singleton servisler yasak"). Testler için `NotificationService.disabled()` — gerçek
+  `FlutterLocalNotificationsPlugin`'i hiç oluşturmayan, tüm çağrıları no-op yapan ikinci bir
+  constructor — `AppDatabase.forTesting`'le aynı kalıp; `pomodoro_controller_test.dart`'ın
+  `_buildContainer()`'ı bunu override ediyor.
+- **Bildirim izin akışı (`POST_NOTIFICATIONS` → `SCHEDULE_EXACT_ALARM`, SPEC.md Ekran 01) Ekran 01'in
+  kendisi olmadan `main.dart`'ta açılışta tetikleniyor** — onboarding UI'ı (İZİN VER VE BAŞLA / Şimdi
+  değil) Faz 10'a ait; ama bildirimler Faz 6'nın kapsamı ve Android 13+'ta `POST_NOTIFICATIONS`
+  reddedilirse hiç gösterilmiyor, bu yüzden izin isteği bugünden itibaren çalışmalı. İzin reddedilirse
+  `NotificationService`'in her metodu sessizce no-op'a düşer (SPEC DoD "izinler reddedildiğinde
+  uygulama tam çalışıyor") — Faz 10 aynı `NotificationService.initialize()`'ı kendi buton akışından
+  tekrar çağırabilir, bu idempotent.
+- **"Kalıcı" bildirim (`Odak · n. pomodoro`) yalnızca odak fazında gösteriliyor, molada değil** —
+  SPEC.md Ekran 12 tablosunun başlığı özellikle "Odak" diyor (genel "Seans" değil); duraklatmada da
+  iptal edilip devam ederken yeniden gösteriliyor (SPEC'in "Ekran açık kalır" ipucu yalnızca çalışırken
+  anlamlı).
+- **Seans bitişi bildirimi yalnızca odak → mola geçişi için var, mola bitişi için ayrı bir bildirim
+  yok** — SPEC.md Ekran 12 tablosu tam olarak dört tip sayıyor ve "Seans bitişi" metni yalnızca
+  "...mola vakti" diyor; beşinci bir tip icat etmek CLAUDE.md "istenmeyen özellik ekleme" kuralını
+  ihlal ederdi.
+- **Seans bitişi metnindeki dakika sayıları (`{{ }}` değil ama SPEC'in "25 dakika...5 dakika" örneği)
+  gerçek `AppSettingsTableData.focusMinutes` ve `isLongBreakFor(cyclePosition)`'a göre seçilen
+  kısa/uzun mola dakikasından geliyor** — SPEC DoD "demo sayılarının hiçbiri kodda yok" kuralı
+  bildirim metinlerine de uygulanıyor.
+- **Seri riski bildirimi, arka planı olmayan bir "yeniden değerlendir ve tek seferlik kur" kalıbıyla
+  uygulandı** — SPEC.md §1 backend/cloud sync'i yasaklıyor, bu yüzden "her gün 21:00, yalnızca bugün
+  seans yoksa ve seri ≥1 ise" koşulunu gerçek zamanlı değerlendirecek bir arka plan işi kurulamıyor.
+  Bunun yerine `NotificationService.rescheduleStreakRiskReminder` her yeniden değerlendirme
+  noktasında (uygulama açılışı `main.dart`, ve her `_completeFocus` sonrası) önce mevcut zamanlanmış
+  bildirimi iptal edip koşul hâlâ geçerliyse o günün 21:00 TSİ'si için tek seferlik yeniden kuruyor;
+  bugünün 21:00'i zaten geçtiyse hiç kurulmuyor. Bilinen sınır: kullanıcı o gün hiç uygulamayı açmazsa
+  bildirim hiç kurulmuyor — yerel/backend'siz bir zamanlayıcının doğal sonucu, "basitlik" ilkesiyle
+  kabul edildi.
+- **`timezone` paketi `Europe/Istanbul` IANA veritabanı girdisiyle kullanıldı**, `app_day.dart`'ın
+  sabit UTC+3 kısayolu yerine — Faz 3'ün `app_day.dart` yorumu zaten bunu Faz 6'ya erteliyordu;
+  bildirim zamanlaması gibi platform API'lerine geçen değerler için paketin resmî `Location`'ı
+  (2016 öncesi DST geçişlerini de doğru modelleyen) daha sağlam, `zonedSchedule`'ın zaten
+  `TZDateTime` beklemesiyle de doğal olarak örtüşüyor.
+- **Rozet bildirimi (`showBadgeUnlocked`) Faz 6'da yazıldı ama hiçbir yerden çağrılmıyor** —
+  `badge_rules.dart` ve rozet açılış akışı Faz 7'nin kapsamı (SPEC §8); SPEC.md Ekran 12'nin dört
+  bildirim metnini "birebir" barındırma gereği bu metodu şimdiden tam ve doğru yazmayı gerektiriyordu,
+  Faz 7 yalnızca çağıracak.
+- **Wakelock, `FocusSessionScreen`in `initState`/`dispose`'unda açılıp kapatılıyor** — ekran hem odak
+  (Ekran 03) hem molayı (Ekran 09) aynı rota içinde gösterdiği için (Faz 5 kararı) tek bir aç/kapat
+  yeterli; ayrıca duraklat/devam state'ine göre koşullu açıp kapatmak SPEC'in "Ekran açık kalır"
+  ipucunun duraklatmada da göründüğü gerçeğiyle çelişirdi (basitlik).
+- **`NotificationService` alanı `_istanbul` `final` değil** — `_location` getter'ı onu tembel
+  başlatıp önbelleğe alıyor; bu yüzden `NotificationService.disabled()` `const` constructor
+  *olamıyor* (Dart kısıtı: non-final alanlı sınıf const constructor'a sahip olamaz) — testte
+  `const NotificationService.disabled()` değil `NotificationService.disabled()` kullanılıyor.

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../services/notifications/notification_service.dart';
 import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
@@ -44,6 +45,8 @@ class PomodoroController extends Notifier<PomodoroPhase> {
   }
 
   SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
+
+  NotificationService get _notifications => ref.read(notificationServiceProvider);
 
   PomodoroPhase? _restoreFromPrefs() {
     final String? raw = _prefs.getString(kPomodoroPhasePrefsKey);
@@ -103,6 +106,14 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     );
     _lastCheckedNowUtc = startedAt;
     await _persist();
+    final int breakMinutes =
+        isLongBreakFor(cyclePosition) ? settings.longBreakMinutes : settings.shortBreakMinutes;
+    await _notifications.scheduleFocusSessionEnd(
+      endAtUtc: startedAt.add(Duration(seconds: plannedSec)),
+      focusMinutes: settings.focusMinutes,
+      breakMinutes: breakMinutes,
+    );
+    await _notifications.showOngoingFocus(cyclePosition: cyclePosition);
     await _haptic();
   }
 
@@ -125,6 +136,8 @@ class PomodoroController extends Notifier<PomodoroPhase> {
         remainingAtPause: remaining,
       );
       await _persist();
+      await _notifications.cancelFocusSessionEnd();
+      await _notifications.cancelOngoingFocus();
       await _haptic();
       return;
     }
@@ -144,6 +157,16 @@ class PomodoroController extends Notifier<PomodoroPhase> {
       );
       _lastCheckedNowUtc = now;
       await _persist();
+      final AppSettingsTableData settings = await ref.read(appSettingsDaoProvider).getSettings();
+      final int breakMinutes = isLongBreakFor(current.cyclePosition)
+          ? settings.longBreakMinutes
+          : settings.shortBreakMinutes;
+      await _notifications.scheduleFocusSessionEnd(
+        endAtUtc: virtualStart.add(Duration(seconds: current.plannedDurationSec)),
+        focusMinutes: settings.focusMinutes,
+        breakMinutes: breakMinutes,
+      );
+      await _notifications.showOngoingFocus(cyclePosition: current.cyclePosition);
       await _haptic();
     }
   }
@@ -165,6 +188,8 @@ class PomodoroController extends Notifier<PomodoroPhase> {
         );
     state = const PomodoroPhase.idle();
     await _clearPersisted();
+    await _notifications.cancelFocusSessionEnd();
+    await _notifications.cancelOngoingFocus();
     await _haptic();
   }
 
@@ -254,6 +279,10 @@ class PomodoroController extends Notifier<PomodoroPhase> {
             endedAt: now,
           );
     }
+    if (current is PomodoroFocusRunning) {
+      await _notifications.cancelFocusSessionEnd();
+      await _notifications.cancelOngoingFocus();
+    }
     state = const PomodoroPhase.idle();
     await _clearPersisted();
   }
@@ -264,6 +293,8 @@ class PomodoroController extends Notifier<PomodoroPhase> {
           completed: true,
           endedAt: now,
         );
+    await _notifications.cancelFocusSessionEnd();
+    await _notifications.cancelOngoingFocus();
     final bool isLong = isLongBreakFor(r.cyclePosition);
     final AppSettingsTableData settings = await ref.read(appSettingsDaoProvider).getSettings();
     final int breakSec = (isLong ? settings.longBreakMinutes : settings.shortBreakMinutes) * 60;
@@ -283,6 +314,7 @@ class PomodoroController extends Notifier<PomodoroPhase> {
       extensionsUsed: 0,
     );
     await _persist();
+    await _notifications.rescheduleStreakRiskReminder(completedToday: true, streak: ref.read(streakProvider));
     await _haptic();
   }
 

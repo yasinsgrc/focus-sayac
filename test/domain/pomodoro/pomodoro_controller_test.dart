@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_controller.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_phase.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_stats_providers.dart';
+import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
@@ -22,6 +23,7 @@ Future<ProviderContainer> _buildContainer() async {
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sharedPreferencesProvider.overrideWithValue(prefs),
+      notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
     ],
   );
   await container.read(pomodoroSessionDaoProvider).watchAllSessions().first;

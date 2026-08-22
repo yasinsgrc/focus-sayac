@@ -8,8 +8,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/time/app_day.dart';
+import 'domain/streak/streak_calculator.dart';
+import 'services/notifications/notification_service.dart';
 import 'services/storage/app_database.dart';
 import 'services/storage/exam_source_service.dart';
+import 'services/storage/storage_enums.dart';
 import 'services/storage/storage_providers.dart';
 
 Future<void> main() async {
@@ -24,15 +28,43 @@ Future<void> main() async {
   unawaited(
     ExamSourceService(database: database, prefs: prefs).syncIfNeeded(),
   );
+  final NotificationService notificationService = NotificationService();
+  // SPEC.md Ekran 01: POST_NOTIFICATIONS → SCHEDULE_EXACT_ALARM izinleri de
+  // burada istenir. Onboarding ekranının kendisi (Faz 10) henüz yok; izin
+  // reddedilse de uygulama tam çalışmaya devam eder (SPEC DoD) — Faz 10
+  // aynı servisi tekrar kullanacak (Faz 6 kararı, DECISIONS.md).
+  await notificationService.initialize();
+  unawaited(_rescheduleStreakRiskReminder(database, notificationService));
   runApp(
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         sharedPreferencesProvider.overrideWithValue(prefs),
+        notificationServiceProvider.overrideWithValue(notificationService),
       ],
       child: const FocusSayacApp(),
     ),
   );
+}
+
+/// SPEC.md Ekran 12 "seri riski" — açılışta bugünün durumunu hesaplayıp
+/// [NotificationService.rescheduleStreakRiskReminder]'ı tetikler. Riverpod
+/// ağacı henüz kurulmadığı için `PomodoroSessionDao` doğrudan okunur, aynı
+/// hesap `pomodoro_stats_providers.dart`'ın `todayFocusStatsProvider`/
+/// `streakProvider`'ıyla birebir aynı (Faz 6 kararı).
+Future<void> _rescheduleStreakRiskReminder(AppDatabase database, NotificationService notificationService) async {
+  final List<PomodoroSession> sessions = await database.pomodoroSessionDao.watchAllSessions().first;
+  final DateTime nowUtc = DateTime.now().toUtc();
+  final DateTime today = currentAppDayKey(nowUtc);
+  final List<DateTime> completedFocusStarts = <DateTime>[];
+  bool completedToday = false;
+  for (final PomodoroSession session in sessions) {
+    if (!session.completed || session.type != SessionType.focus) continue;
+    completedFocusStarts.add(session.startedAt);
+    if (appDayKey(session.startedAt) == today) completedToday = true;
+  }
+  final int streak = calculateStreak(completedFocusStartedAtUtc: completedFocusStarts, nowUtc: nowUtc);
+  await notificationService.rescheduleStreakRiskReminder(completedToday: completedToday, streak: streak);
 }
 
 class FocusSayacApp extends ConsumerWidget {
