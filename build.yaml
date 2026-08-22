@@ -1,0 +1,10 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # SPEC.md §5.1: "Tüm hesap UTC". Varsayılan epoch-int depolama,
+          # okurken `DateTime`'ı yerel saate çeviriyor (drift'in bilinen
+          # davranışı) — bu, cihaz saat dilimine göre UTC tutarlılığını
+          # bozar. ISO-8601 metin olarak saklamak UTC'yi birebir korur.
+          store_date_time_values_as_text: true

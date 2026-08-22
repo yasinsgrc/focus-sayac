@@ -1,0 +1,41 @@
+{
+  "_note": "Bu dosya yalnizca ilk kurulum yedegidir. Tarihler resmi ÖSYM takviminden dogrulanmalidir; uygulama acilista varsa uzak override ile bu degerleri tazeler.",
+  "exams": [
+    {
+      "key": "yks",
+      "name": "YKS",
+      "subtitle": "TYT + AYT",
+      "dateUtc": "2027-06-20T07:15:00.000Z",
+      "timeOfDay": "10:15",
+      "accentRole": "ember",
+      "verifiedAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "key": "lgs",
+      "name": "LGS",
+      "subtitle": "8. Sınıf",
+      "dateUtc": "2027-06-06T07:15:00.000Z",
+      "timeOfDay": "10:15",
+      "accentRole": "sky",
+      "verifiedAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "key": "kpss_lisans",
+      "name": "KPSS Lisans",
+      "subtitle": "Genel Yetenek - Genel Kültür",
+      "dateUtc": "2027-07-11T06:45:00.000Z",
+      "timeOfDay": "09:45",
+      "accentRole": "mint",
+      "verifiedAt": "2026-08-01T00:00:00.000Z"
+    },
+    {
+      "key": "ales",
+      "name": "ALES",
+      "subtitle": "Sayısal / Sözel",
+      "dateUtc": "2027-05-16T07:15:00.000Z",
+      "timeOfDay": "10:15",
+      "accentRole": "accent",
+      "verifiedAt": "2026-08-01T00:00:00.000Z"
+    }
+  ]
+}

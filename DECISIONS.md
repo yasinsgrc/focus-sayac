@@ -83,3 +83,62 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   somut CSS kalıplarından (kart yüzeyi `rgba(30,32,48,.82)`, Michroma uppercase etiketler, Nocturne'ün
   sönümlenen `.hr` çizgisi, hap buton `border+gradient-deep+role-color` üçlüsü) türetildi — icat edilmiş
   bileşen değil, birden çok ekranda gözlenen kalıbın tekilleştirilmesi.
+
+## Faz 3 — services/storage (drift)
+
+- Dört tablo (`Exams`, `PomodoroSessions`, `UserBadges`, `AppSettingsTable`) SPEC.md §4 şemasıyla
+  birebir; `PomodoroSession.type`, `Exam.accentRole`, `Exam.source` `textEnum<T>()` ile modellendi
+  (drift 2.31'in `EnumNameConverter`'ı, enum adını metin olarak saklar) — `intEnum` yerine tercih
+  edildi çünkü DB'yi elle inceleyen biri için okunur kalması, sayısal indekse göre daha az kırılgan.
+  `Exam.timeOfDay` düz `"HH:mm"` metin — drift'in yerel bir `TimeOfDay` türü yok, ekstra bir tür
+  eklemek bu basit alan için gereksiz karmaşıklık olurdu.
+- **Sınav tarihleri koda gömülmedi:** `onCreate` migration'ı 4 preset satırı `assets/data/exam_dates.json`
+  dosyasını `rootBundle.loadString` ile okuyarak yazıyor (SPEC.md §4 "Tarihleri `.dart` dosyasına gömme"
+  kuralı gereği). JSON şeması `{key, name, subtitle, dateUtc, timeOfDay, accentRole, verifiedAt}` —
+  `exam_json_models.dart`'taki `ExamJsonEntry`, hem yerel seed hem uzak override tarafından paylaşılan
+  tek çözümleyici. Seed içeriği: YKS/LGS/KPSS Lisans/ALES, 2027 tarihli (2026-08-22 "bugün"e göre en
+  yakın gerçekçi gelecek sınav tarihleri) — JSON'daki `_note` alanı bunların resmî takvimden
+  doğrulanması gerektiğini belirtiyor.
+- **Uzak override, gerçek bir backend olmadan mimari olarak tam kodlandı, çalışma zamanında pasif:**
+  `ExamSourceService.remoteOverrideUrl`, `String.fromEnvironment('EXAM_DATES_REMOTE_URL')` ile boş
+  varsayılana sahip; boşken ağa hiç çıkmıyor ve yerel seed veri geçerliliğini koruyor. Henüz bir uç
+  nokta verilmediği için sahte/rastgele bir URL icat etmek yerine bu yol seçildi — gerçek backend
+  bağlanınca `--dart-define=EXAM_DATES_REMOTE_URL=...` ile kod değişikliği olmadan açılır. 24 saatlik
+  önbellek `shared_preferences`'a yazılan ISO-8601 zaman damgasıyla tutuluyor; ağ/format hatasında
+  `catch (_) {}` ile sessizce yerel veriye düşülüyor (SPEC.md §4 "sessizce 3'e düş" — kullanıcıya hata
+  gösterilmiyor, bu kasıtlı ve yorumla belirtildi).
+- **`Exam.isActive` + `AppSettings.activeExamId` birlikte tutuluyor:** SPEC.md §4 her iki alanı da
+  ayrı ayrı listelediği için ikisi de şemada var; `ExamDao.setActiveExam`/`AppSettingsDao.setActiveExam`
+  ayrı DAO'larda ayrı metotlar olarak kaldı (drift `DatabaseAccessor` sınırları tablo bazlı) ama Faz 4+
+  UI katmanı ikisini birlikte çağırmalı — bu tek işlemli bir "değiştir" API'si Faz 4'te bir Riverpod
+  notifier'ında birleştirilecek.
+- **`store_date_time_values_as_text: true`** (`build.yaml`, drift_dev seçeneği) eklendi. Varsayılan
+  epoch-int depolama, okurken `DateTime`'ı **yerel saate** çeviriyor (test sırasında somut olarak
+  gözlendi: UTC `00:00Z` yazılan bir zaman `03:00` yerel olarak geri geldi) — SPEC.md §5.1 "Tüm hesap
+  UTC" kuralını cihaz saat dilimine bağlı olarak sessizce bozardı. ISO-8601 metin depolama UTC'yi
+  birebir korur; bu, prod DB dosyası + bellek-içi test DB'si için ortak, tek bir codegen ayarı.
+- **`sqlite3_flutter_libs` sürümü `^0.6.0+eol`'den `^0.5.41`'e düşürüldü.** `0.6.0+eol`, yalnızca
+  `sqlite3` paketinin 3.x sürümüyle (yerel asset hook'ları native kütüphaneyi kendisi indirir)
+  kullanılmak üzere **hiçbir şey yapmayan boş bir stub**; ama Faz 1'in `meta`/`analyzer` sürüm
+  pinlemesi `sqlite3`'ü 2.9.4'te tutuyor (native asset hook'u yok). `0.6.0+eol` ile 2.x arasında hiçbir
+  şey Android/iOS için `libsqlite3.so`/`.a`'yı gerçekten paketlemiyordu — bu, cihazda sessizce
+  `NativeDatabase` açma hatasına yol açacak gizli bir Faz 1 hatasıydı, Faz 3'te veritabanı gerçekten
+  açılırken ortaya çıktı. `0.5.41` (son işlevsel, EOL öncesi sürüm) native kütüphaneyi eskisi gibi
+  gradle/CocoaPods ile paketliyor ve `sqlite3` 2.x ile uyumlu.
+- **`build_runner` dev_dependency olarak eksikti** (Faz 1'de hiç eklenmemiş) — `^2.4.13` eklendi
+  (`drift_dev`'in kendi `pubspec.yaml`'ındaki `build_runner: ^2.4.0` alt sınırıyla uyumlu).
+- **`dart run build_runner build` bu ortamda yalnızca `--force-jit` ile çalışıyor.** Varsayılan AOT
+  derlemesi `'dart compile' does not support build hooks, use 'dart build' instead` hatasıyla
+  başarısız oluyor — paket grafiğindeki bir native-asset-hook paketi (muhtemelen bir Flutter eklentisi)
+  Dart 3.10 SDK'sının `dart compile`'ının artık desteklemediği bir "hook" tanımlıyor. `--force-jit`
+  AOT'yi atlayıp derleme betiğini JIT modda çalıştırıyor — biraz daha yavaş ama tam olarak çalışıyor;
+  bu proje için `dart run build_runner build --force-jit` standart komut olarak benimsendi.
+- **Enum sütun karşılaştırması:** DAO `where()` kapatmalarında closure parametresi DSL soyut tablo
+  tipiyle (`PomodoroSessions s`) açıkça tipleniyor; bu tip `textEnum` sütunlarını düz `TextColumn`
+  olarak görüyor (tip-dönüştürücülü sürüm yalnızca *üretilen* `$PomodoroSessionsTable`'da var), bu
+  yüzden `equalsValue(SessionType.focus)` derlenmiyor. Bunun yerine `s.type.equals(SessionType.focus.name)`
+  kullanıldı — enum'un adı zaten disk üzerindeki temsil, bu yüzden doğru ve DSL/üretilmiş sınıf
+  tipi farkından bağımsız.
+- Test: `test/services/storage/app_database_test.dart`, `AppDatabase.forTesting(NativeDatabase.memory())`
+  ile 4 DAO'yu ve `onCreate` seed'ini kapsıyor (11 test, hepsi geçiyor). Gerçek dosya tabanlı DB yerine
+  bellek-içi DB kullanıldı — testler hızlı ve izole, disk temizliği gerekmiyor.

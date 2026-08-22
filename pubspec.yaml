@@ -49,7 +49,7 @@ dependencies:
   shared_preferences: ^2.5.5
   path_provider: ^2.1.6
   path: ^1.9.1
-  sqlite3_flutter_libs: ^0.6.0+eol
+  sqlite3_flutter_libs: ^0.5.41
   in_app_review: ^2.0.12
   http: ^1.6.0
   drift: 2.31.0
@@ -68,6 +68,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   riverpod_generator: ^4.0.0+1
   drift_dev: 2.31.0
+  build_runner: ^2.4.13
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -90,6 +91,9 @@ flutter:
 
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
+
+  assets:
+    - assets/data/exam_dates.json
 
   fonts:
     - family: Space Grotesk
