@@ -349,3 +349,63 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   başlatıp önbelleğe alıyor; bu yüzden `NotificationService.disabled()` `const` constructor
   *olamıyor* (Dart kısıtı: non-final alanlı sınıf const constructor'a sahip olamaz) — testte
   `const NotificationService.disabled()` değil `NotificationService.disabled()` kullanılıyor.
+
+## Faz 7 — Ekran 04 (rozetler) + `badge_rules` + `streak_calculator` + açılış dialogu
+
+- **`calculateLongestStreak` `streak_calculator.dart`'a eklendi**, ayrı bir dosyaya değil — SPEC.md
+  §5.4 "Haftalık Seri" rozeti "7 gün üst üste ≥1 seans" der ve rozetler asla geri alınmaz; mevcut
+  `calculateStreak` yalnızca bugün/dün canlıysa sayar (Ekran 02'nin "6 gün seri" göstergesi için doğru
+  semantik), bu yüzden rozet kuralı ayrı, "tüm zamanların en uzun serisi" anlamına gelen saf bir
+  fonksiyon gerektiriyordu. Bu fonksiyon Ekran 06'nın "en uzun seri" istatistiğiyle (Faz 9) de birebir
+  aynı hesap olduğu için `domain/streak/` içinde kalması, `domain/badges/` altına kopyalanmasından
+  daha doğru (SPEC §0 kural 9 "iletişim core/ ve domain/ üzerinden").
+- **Rozet kataloğu (`badge_definition.dart`) İngilizce `key` alanları kullanıyor** (`first_spark`,
+  `focus_torch`, vb.) — SPEC §0 kural 7 "kod/değişken İngilizce, kullanıcı metinleri yalnızca ARB'den";
+  `name`/`rule` alanları hâlâ Türkçe çünkü ARB geçişi Faz 13'e kadar tüm ekranlarda hard-coded
+  (Faz 4-6 emsali), rozet kataloğu da bu kuraldan muaf değil.
+- **`evaluateEarnedBadgeKeys` idempotent ve geriye dönük yeniden hesaplanabilir** — DB'de "hangi
+  rozetler açık" diye ayrı bir önbellek tutmuyor, her çağrıda tüm tamamlanmış odak geçmişinden yeniden
+  türetiyor. Bu, SPEC §5.4 "yalnızca başarıyla açılır, asla satın almayla" ve "asla geri alınmaz"
+  kurallarını IO'suz saf bir fonksiyonla garanti ediyor; IO'lu kısım (`BadgeUnlockService`,
+  `domain/badges/badge_providers.dart`) yalnızca zaten `UserBadge` tablosunda olmayan anahtarları
+  fark edip yazıyor.
+- **"Sabah Yıldızı"/"Gece Nöbeti" sınırları dakika hassasiyetiyle karşılaştırılıyor** (`hour*60+minute`
+  < 480 / ≥ 1380), yalnızca `hour` ile değil — SPEC §9 test listesi "07:59/08:00 ve 22:59/23:00
+  sınırları" diye açıkça dakika bazlı bir sınır istiyor; saat bazlı bir kıyas 08:00 tam ile 08:59'u
+  ayırt edemezdi.
+- **`BadgeUnlockService.evaluateAfterFocusCompletion` `PomodoroController._completeFocus`'un içine
+  eklendi** (Faz 6'nın `NotificationService.showBadgeUnlocked` yorumunun işaret ettiği tam nokta) —
+  yalnızca odak seansı tamamlandığında rozet kazanılabilir (SPEC §5.4 kuralları hep "tamamlanan
+  pomodoro" üzerine), mola tamamlanışında değil.
+- **Rozet açılışındaki `HapticFeedback.heavyImpact()` `AppSettings.hapticEnabled`'a bağlı** — SPEC
+  §5.4 bunu açıkça söylemiyor ama `PomodoroController._haptic()`'in her çağrısı bu ayarı kontrol
+  ediyor (Faz 5 kararı); titreşimi kapatan bir kullanıcı rozet açılışında da titreşim almamalı,
+  tutarlılık "basitlik" ilkesinden daha ağır bastı.
+- **Ekran 04'te alt gezinme çubuğu yok** — prototip v2'nin Ekran 04 markup'ı (satır 182-212) diğer
+  ekranların (02/06) aksine floating nav bar içermiyor; bu yüzden `BadgesScreen` `BottomNavBar`
+  render etmiyor, geri dönüş sistem geri tuşu/kaydırmasıyla (`context.push` kullanıldığı için doğal
+  olarak çalışıyor). "Prototipte olmayan öğe ekleme" kuralı burada da geçerli.
+- **`BottomNavBar`'ın hem `flame` hem `medal` ikonu rozetler ekranına gidiyor** — prototipin alt
+  çubuğunda 5 ikon var (timer/flame/medal/chart/gear) ama uygulamada "seri" için ayrı bir ekran yok;
+  Faz 4'ün bıraktığı `onSelect` parametresi şimdi yalnızca `AppNavTab.badges` için `context.push`
+  çağırıyor, istatistik/ayarlar Faz 9/12'ye kadar no-op kalıyor (aynı dosyanın önceki kararı).
+  `_ActiveTabPill` hâlâ her zaman "SAYAÇ" gösteriyor (yalnızca Ekran 02/06 bu çubuğu kullandığı ve
+  Ekran 06 zaten kendi özel alt çubuğunu prototipte farklı çizdiği için — Faz 9'un kapsamı).
+- **Rozet ızgarası `GridView` yerine `LayoutBuilder` + `Wrap` ile çizildi** — `GridView`'in sabit
+  `childAspectRatio`'su, 7 rozetin değişken uzunluktaki Türkçe ad/kural metinleriyle (`100 Saat
+  Kulübü` gibi 2 satıra sarabilen başlıklar) taşma riski taşıyordu; `Wrap` her kartın kendi içeriğine
+  göre yükseklik almasını sağlıyor, 2 sütun düzeni sabit `cardWidth = (genişlik-12)/2` ile garanti
+  ediliyor (SPEC §6 "aynı görünen ama daha ucuz/sağlam" serbestliği).
+- **Rozet açılış dialogundaki dönen halka (CSS `spin 6s` + üstte farklı renkli kenar) statik, tek
+  renkli bir `Border.all` çemberine indirgendi**, `CustomPainter` ile parça parça çizilmiş bir yay
+  yerine — Flutter'ın `BoxShape.circle` dekorasyonu tek renkli olmayan (yalnızca üst kenarı farklı
+  renkte) bir çember kenarlığını desteklemiyor; simetrik tek renkli bir halkayı döndürmenin görsel
+  hiçbir farkı olmayacağı için animasyon da eklenmedi (SPEC §6 "aynı görünen ama ucuz"). Aynı şekilde
+  `glow 2.8s` nabız animasyonu da statik bir radyal gradyan olarak sadeleştirildi.
+- **Dialog arka planı `BackdropFilter` yerine düz `barrierColor`** — Ekran 10'un iptal onayı
+  (`FocusSessionScreen._CancelConfirmDialog`, Faz 5 kararı) ile aynı teknik/gerekçe; burada wakelock
+  aktif değil ama tutarlılık ve maliyet nedeniyle aynı çözüm tekrar kullanıldı.
+- **"BAŞARI KARTINI OLUŞTUR" butonu `onPressed: null` ile inert** — Ekran 05 (başarı kartı) Faz 8'in
+  kapsamı; Faz 5'in mola ekranındaki "5 dk ekle" (`canExtend=false` iken `onPressed: null`) ve Faz
+  4'ün `BottomNavBar` no-op sekmeleriyle aynı emsel: görsel birebir, var olmayan bir rotaya gitmeye
+  çalışıp çökmek yerine dokunma hedefsiz bırakılıyor.

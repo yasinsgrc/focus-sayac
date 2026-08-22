@@ -6,12 +6,13 @@ import '../theme/app_typography.dart';
 
 enum AppNavTab { countdown, badges, stats, settings }
 
-/// Prototipin ekranlar arası ortak yüzen alt gezinme çubuğu (Ekran 02/04/06/07
-/// satır 108-114 v.b.). Rozetler/istatistik/ayarlar ekranları henüz
-/// yapılmadığından (Faz 7/9/12), o sekmeler şimdilik görsel olarak
-/// prototipteki gibi durur ama dokunma hedefine bağlanmaz — hedef ekran
-/// yokken sahte bir rota eklemek "prototipte olmayan özellik ekleme"
-/// riski taşır; gerçek rota geldiğinde `onSelect` genişletilecek.
+/// Prototipin ekranlar arası ortak yüzen alt gezinme çubuğu (Ekran 02/06 —
+/// Ekran 04/07'de prototipte bu çubuk yok). Rozetler ekranı Faz 7'de
+/// bağlandı; istatistik/ayarlar ekranları henüz yapılmadığından (Faz 9/12),
+/// o sekmeler şimdilik görsel olarak prototipteki gibi durur ama dokunma
+/// hedefine bağlanmaz — hedef ekran yokken sahte bir rota eklemek
+/// "prototipte olmayan özellik ekleme" riski taşır; gerçek rota geldiğinde
+/// `onSelect` genişletilecek.
 class BottomNavBar extends StatelessWidget {
   const BottomNavBar({required this.active, super.key, this.onSelect});
 

@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/badges/badges_screen.dart';
 import '../../features/countdown/countdown_screen.dart';
 import '../../features/countdown/exam_expired_screen.dart';
 import '../../features/exams/add_exam_screen.dart';
@@ -32,6 +33,10 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: RoutePaths.focusSession,
         builder: (BuildContext context, GoRouterState state) => const FocusSessionScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.badges,
+        builder: (BuildContext context, GoRouterState state) => const BadgesScreen(),
       ),
     ],
   );

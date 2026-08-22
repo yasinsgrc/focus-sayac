@@ -38,3 +38,28 @@ int calculateStreak({
   }
   return streak;
 }
+
+/// Tüm zamanların en uzun serisi — [calculateStreak] yalnızca bugün/dün
+/// canlıysa sayar, bu fonksiyon geçmişte kırılmış olsa bile en uzun ardışık
+/// bloğu bulur. Ekran 06'nın "en uzun seri" istatistiği (Faz 9) ve
+/// "Haftalık Seri" rozeti (Faz 7, `badge_rules.dart`) bu saf fonksiyonu
+/// paylaşır — SPEC.md §5.4 rozet kuralı "ever" anlamında olduğu için
+/// (bir kez kazanılan rozet serinin sonradan kırılmasıyla geri alınmaz).
+int calculateLongestStreak({required List<DateTime> completedFocusStartedAtUtc}) {
+  final List<DateTime> days = completedFocusStartedAtUtc.map(appDayKey).toSet().toList()..sort();
+  if (days.isEmpty) {
+    return 0;
+  }
+
+  int longest = 1;
+  int current = 1;
+  for (int i = 1; i < days.length; i++) {
+    if (days[i].difference(days[i - 1]).inDays == 1) {
+      current += 1;
+      if (current > longest) longest = current;
+    } else {
+      current = 1;
+    }
+  }
+  return longest;
+}

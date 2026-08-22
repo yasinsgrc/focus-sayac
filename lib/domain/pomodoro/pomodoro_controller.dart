@@ -9,6 +9,7 @@ import '../../services/notifications/notification_service.dart';
 import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
+import '../badges/badge_providers.dart';
 import '../exams/exam_providers.dart';
 import 'pomodoro_math.dart';
 import 'pomodoro_phase.dart';
@@ -315,6 +316,7 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     );
     await _persist();
     await _notifications.rescheduleStreakRiskReminder(completedToday: true, streak: ref.read(streakProvider));
+    await ref.read(badgeUnlockServiceProvider).evaluateAfterFocusCompletion();
     await _haptic();
   }
 

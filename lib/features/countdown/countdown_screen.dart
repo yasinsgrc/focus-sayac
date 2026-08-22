@@ -121,11 +121,19 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
               error: (Object error, StackTrace stackTrace) => const SizedBox.shrink(),
             ),
           ),
-          const Positioned(
+          Positioned(
             left: 20,
             right: 20,
             bottom: 18,
-            child: BottomNavBar(active: AppNavTab.countdown),
+            child: BottomNavBar(
+              active: AppNavTab.countdown,
+              // Prototipin alt çubuğunda "flame" (seri) için ayrı bir ekran
+              // yok — ikisi de rozetler ekranına gider (Faz 4 DECISIONS.md).
+              // İstatistik/ayarlar sekmeleri Faz 9/12'de gelene kadar no-op.
+              onSelect: (AppNavTab tab) {
+                if (tab == AppNavTab.badges) context.push(RoutePaths.badges);
+              },
+            ),
           ),
         ],
       ),
