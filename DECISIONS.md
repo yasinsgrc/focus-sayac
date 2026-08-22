@@ -208,3 +208,89 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   Kapatmayı hiç çağırmamak (bellek-içi test DB'si zaten process'le birlikte yok oluyor) ve teardown'un
   ardından `pumpAndSettle()` ile bu zamanlayıcıları güvenle boşaltmak çözüm oldu — o noktada ekranın
   kendi sonsuz-tekrarlı halka animasyonu zaten ağaçtan kalkmış olduğu için `pumpAndSettle` orada takılmıyor.
+
+## Faz 5 — Ekran 03 + 09 + 10: durum makinesi, wall-clock timer, meşale, mola, iptal
+
+- **`freezed` dev_dependency olarak eklendi** (`^3.2.3`) — SPEC.md §5.2 "durum makinesi (freezed sealed
+  union)" talimatı gereği. Faz 1'in `meta`/`analyzer` sürüm pinlemesiyle çakışmadan temiz çözüldü
+  (`flutter pub add -d freezed` dry-run ile önce doğrulandı), Faz 1/3'teki riverpod/drift codegen
+  çakışmalarının aksine burada ekstra bir pinleme gerekmedi.
+- **`PomodoroPhase` union'ı SPEC'in andığı 8 addan yalnızca 4'ünü modelliyor**: `idle`, `focusRunning`,
+  `focusPaused`, `breakRunning`. `focusCompleted`/`breakCompleted` kendi başına render edilen bir ekrana
+  sahip değil — tamamlanma (DB yazımı + bir sonraki faza geçiş) `PomodoroController` içinde tek senkron
+  adımda oluyor, bu yüzden ayrı bir union üyesi olarak modellenmedi. `breakPaused` da yok: Ekran 09
+  prototipinde molayı duraklatan bir kontrol yok (yalnızca "5 dk ekle"/"ODAĞA DÖN") — hiç üretilmeyecek
+  bir durumu union'a eklemek SPEC.md §0 "basitlik" ilkesine ve CLAUDE.md "do not over-engineer"
+  kuralına aykırı düşerdi.
+- **`NotifierProvider` (elle yazılmış, `riverpod_generator` kullanılmadan) tercih edildi** — mevcut
+  kod tabanında (Faz 2-4) `@riverpod` annotation'lı codegen'e hiç geçilmemiş, tüm provider'lar elle
+  yazılmış; `PomodoroController` de bu kurulu kalıba uyuyor. `flutter_riverpod` 3.1.0'da hem modern
+  `Notifier`/`NotifierProvider` hem eski `StateNotifierProvider` mevcut — legacy olmayanı seçildi.
+- **Döngü konumu (`cyclePosition`) ayrı bir kalıcı sayaç yerine `todayFocusStatsProvider.completedCount % 4`
+  üzerinden türetiliyor** — Ekran 02'nin Faz 4'te kurduğu "bugünkü tamamlanan sayısı" akışıyla aynı
+  kaynağı paylaşıyor (SPEC §2 "Basitlik"); gün sınırı zaten 04:00 TSİ'de sıfırlandığı için ekstra bir
+  DB alanı/durum gerekmiyor.
+- **Durum diyagramı `breakCompleted → idle` yazıyor, `breakCompleted → focusRunning` değil** — bu yüzden
+  hem molanın doğal bitişi hem de "ODAĞA DÖN" (erken bitirme) `idle`'a dönüyor; sonraki pomodoro'yu
+  başlatmak kullanıcının Ekran 02'den "25 DAKİKA ODAKLAN"a tekrar dokunmasını gerektiriyor. Prototipin
+  "ODAĞA DÖN" ("molayı erken bitirir") ifadesi de bunu destekliyor — otomatik yeni seans başlatma SPEC
+  metninde yok, eklemek "prototipte olmayan özellik ekleme" riski taşırdı.
+- **Duraklat/devam ettir, azalan bir sayaç tutmadan `resumeVirtualStart` ile çözüldü**: devam ederken
+  `startedAtUtc`, "eğer kesintisiz çalışsaydı duraklama anındaki kalan süreyi verecek" bir sanal değere
+  kaydırılıyor; DB'deki gerçek `startedAt` hiç değişmiyor. SPEC §5.1'in "her zaman `startedAt+planned-now()`"
+  formülü böylece duraklatma sonrasında da birebir korunuyor.
+- **Cihaz saati geri alma koruması, `startedAt`'e değil ardışık `now()` okumalarına kıyaslıyor**:
+  `tick()` her çağrıldığında son ölçülen `now()` ile yeni `now()` karşılaştırılıyor; yeni değer eskisinden
+  küçükse (saat geri alındı) aktif seans `completed:false` ile kapatılıp `idle`'a dönülüyor. Bu, SPEC'in
+  "negatif kalan süre → tamamlanmış sayılmaz" kuralını hiçbir zaman `completed:true` üretmeyerek
+  kesin biçimde garanti ediyor; sahte bir `Clock` enjeksiyonu eklenmediği için otomatik testle değil
+  kod incelemesiyle doğrulandı (DoD'nin bu maddesi).
+- **Aktif faz `SharedPreferences`'a elle yazılmış küçük bir JSON blob'u olarak yazılıyor** (`json_serializable`
+  kullanılmadan) — yalnızca 3-4 alanlı, tek yerde encode/decode edilen basit bir yapı için ekstra bir
+  codegen bağımlılığı gereksiz karmaşıklık olurdu.
+- **Ekran 10'un (iptal onayı) hiçbir metni prototipte `{{ }}` ile işaretli değil** — v2 prototipinin bu
+  ekranı tamamen statik demo sayılarla (09:24, 9 dakika 24 saniye, 15 dakika 36 saniye, 6 gün) yazılmış.
+  Gerçek bağlamalar SPEC.md'nin binding tablosundaki düz metin açıklamalarından çıkarıldı: demo
+  sayılarının kendisi bile tutarlı (elapsed 9:24 + remaining 15:36 = planned 25:00) — bu da "elapsed =
+  planned - remaining" ilişkisini doğruluyor. "6 günlük serin risk altına girer" cümlesi yalnızca bugün
+  tamamlanmış seans yoksa **ve** güncel seri ≥1 ise gösteriliyor (seri 0 iken "risk altına giren" bir
+  şey yok); yalnızca "bugün seans yoksa" koşulu olsaydı seri 0 için de anlamsız bir cümle üretirdi.
+- **"UZUN MOLA" etiketi SPEC.md'nin kendi metninden alındı** ("KISA MOLA / uzun mola" — SPEC.md Ekran 09
+  binding tablosu), prototipte yalnızca kısa mola demo edilmiş; bu, "yeni metin yazma" kuralını ihlal
+  etmiyor çünkü kaynağı SPEC.md'nin kendisi, benim icadım değil.
+- **"molada dene" katalogu yalnızca prototipteki 2 ipucuyla sınırlı** (ekrana bakmama, su içme) — SPEC
+  "her molada rastgele 2 tanesi" diyor ama prototip yalnızca 2 tane somut metin veriyor; ekstra ipucu
+  icat etmek "yeni metin yazma yasak" kuralını ihlal ederdi. Katalog büyüdükçe (gelecek faz/ürün kararı)
+  rastgele seçim otomatik anlamlı hale gelecek.
+- **Ekran 03'ün "skip-forward" ikonu görsel olarak duruyor ama dokunmaya bağlı değil** — SPEC.md'nin
+  Ekran 03 binding tablosunda bu buton için hiçbir davranış tanımlı değil (yalnızca X/oynat-duraklat
+  bağlanmış); var olan bir prototip elemanını görsel olarak silmek "birebir taşı" kuralını, ona
+  tanımsız bir davranış icat etmek de "özellik ekleme yasağı"nı ihlal ederdi — Faz 4'ün alt gezinme
+  sekmeleri için kurduğu "görsel var, `onTap` yok" emsaliyle aynı çözüm.
+- **Meşalenin `flick` animasyonunun sayısal keyframe değerleri prototip HTML'inde yok** — yalnızca
+  `_ds_bundle.js` içinde derlenmiş halde duruyor, kaynak yüzdeleri dışa açık değil. Sinüs tabanlı bir
+  salınım (yatay kayma + dikey gerilme + hafif eğim) kendi kararımızla uygulandı — SPEC §0 kural 5
+  "belirtilmemiş detayda kendi kararını ver" kapsamında.
+- **Alev şekli tam CSS `border-radius` yüzde/eliptik zincirinin birebir eşdeğeri yerine
+  `BorderRadius.elliptical` ile yaklaşık bir gözyaşı damlası olarak çizildi** — CSS'in çok parçalı
+  `50% 50% 46% 46% / 68% 68% 32% 32%` söz dizimi Flutter'da doğrudan karşılığı olmayan bir birleşik
+  eğri; SPEC §6'nın "aynı görünen ama daha ucuz" serbestliği burada da uygulandı.
+- **İptal onayı dialog'unun arka planı `BackdropFilter` ile bulanıklaştırılmadı**, düz yarı saydam bir
+  `barrierColor` kullanıldı — bu dialog, wakelock'un açık olacağı odak seansı sırasında görünebiliyor;
+  SPEC §6'nın "odak ekranında runtime blur'dan kaçın" ruhu kısa süreli bir modal için de uygulandı.
+- **`PhosphorIconsDuotone.flameSlash` yok** (`phosphor_flutter ^2.1.0`'da yalnızca `flame` var) —
+  prototipin `ph-duotone ph-flame-slash` ikonuna en yakın karşılık olarak `flame` (rose renkte)
+  kullanıldı.
+- **Wakelock ve bildirimler Faz 5'te bağlanmadı** — SPEC.md §8 faz planı bunları açıkça Faz 6'ya
+  koyuyor ("Bildirimler ... + wakelock + izin akışı"); Faz 5 yalnızca durum makinesi/wall-clock/UI
+  kapsıyor.
+- **Testler için odak/mola süresi 0 saniyeye ayarlandı** (`AppSettingsDao.updateSettings`), gerçek
+  `DateTime.now()` kullanan `tick()`'in anında tamamlanma üretmesi için — controller'a sahte bir
+  `Clock` enjekte edilmedi (SPEC §5.1 "gerçek duvar saati" ilkesiyle en sade uyum).
+- **`ProviderContainer` tabanlı testlerde `container.read(streamProvider)` tek başına aboneliği
+  güvenilir şekilde tetiklemedi** (gözlemlendi: `AsyncLoading` içinde süresiz asılı kaldı) —
+  `container.listen(provider, ..., fireImmediately: true)` eklemek akışın ilk yayınını gerçekten
+  başlattı. Bu, `pomodoro_controller_test.dart`'ın kurulumunda belgelenmiş bir gözlem/atlatma.
+- **`test/widget_test.dart`'a `sharedPreferencesProvider` override'ı eklendi** — Faz 4'ün "bu ekranların
+  render yolunda hiç okunmuyor" notu artık geçersiz: `CountdownScreen` artık aktif seans kurtarma
+  yönlendirmesi için `pomodoroControllerProvider`ı okuyor, o da `SharedPreferences`'a bağlı.

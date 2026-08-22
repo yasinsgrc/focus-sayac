@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/countdown/countdown_screen.dart';
 import '../../features/countdown/exam_expired_screen.dart';
 import '../../features/exams/add_exam_screen.dart';
+import '../../features/focus_session/focus_session_screen.dart';
 import 'route_paths.dart';
 
 /// Uygulamanın tek `GoRouter` örneği. Ekran 01 (onboarding, Faz 10) henüz
@@ -27,6 +28,10 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: RoutePaths.addExam,
         builder: (BuildContext context, GoRouterState state) => const AddExamScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.focusSession,
+        builder: (BuildContext context, GoRouterState state) => const FocusSessionScreen(),
       ),
     ],
   );

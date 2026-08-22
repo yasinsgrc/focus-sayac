@@ -14,6 +14,8 @@ import '../../core/time/app_day.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
 import '../../domain/countdown/countdown_math.dart';
 import '../../domain/exams/exam_providers.dart';
+import '../../domain/pomodoro/pomodoro_controller.dart';
+import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
 import '../../domain/time/duration_formatter.dart';
 import '../../services/storage/app_database.dart';
@@ -37,6 +39,7 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
   Timer? _secondTicker;
   DateTime _nowUtc = DateTime.now().toUtc();
   bool _redirectedForExpiry = false;
+  bool _redirectedForActiveSession = false;
 
   @override
   void initState() {
@@ -73,6 +76,19 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
         });
       }
     });
+
+    // SPEC.md DoD: "Uygulama öldürülüp açıldığında aktif seans kurtarılıyor"
+    // — `PomodoroController.build()` `SharedPreferences`'tan aktif fazı geri
+    // yüklerse (Faz 5), soğuk başlangıçta uygulama her zaman bu ekrandan
+    // (initialLocation) açıldığı için buradan odak/mola ekranına yönlendirmek
+    // gerekiyor.
+    final PomodoroPhase pomodoroPhase = ref.watch(pomodoroControllerProvider);
+    if (pomodoroPhase is! PomodoroIdle && !_redirectedForActiveSession) {
+      _redirectedForActiveSession = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.push(RoutePaths.focusSession);
+      });
+    }
 
     return Scaffold(
       backgroundColor: colors.bg,
@@ -362,9 +378,10 @@ class _CountdownBody extends ConsumerWidget {
                 type: MaterialType.transparency,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(20),
-                  // Ekran 03 (odak seansı) Faz 5'te geliyor — buton görsel
-                  // olarak prototipteki gibi etkin durur, hedef ekran henüz yok.
-                  onTap: () {},
+                  onTap: () async {
+                    await ref.read(pomodoroControllerProvider.notifier).startFocus();
+                    if (context.mounted) unawaited(context.push(RoutePaths.focusSession));
+                  },
                   child: Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/storage/app_database.dart';
@@ -20,14 +21,18 @@ void main() {
     await initializeDateFormatting('tr_TR');
     final AppDatabase database = AppDatabase.forTesting(NativeDatabase.memory());
 
-    // `sharedPreferencesProvider` bu ekranların render yolunda hiç
-    // okunmuyor (yalnızca `ExamSourceService`/`main.dart` kullanıyor) —
-    // gerçek `SharedPreferences.getInstance()` platform kanalını bu
-    // widget testinde tetiklemeye gerek yok.
+    // Faz 5: `CountdownScreen` artık `pomodoroControllerProvider`ı okuyor
+    // (aktif seans kurtarma yönlendirmesi için), o da `PomodoroController`
+    // üzerinden `sharedPreferencesProvider`a bağlı — bu yüzden Faz 4'te
+    // gerekmeyen bu override artık gerekli.
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           appDatabaseProvider.overrideWithValue(database),
+          sharedPreferencesProvider.overrideWithValue(prefs),
         ],
         child: const FocusSayacApp(),
       ),
