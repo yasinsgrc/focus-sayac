@@ -30,4 +30,12 @@ class ActiveExamSwitcher {
     await _ref.read(examDaoProvider).setActiveExam(examId);
     await _ref.read(appSettingsDaoProvider).setActiveExam(examId);
   }
+
+  /// Seçimi tamamen kaldırır (`activeExamProvider` → `null`). Ekran 08,
+  /// süresi geçmiş sınavdan çıkarken kullanır: bayrak düşmezse geri sayım
+  /// ekranı geçmiş tarihli sınavla "0 GÜN KALDI" göstermeye devam ediyordu.
+  Future<void> clearActive() async {
+    await _ref.read(examDaoProvider).clearActiveExam();
+    await _ref.read(appSettingsDaoProvider).clearActiveExam();
+  }
 }

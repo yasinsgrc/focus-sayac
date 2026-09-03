@@ -83,7 +83,21 @@ class ExamExpiredScreen extends ConsumerWidget {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           backgroundColor: colors.accent900.withValues(alpha: 0.4),
                         ),
-                        onPressed: () => context.go(RoutePaths.countdown, extra: true),
+                        // Sınav seçimi geri sayıma dönmeden önce burada
+                        // düşürülüyor: alt sayfa kapatılırsa (kullanıcı
+                        // hiçbir sınav seçmezse) geri sayım ekranı hâlâ
+                        // `isActive` olan geçmiş tarihli sınavla açılıyor ve
+                        // "0 GÜN KALDI" gösteren bir sayaçta takılı
+                        // kalıyordu — `CountdownScreen`in süre kontrolü
+                        // yalnızca `activeExamProvider` yeni bir değer
+                        // yayınladığında çalıştığı için orada yeniden
+                        // tetiklenmiyor. Bayrak düşünce ekran "HEDEF
+                        // SEÇİLMEDİ" boş durumuna düşer, "SINAV SEÇ" çıkışı
+                        // her koşulda elde kalır.
+                        onPressed: () async {
+                          await ref.read(activeExamSwitcherProvider).clearActive();
+                          if (context.mounted) context.go(RoutePaths.countdown, extra: true);
+                        },
                         child: Text(
                           'YENİ SINAV SEÇ',
                           style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w600, color: colors.accent200),

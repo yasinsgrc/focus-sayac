@@ -28,4 +28,10 @@ class AppSettingsDao extends DatabaseAccessor<AppDatabase> with _$AppSettingsDao
   Future<void> setActiveExam(int examId) {
     return updateSettings(AppSettingsTableCompanion(activeExamId: Value<int?>(examId)));
   }
+
+  /// `ExamDao.clearActiveExam` ile birlikte çağrılır — sütun zaten
+  /// `nullable()`, seçili sınav yokken tutulması gereken değer `null`.
+  Future<void> clearActiveExam() {
+    return updateSettings(const AppSettingsTableCompanion(activeExamId: Value<int?>(null)));
+  }
 }

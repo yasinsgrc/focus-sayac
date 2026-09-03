@@ -130,4 +130,11 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
           .write(const ExamsCompanion(isActive: Value<bool>(true)));
     });
   }
+
+  /// Hiçbir sınavı aktif bırakmaz — sınav tarihi geçtiğinde (Ekran 08)
+  /// kullanıcı yeni hedefini seçene kadar geri sayımın "hedef seçilmedi"
+  /// durumuna düşmesi için. Satırlar silinmez, yalnızca bayrak düşer.
+  Future<void> clearActiveExam() async {
+    await update(exams).write(const ExamsCompanion(isActive: Value<bool>(false)));
+  }
 }
