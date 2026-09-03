@@ -37,6 +37,7 @@ final NotifierProvider<PomodoroController, PomodoroPhase> pomodoroControllerProv
 /// kontrolü yapar, ekranın kendi görsel yenilemesi ekranın sorumluluğudur.
 class PomodoroController extends Notifier<PomodoroPhase> {
   DateTime? _lastCheckedNowUtc;
+  bool _ticking = false;
 
   @override
   PomodoroPhase build() {
@@ -226,44 +227,54 @@ class PomodoroController extends Notifier<PomodoroPhase> {
 
   /// Ekranın yerel saniye tikleyicisinin her çağırdığı kontrol noktası:
   /// tamamlanmayı ve cihaz saati geri alma anomalisini yakalar.
+  ///
+  /// Tikleyici uygulama arka plandayken duruyor (Ekran 03) ve uygulama
+  /// öldürülüp açıldığında hiç çalışmamış oluyor; bu yüzden tek bir tik
+  /// gecikmeli gelebilir ve o aralıkta birden fazla fazın süresi dolmuş
+  /// olabilir. Dolan fazlar burada sırayla, her biri kendi **planlanan bitiş
+  /// anıyla** kapatılır — tikin geldiği anla değil. Böylece geç dönmek ne
+  /// `completedAt`'i bozar ne de molayı sıfırdan, tam süreyle başlatır.
   Future<void> tick() async {
-    final DateTime now = DateTime.now().toUtc();
-    final DateTime? last = _lastCheckedNowUtc;
-    final PomodoroPhase current = state;
-    final bool isRunningPhase = current is PomodoroFocusRunning || current is PomodoroBreakRunning;
+    // Gecikmeli bir yakalama tiki birkaç DB yazımı sürebiliyor; bu sırada
+    // gelen bir sonraki saniye tiki aynı fazı ikinci kez tamamlamamalı.
+    if (_ticking) return;
+    _ticking = true;
+    try {
+      final DateTime now = DateTime.now().toUtc();
+      final DateTime? last = _lastCheckedNowUtc;
+      final PomodoroPhase current = state;
+      final bool isRunningPhase = current is PomodoroFocusRunning || current is PomodoroBreakRunning;
 
-    if (isRunningPhase && last != null && now.isBefore(last)) {
-      // Cihaz saati geriye alındı: SPEC §5.1 — seans anında "tamamlanmış"
-      // sayılmaz, completed=false ile kapatılır (bir sonraki now() okuması
-      // ile tutarlı bir taban oluşturmak için de idle'a dönülür).
+      if (isRunningPhase && last != null && now.isBefore(last)) {
+        // Cihaz saati geriye alındı: SPEC §5.1 — seans anında "tamamlanmış"
+        // sayılmaz, completed=false ile kapatılır (bir sonraki now() okuması
+        // ile tutarlı bir taban oluşturmak için de idle'a dönülür).
+        _lastCheckedNowUtc = now;
+        await _forceCancelForClockRollback(current, now);
+        return;
+      }
       _lastCheckedNowUtc = now;
-      await _forceCancelForClockRollback(current, now);
-      return;
-    }
-    _lastCheckedNowUtc = now;
 
-    switch (current) {
-      case final PomodoroFocusRunning r:
-        final Duration remaining = phaseRemaining(
-          startedAtUtc: r.startedAtUtc,
-          plannedDurationSec: r.plannedDurationSec,
-          nowUtc: now,
-        );
-        if (remaining == Duration.zero) {
-          await _completeFocus(r, now);
+      // Zincir en fazla iki geçiş sürer (odak → mola → idle): her adım ya
+      // fazı tamamlayıp durumu ilerletir ya da döngüden çıkar.
+      while (true) {
+        final PomodoroPhase phase = state;
+        switch (phase) {
+          case final PomodoroFocusRunning r:
+            final DateTime endsAtUtc = r.startedAtUtc.add(Duration(seconds: r.plannedDurationSec));
+            if (now.isBefore(endsAtUtc)) return;
+            await _completeFocus(r, endsAtUtc);
+          case final PomodoroBreakRunning b:
+            final DateTime endsAtUtc = b.startedAtUtc.add(Duration(seconds: b.plannedDurationSec));
+            if (now.isBefore(endsAtUtc)) return;
+            await _completeBreak(b, endsAtUtc);
+          case PomodoroIdle _:
+          case PomodoroFocusPaused _:
+            return;
         }
-      case final PomodoroBreakRunning b:
-        final Duration remaining = phaseRemaining(
-          startedAtUtc: b.startedAtUtc,
-          plannedDurationSec: b.plannedDurationSec,
-          nowUtc: now,
-        );
-        if (remaining == Duration.zero) {
-          await _completeBreak(b, now);
-        }
-      case PomodoroIdle _:
-      case PomodoroFocusPaused _:
-        break;
+      }
+    } finally {
+      _ticking = false;
     }
   }
 
@@ -288,11 +299,14 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     await _clearPersisted();
   }
 
-  Future<void> _completeFocus(PomodoroFocusRunning r, DateTime now) async {
+  /// [endedAtUtc] odağın **planlanan bitiş anı**dır, tikin geldiği an değil
+  /// (bkz. [tick]): mola da tam o andan itibaren başlatılır, aksi hâlde geç
+  /// gelen bir tik molayı baştan ve tam süreyle kurardı.
+  Future<void> _completeFocus(PomodoroFocusRunning r, DateTime endedAtUtc) async {
     await ref.read(pomodoroSessionDaoProvider).finishSession(
           id: r.sessionId,
           completed: true,
-          endedAt: now,
+          endedAt: endedAtUtc,
         );
     await _notifications.cancelFocusSessionEnd();
     await _notifications.cancelOngoingFocus();
@@ -302,14 +316,14 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     final int breakSessionId = await ref.read(pomodoroSessionDaoProvider).startSession(
           examId: r.examId,
           type: isLong ? SessionType.longBreak : SessionType.shortBreak,
-          startedAt: now,
+          startedAt: endedAtUtc,
           plannedDurationSec: breakSec,
         );
     state = PomodoroPhase.breakRunning(
       sessionId: breakSessionId,
       examId: r.examId,
       isLong: isLong,
-      startedAtUtc: now,
+      startedAtUtc: endedAtUtc,
       plannedDurationSec: breakSec,
       cyclePosition: r.cyclePosition,
       extensionsUsed: 0,
@@ -320,11 +334,12 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     await _haptic();
   }
 
-  Future<void> _completeBreak(PomodoroBreakRunning b, DateTime now) async {
+  /// [endedAtUtc] molanın **planlanan bitiş anı**dır — bkz. [_completeFocus].
+  Future<void> _completeBreak(PomodoroBreakRunning b, DateTime endedAtUtc) async {
     await ref.read(pomodoroSessionDaoProvider).finishSession(
           id: b.sessionId,
           completed: true,
-          endedAt: now,
+          endedAt: endedAtUtc,
         );
     state = const PomodoroPhase.idle();
     await _clearPersisted();

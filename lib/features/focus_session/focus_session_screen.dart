@@ -46,6 +46,11 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
 
   void _startTicker() {
     _ticker?.cancel();
+    // Tikleyici arka planda iptal ediliyor ve soğuk başlangıçta hiç çalışmamış
+    // oluyor; periyodik tikin ilk atışını 1 saniye beklemek yerine burada hemen
+    // bir yakalama tiki atılıyor ki aradaki sürede dolan fazlar (odak, gerekirse
+    // mola da) `tick()` içinde gerçek bitiş anlarıyla kapansın.
+    unawaited(ref.read(pomodoroControllerProvider.notifier).tick());
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       unawaited(ref.read(pomodoroControllerProvider.notifier).tick());
       if (mounted) setState(() => _nowUtc = DateTime.now().toUtc());
@@ -55,8 +60,10 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // SPEC §5.1: "uygulama arka plandayken durur, öne gelince yeniden
-    // hesaplanır" — kalan süre her zaman formülden okunduğu için doğruluk
-    // zaten garanti, burada yalnızca gereksiz arka plan tikleme durduruluyor.
+    // hesaplanır" — kalan süre her zaman formülden okunduğu için görüntü
+    // doğruluğu garanti. Faz *tamamlanması* ise tike bağlı olduğundan
+    // `_startTicker()` öne gelir gelmez bir yakalama tiki atıyor; arka planda
+    // dolan odak/mola orada gerçek bitiş anlarıyla kapanıyor.
     if (state == AppLifecycleState.resumed) {
       setState(() => _nowUtc = DateTime.now().toUtc());
       _startTicker();

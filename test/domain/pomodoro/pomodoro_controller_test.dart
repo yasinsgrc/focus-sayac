@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,10 +14,16 @@ import 'package:focussayac/services/storage/storage_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// SPEC.md §9 "Widget: faz geçişleri (odak → mola → odak → 4. sonrası uzun
-/// mola)". Odak/mola süreleri 0 saniyeye ayarlanır ki `tick()` gerçek
-/// `DateTime.now()` ile hemen tamamlanma üretsin — controller gerçek duvar
-/// saatini kullanıyor (SPEC §5.1), sahte bir `Clock` enjeksiyonu yok.
-Future<ProviderContainer> _buildContainer() async {
+/// mola)". Odak/mola süreleri varsayılan olarak 0 saniyeye ayarlanır ki
+/// `tick()` gerçek `DateTime.now()` ile hemen tamamlanma üretsin — controller
+/// gerçek duvar saatini kullanıyor (SPEC §5.1), sahte bir `Clock` enjeksiyonu
+/// yok. Molada kalmayı gerektiren testler [shortBreakMinutes]'ı sıfırdan
+/// büyük verir; yoksa `tick()` dolan molayı da aynı çağrıda kapatır.
+Future<ProviderContainer> _buildContainer({
+  int focusMinutes = 0,
+  int shortBreakMinutes = 0,
+  int longBreakMinutes = 0,
+}) async {
   final AppDatabase db = AppDatabase.forTesting(NativeDatabase.memory());
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -38,10 +46,10 @@ Future<ProviderContainer> _buildContainer() async {
   );
   await _waitForSessionCount(container, 0);
   await db.appSettingsDao.updateSettings(
-    const AppSettingsTableCompanion(
-      focusMinutes: Value<int>(0),
-      shortBreakMinutes: Value<int>(0),
-      longBreakMinutes: Value<int>(0),
+    AppSettingsTableCompanion(
+      focusMinutes: Value<int>(focusMinutes),
+      shortBreakMinutes: Value<int>(shortBreakMinutes),
+      longBreakMinutes: Value<int>(longBreakMinutes),
     ),
   );
   return container;
@@ -93,16 +101,10 @@ void main() {
       final PomodoroPhase running = container.read(pomodoroControllerProvider);
       observedCyclePositions.add((running as PomodoroFocusRunning).cyclePosition);
 
-      await controller.tick(); // planned=0s → anında tamamlanır, mola başlar
-      final PomodoroPhase afterFocus = container.read(pomodoroControllerProvider);
-      expect(afterFocus, isA<PomodoroBreakRunning>());
-      if (i == 3) {
-        expect((afterFocus as PomodoroBreakRunning).isLong, isTrue);
-      } else {
-        expect((afterFocus as PomodoroBreakRunning).isLong, isFalse);
-      }
-
-      await controller.tick(); // mola da planned=0s → anında tamamlanır, idle
+      // Odak da mola da planned=0s olduğu için ikisinin de bitiş anı çoktan
+      // geçmiş sayılır; `tick()` dolan fazları zincirleyerek kapattığından
+      // tek çağrıda odak → mola → idle tamamlanır.
+      await controller.tick();
       expect(container.read(pomodoroControllerProvider), isA<PomodoroIdle>());
     }
     await _waitForSessionCount(container, 8);
@@ -131,7 +133,7 @@ void main() {
   });
 
   test('extendBreak is capped at kMaxBreakExtensions', () async {
-    final ProviderContainer container = await _buildContainer();
+    final ProviderContainer container = await _buildContainer(shortBreakMinutes: 5);
     addTearDown(container.dispose);
     final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
 
@@ -148,7 +150,7 @@ void main() {
   });
 
   test('endBreakEarly closes the break as completed:false and returns to idle', () async {
-    final ProviderContainer container = await _buildContainer();
+    final ProviderContainer container = await _buildContainer(shortBreakMinutes: 5);
     addTearDown(container.dispose);
     final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
 
@@ -161,5 +163,87 @@ void main() {
         await container.read(pomodoroSessionDaoProvider).watchAllSessions().first;
     final PomodoroSession breakSession = sessions.firstWhere((PomodoroSession s) => s.type == SessionType.shortBreak);
     expect(breakSession.completed, isFalse);
+  });
+
+  test('odak, tikin geldiği an değil planlanan bitiş anıyla kapanır ve mola oradan başlar', () async {
+    final ProviderContainer container = await _buildContainer(shortBreakMinutes: 5);
+    addTearDown(container.dispose);
+    final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
+
+    await controller.startFocus();
+    final PomodoroFocusRunning focus = container.read(pomodoroControllerProvider) as PomodoroFocusRunning;
+    final DateTime focusEndUtc = focus.startedAtUtc.add(Duration(seconds: focus.plannedDurationSec));
+
+    await controller.tick();
+
+    final PomodoroPhase phase = container.read(pomodoroControllerProvider);
+    expect(phase, isA<PomodoroBreakRunning>());
+    final PomodoroBreakRunning breakPhase = phase as PomodoroBreakRunning;
+    expect(breakPhase.isLong, isFalse);
+    expect(breakPhase.startedAtUtc, focusEndUtc);
+
+    final List<PomodoroSession> sessions =
+        await container.read(pomodoroSessionDaoProvider).watchAllSessions().first;
+    final PomodoroSession focusRow = sessions.firstWhere((PomodoroSession s) => s.type == SessionType.focus);
+    expect(focusRow.completed, isTrue);
+    expect(focusRow.completedAt!.isAtSameMomentAs(focusEndUtc), isTrue);
+  });
+
+  test('arka planda dolan odak+mola, ilk tikte gerçek bitiş anlarıyla kapanır', () async {
+    // Regresyon: tikleyici arka planda iptal edildiği için 25 dk'lık odak
+    // dolarken hiç tik gelmiyordu; kullanıcı 40 dk sonra döndüğünde seans
+    // "dönüş anı" ile kapanıyor ve mola sıfırdan başlıyordu.
+    final ProviderContainer container = await _buildContainer(shortBreakMinutes: 5);
+    addTearDown(container.dispose);
+
+    // Drift `dateTime()` sütunları saniye hassasiyetinde saklandığı için
+    // tohum zamanı tam saniyeye yuvarlanıyor.
+    final DateTime nowUtc = DateTime.now().toUtc();
+    final DateTime startedAtUtc = DateTime.fromMillisecondsSinceEpoch(
+      (nowUtc.millisecondsSinceEpoch ~/ 1000) * 1000,
+      isUtc: true,
+    ).subtract(const Duration(minutes: 40));
+    const int focusSec = 25 * 60;
+
+    final int sessionId = await container.read(pomodoroSessionDaoProvider).startSession(
+          examId: null,
+          type: SessionType.focus,
+          startedAt: startedAtUtc,
+          plannedDurationSec: focusSec,
+        );
+    await container.read(sharedPreferencesProvider).setString(
+          kPomodoroPhasePrefsKey,
+          jsonEncode(<String, Object?>{
+            'type': 'focusRunning',
+            'sessionId': sessionId,
+            'examId': null,
+            'startedAtUtc': startedAtUtc.toIso8601String(),
+            'plannedDurationSec': focusSec,
+            'cyclePosition': 1,
+          }),
+        );
+
+    final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
+    expect(container.read(pomodoroControllerProvider), isA<PomodoroFocusRunning>());
+
+    await controller.tick();
+
+    // Odak 25. dakikada, mola da onun 5 dk sonrasında dolmuş; ikisi de aynı
+    // tikte kapanıp idle'a inilir.
+    expect(container.read(pomodoroControllerProvider), isA<PomodoroIdle>());
+
+    final DateTime focusEndUtc = startedAtUtc.add(const Duration(seconds: focusSec));
+    final DateTime breakEndUtc = focusEndUtc.add(const Duration(minutes: 5));
+    final List<PomodoroSession> sessions =
+        await container.read(pomodoroSessionDaoProvider).watchAllSessions().first;
+
+    final PomodoroSession focusRow = sessions.firstWhere((PomodoroSession s) => s.type == SessionType.focus);
+    expect(focusRow.completed, isTrue);
+    expect(focusRow.completedAt!.isAtSameMomentAs(focusEndUtc), isTrue);
+
+    final PomodoroSession breakRow = sessions.firstWhere((PomodoroSession s) => s.type == SessionType.shortBreak);
+    expect(breakRow.completed, isTrue);
+    expect(breakRow.startedAt.isAtSameMomentAs(focusEndUtc), isTrue);
+    expect(breakRow.completedAt!.isAtSameMomentAs(breakEndUtc), isTrue);
   });
 }
