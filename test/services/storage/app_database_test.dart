@@ -41,6 +41,12 @@ void main() {
       expect(settings.longBreakMinutes, 15);
       expect(settings.isPremium, isFalse);
       expect(settings.onboardingCompleted, isFalse);
+      // `NotificationPreferences.allEnabled()` (ayar okunamayan bağlamların
+      // yedeği) bu üç varsayılanla aynı olmak zorunda — biri değişirse
+      // bildirimler sessizce yedeğe göre davranmaya başlar.
+      expect(settings.notificationsEnabled, isTrue);
+      expect(settings.soundEnabled, isTrue);
+      expect(settings.streakReminderEnabled, isTrue);
     });
   });
 

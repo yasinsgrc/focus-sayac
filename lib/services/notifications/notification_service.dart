@@ -12,16 +12,67 @@ final Provider<NotificationService> notificationServiceProvider = Provider<Notif
   throw UnimplementedError('notificationServiceProvider main.dart içinde override edilmeli.');
 });
 
+/// `AppSettings`in bildirim gönderimini etkileyen alanlarının, depolama
+/// katmanından bağımsız görünümü (SPEC.md §4 / Ekran 07). `AppSettingsTableData`
+/// doğrudan kullanılmıyor ki `services/notifications` `services/storage`'a
+/// bağlanmasın; eşleme tek yerde, `main.dart`'ta yapılır.
+class NotificationPreferences {
+  const NotificationPreferences({
+    required this.notificationsEnabled,
+    required this.soundEnabled,
+    required this.streakReminderEnabled,
+  });
+
+  /// Ayar okuyamayan bağlamlar (testler, [NotificationService.disabled]) için
+  /// varsayılan — `AppSettingsTable`ın kolon varsayılanlarıyla aynı.
+  const NotificationPreferences.allEnabled()
+      : notificationsEnabled = true,
+        soundEnabled = true,
+        streakReminderEnabled = true;
+
+  /// Ana anahtar: kapalıyken hiçbir bildirim **gönderilmez** (iptaller yine
+  /// çalışır, bkz. [NotificationService]).
+  final bool notificationsEnabled;
+  final bool soundEnabled;
+
+  /// Yalnızca "seri riski" tipini kapatır; diğer üç tip açık kalır.
+  final bool streakReminderEnabled;
+}
+
+/// Her gönderim anında güncel ayarları okur. `AppSettings` tek satırlık bir
+/// tablo olduğu için okuma ucuz; anlık görüntüyü serviste önbelleğe almak
+/// yerine her çağrıda okumak, ayar değiştiğinde servisi haberdar edecek ayrı
+/// bir senkronizasyon yolu gerekmemesini sağlıyor.
+typedef NotificationPreferencesReader = Future<NotificationPreferences> Function();
+
 /// SPEC.md Ekran 12'nin dört bildirim tipi: seans bitişi, seri riski, rozet,
 /// kalıcı ("Odak · n. pomodoro"). Gerçek platform kanalını yalnızca
 /// [NotificationService.new] açar; [NotificationService.disabled] (testler
 /// için) tüm çağrıları no-op yapar — `AppDatabase.forTesting` ile aynı kalıp.
+///
+/// SPEC.md Ekran 07'nin "Bildirimler"/"Ses" anahtarları ve
+/// `streakReminderEnabled` burada, tek noktada uygulanır — çağıranların her
+/// birinde ayrı ayrı değil (`PomodoroController`, `BadgeUnlockService` ve
+/// `main.dart` üç ayrı çağıran; kontrolü onlara dağıtmak birinin
+/// unutulmasına açık kapı bırakırdı).
+///
+/// **İptaller bilinçli olarak kapıdan muaf:** kullanıcı seans sürerken
+/// bildirimleri kapatırsa, o seansın bekleyen/kalıcı kaydını temizleyecek
+/// olan yine `cancel*` çağrılarıdır — onları da kapatmak, kapatma anında
+/// ekranda duran kalıcı bildirimi kalıcı olarak orada bırakırdı.
 class NotificationService {
-  NotificationService() : _plugin = FlutterLocalNotificationsPlugin();
+  NotificationService({NotificationPreferencesReader? readPreferences})
+      : _plugin = FlutterLocalNotificationsPlugin(),
+        _readPreferences = readPreferences ?? _allEnabled;
 
-  NotificationService.disabled() : _plugin = null;
+  NotificationService.disabled({NotificationPreferencesReader? readPreferences})
+      : _plugin = null,
+        _readPreferences = readPreferences ?? _allEnabled;
+
+  static Future<NotificationPreferences> _allEnabled() async => const NotificationPreferences.allEnabled();
 
   final FlutterLocalNotificationsPlugin? _plugin;
+  final NotificationPreferencesReader _readPreferences;
   tz.Location? _istanbul;
 
   static const int _sessionEndNotificationId = 1001;
@@ -29,12 +80,29 @@ class NotificationService {
   static const int _streakRiskNotificationId = 1003;
   static const int _breakEndNotificationId = 1004;
 
+  /// SPEC.md Ekran 07 "Ses" anahtarının Android karşılığı. Bir kanalın ses
+  /// ayarı **oluşturulduktan sonra değiştirilemez** (Android 8+: kanal
+  /// ayarları kullanıcıya aittir, uygulama `playSound`'u sonradan
+  /// güncelleyemez). Bu yüzden aynı kanalın `playSound: false` ikizi ayrı bir
+  /// kanal kimliğiyle tanımlanıyor ve gönderim anında ayara göre biri
+  /// seçiliyor; tek kanalda bayrağı çevirmek ilk kurulumdan sonra hiçbir
+  /// etki yaratmazdı. "Kalıcı" bildirimin zaten sesi yok (SPEC Ekran 12),
+  /// bu yüzden onun sessiz ikizi yok.
   static const AndroidNotificationDetails _sessionEndAndroidDetails = AndroidNotificationDetails(
     'session_end',
     'Seans bitişi',
     channelDescription: 'Odak süresi dolduğunda gönderilir.',
     importance: Importance.high,
     priority: Priority.high,
+  );
+
+  static const AndroidNotificationDetails _sessionEndSilentAndroidDetails = AndroidNotificationDetails(
+    'session_end_silent',
+    'Seans bitişi (sessiz)',
+    channelDescription: 'Odak süresi dolduğunda sessiz gönderilir.',
+    importance: Importance.high,
+    priority: Priority.high,
+    playSound: false,
   );
 
   static const AndroidNotificationDetails _ongoingAndroidDetails = AndroidNotificationDetails(
@@ -56,10 +124,24 @@ class NotificationService {
     channelDescription: 'Günlük seri kapanmadan önce gönderilen hatırlatma.',
   );
 
+  static const AndroidNotificationDetails _streakRiskSilentAndroidDetails = AndroidNotificationDetails(
+    'streak_risk_silent',
+    'Seri riski (sessiz)',
+    channelDescription: 'Günlük seri kapanmadan önce sessiz gönderilen hatırlatma.',
+    playSound: false,
+  );
+
   static const AndroidNotificationDetails _badgeAndroidDetails = AndroidNotificationDetails(
     'badge_unlocked',
     'Yeni rozet',
     channelDescription: 'Bir rozet açıldığında gönderilir.',
+  );
+
+  static const AndroidNotificationDetails _badgeSilentAndroidDetails = AndroidNotificationDetails(
+    'badge_unlocked_silent',
+    'Yeni rozet (sessiz)',
+    channelDescription: 'Bir rozet açıldığında sessiz gönderilir.',
+    playSound: false,
   );
 
   /// `timezone` veritabanını yükler, platform kanalını başlatır ve SPEC.md
@@ -83,6 +165,14 @@ class NotificationService {
 
   tz.Location get _location => _istanbul ?? (_istanbul = tz.getLocation('Europe/Istanbul'));
 
+  /// Gönderim kapısı: ana anahtar kapalıysa `null` döner ve çağıran metot
+  /// hiçbir şey göndermeden çıkar. Açıksa dönen [NotificationPreferences]
+  /// hangi kanalın (sesli/sessiz) kullanılacağını da belirler.
+  Future<NotificationPreferences?> _allowedPreferences() async {
+    final NotificationPreferences preferences = await _readPreferences();
+    return preferences.notificationsEnabled ? preferences : null;
+  }
+
   /// SPEC.md Ekran 12 "Seans bitişi" — seans başında kurulur, [endAtUtc]'de
   /// tetiklenir. Metindeki dakika sayıları demo veri değil, çağıranın
   /// geçtiği gerçek ayar değerleridir (SPEC DoD "demo sayılarının hiçbiri
@@ -94,12 +184,16 @@ class NotificationService {
   }) async {
     final FlutterLocalNotificationsPlugin? plugin = _plugin;
     if (plugin == null) return;
+    final NotificationPreferences? preferences = await _allowedPreferences();
+    if (preferences == null) return;
     await plugin.zonedSchedule(
       id: _sessionEndNotificationId,
       title: 'Seans tamamlandı',
       body: '$focusMinutes dakika odak bitti. Meşalen büyüdü — $breakMinutes dakika mola vakti.',
       scheduledDate: tz.TZDateTime.from(endAtUtc, _location),
-      notificationDetails: const NotificationDetails(android: _sessionEndAndroidDetails),
+      notificationDetails: NotificationDetails(
+        android: preferences.soundEnabled ? _sessionEndAndroidDetails : _sessionEndSilentAndroidDetails,
+      ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
@@ -120,12 +214,16 @@ class NotificationService {
   }) async {
     final FlutterLocalNotificationsPlugin? plugin = _plugin;
     if (plugin == null) return;
+    final NotificationPreferences? preferences = await _allowedPreferences();
+    if (preferences == null) return;
     await plugin.zonedSchedule(
       id: _breakEndNotificationId,
       title: 'Mola bitti',
       body: '$breakMinutes dakika mola bitti. Meşaleyi yeniden yakmaya hazır mısın?',
       scheduledDate: tz.TZDateTime.from(endAtUtc, _location),
-      notificationDetails: const NotificationDetails(android: _sessionEndAndroidDetails),
+      notificationDetails: NotificationDetails(
+        android: preferences.soundEnabled ? _sessionEndAndroidDetails : _sessionEndSilentAndroidDetails,
+      ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
@@ -141,6 +239,7 @@ class NotificationService {
   Future<void> showOngoingFocus({required int cyclePosition}) async {
     final FlutterLocalNotificationsPlugin? plugin = _plugin;
     if (plugin == null) return;
+    if (await _allowedPreferences() == null) return;
     await plugin.show(
       id: _ongoingFocusNotificationId,
       title: 'Odak · $cyclePosition. pomodoro',
@@ -163,7 +262,12 @@ class NotificationService {
   Future<void> rescheduleStreakRiskReminder({required bool completedToday, required int streak}) async {
     final FlutterLocalNotificationsPlugin? plugin = _plugin;
     if (plugin == null) return;
+    // İptal kapıdan önce: bu metot her yeniden değerlendirme noktasında
+    // çağrıldığı için, ayar kapatıldıktan sonraki ilk çağrı önceden kurulmuş
+    // hatırlatmayı da temizlemiş olur.
     await plugin.cancel(id: _streakRiskNotificationId);
+    final NotificationPreferences? preferences = await _allowedPreferences();
+    if (preferences == null || !preferences.streakReminderEnabled) return;
     if (completedToday || streak < 1) return;
     final tz.TZDateTime now = tz.TZDateTime.now(_location);
     final tz.TZDateTime target = tz.TZDateTime(_location, now.year, now.month, now.day, 21);
@@ -173,7 +277,9 @@ class NotificationService {
       title: 'Serin risk altında',
       body: "$streak günlük seri için bugün 1 pomodoro yeter. Gün 04:00'te kapanıyor.",
       scheduledDate: target,
-      notificationDetails: const NotificationDetails(android: _streakRiskAndroidDetails),
+      notificationDetails: NotificationDetails(
+        android: preferences.soundEnabled ? _streakRiskAndroidDetails : _streakRiskSilentAndroidDetails,
+      ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
@@ -184,11 +290,15 @@ class NotificationService {
   Future<void> showBadgeUnlocked({required String name, required String ruleDescription}) async {
     final FlutterLocalNotificationsPlugin? plugin = _plugin;
     if (plugin == null) return;
+    final NotificationPreferences? preferences = await _allowedPreferences();
+    if (preferences == null) return;
     await plugin.show(
       id: name.hashCode & 0x7fffffff,
       title: 'Yeni rozet: $name',
       body: '$ruleDescription Başarı kartını paylaş.',
-      notificationDetails: const NotificationDetails(android: _badgeAndroidDetails),
+      notificationDetails: NotificationDetails(
+        android: preferences.soundEnabled ? _badgeAndroidDetails : _badgeSilentAndroidDetails,
+      ),
     );
   }
 }

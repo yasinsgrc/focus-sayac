@@ -28,7 +28,9 @@ Future<void> main() async {
   unawaited(
     ExamSourceService(database: database, prefs: prefs).syncIfNeeded(),
   );
-  final NotificationService notificationService = NotificationService();
+  final NotificationService notificationService = NotificationService(
+    readPreferences: () => _readNotificationPreferences(database),
+  );
   // SPEC.md Ekran 01: POST_NOTIFICATIONS → SCHEDULE_EXACT_ALARM izinleri de
   // burada istenir. Onboarding ekranının kendisi (Faz 10) henüz yok; izin
   // reddedilse de uygulama tam çalışmaya devam eder (SPEC DoD) — Faz 10
@@ -44,6 +46,20 @@ Future<void> main() async {
       ],
       child: const FocusSayacApp(),
     ),
+  );
+}
+
+/// `AppSettings` → [NotificationPreferences] eşlemesinin tek yeri. Servis
+/// depolama katmanına bağlanmasın diye `AppSettingsTableData`yı burada
+/// çeviriyoruz (SPEC.md Ekran 07 anahtarları). Riverpod ağacı kurulmadan
+/// önce de gerekli olduğu için `appSettingsDaoProvider` yerine `database`
+/// doğrudan okunuyor — `_rescheduleStreakRiskReminder` ile aynı gerekçe.
+Future<NotificationPreferences> _readNotificationPreferences(AppDatabase database) async {
+  final AppSettingsTableData settings = await database.appSettingsDao.getSettings();
+  return NotificationPreferences(
+    notificationsEnabled: settings.notificationsEnabled,
+    soundEnabled: settings.soundEnabled,
+    streakReminderEnabled: settings.streakReminderEnabled,
   );
 }
 

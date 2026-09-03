@@ -418,3 +418,26 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   bildirime değil, öne dönüşteki yakalama tikine bağlı (planlanan bitiş anıyla kapanıyor — Faz 5
   kararı): yerel bildirimler kod çalıştırmadığı ve SPEC §1 arka plan servisini yasakladığı için
   bildirim yalnızca "haber verme" görevini üstleniyor.
+- **`notificationsEnabled` / `soundEnabled` / `streakReminderEnabled` tek noktada,
+  `NotificationService`in içinde uygulanıyor** — çağıranların (`PomodoroController`,
+  `BadgeUnlockService`, `main.dart`) her birinde ayrı ayrı değil. Üç çağıran ve dokuz çağrı noktası
+  var; kontrolü onlara dağıtmak birinin unutulmasına açık kapı bırakırdı (kolonlar Faz 3'te
+  açılmıştı ama Faz 6'da hiçbir yerde okunmuyordu — tam olarak bu sınıf hata). Servis
+  `services/storage`'a bağlanmasın diye ayarlar `AppSettingsTableData` yerine depolamadan bağımsız
+  bir `NotificationPreferences` olarak geçiyor; eşleme yalnızca `main.dart`'ta. Ayar anlık görüntüsü
+  serviste önbelleğe alınmıyor, her gönderimde okunuyor (tek satırlık tablo, ucuz) — böylece ayar
+  değişince servisi haberdar edecek ayrı bir senkronizasyon yolu gerekmiyor.
+- **`cancel*` çağrıları bilinçli olarak bu kapının dışında** — kullanıcı seans sürerken bildirimleri
+  kapatırsa, o seansın bekleyen/kalıcı kaydını temizleyecek olan yine iptal çağrılarıdır; onları da
+  kapatmak, kapatma anında ekranda duran kalıcı bildirimi ("Odak · n. pomodoro") kaldırılamaz hâlde
+  bırakırdı. Aynı gerekçeyle `rescheduleStreakRiskReminder` önce iptal edip sonra ayara bakıyor:
+  hatırlatma kapatıldıktan sonraki ilk çağrı, önceden kurulmuş olanı da temizlemiş oluyor.
+- **`soundEnabled` için kanal başına sessiz ikiz kanal açıldı** (`session_end_silent`,
+  `streak_risk_silent`, `badge_unlocked_silent`), tek kanalda `playSound` bayrağı çevrilmedi —
+  Android 8+'ta bir kanalın ses ayarı oluşturulduktan sonra uygulama tarafından değiştirilemez
+  (kanal ayarları kullanıcıya aittir), bayrağı çevirmek ilk kurulumdan sonra hiçbir etki
+  yaratmazdı. "Kalıcı" bildirimin zaten `playSound: false` olduğu için (SPEC Ekran 12) sessiz ikizi
+  yok; `soundEnabled` onu etkilemiyor.
+- **`selectedTemplateIndex` hâlâ okunmuyor ve bu doğru** — o kolon bir bildirim ayarı değil, SPEC
+  Ekran 05'in başarı kartı şablon seçimi (`GECE MEŞALESİ` / `MİNİMAL SAYAÇ` / 3. şablon). Ekran 05
+  Faz 8'in kapsamı; onu tüketecek ekran yazılana kadar bağlanacağı bir yer yok.
