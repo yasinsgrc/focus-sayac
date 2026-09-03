@@ -121,6 +121,7 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
         final PomodoroBreakRunning b => _BreakBody(
             phase: b,
             remaining: phaseRemaining(startedAtUtc: b.startedAtUtc, plannedDurationSec: b.plannedDurationSec, nowUtc: _nowUtc),
+            progress: phaseProgress(startedAtUtc: b.startedAtUtc, plannedDurationSec: b.plannedDurationSec, nowUtc: _nowUtc),
           ),
       },
     );
@@ -195,12 +196,12 @@ class _FocusBody extends ConsumerWidget {
                     child: CustomPaint(
                       size: const Size(330, 330),
                       painter: running
-                          ? const SessionRingPainter(
-                              progress: 1,
-                              gradientColors: <Color>[Color(0xFF8A4F14), Color(0xFFFFB03A), Color(0xFFFFF1D0)],
-                              gradientStops: <double>[0, 0.62, 1],
+                          ? SessionRingPainter(
+                              progress: progress,
+                              gradientColors: const <Color>[Color(0xFF8A4F14), Color(0xFFFFB03A), Color(0xFFFFF1D0)],
+                              gradientStops: const <double>[0, 0.62, 1],
                             )
-                          : const SessionRingPainter(progress: 1, solidColor: Color(0xFF595D6C)),
+                          : SessionRingPainter(progress: progress, solidColor: const Color(0xFF595D6C)),
                     ),
                   ),
                   RepaintBoundary(
@@ -364,10 +365,11 @@ class _PlayPauseButton extends StatelessWidget {
 
 /// Ekran 09 — prototip satır 335-378.
 class _BreakBody extends ConsumerWidget {
-  const _BreakBody({required this.phase, required this.remaining});
+  const _BreakBody({required this.phase, required this.remaining, required this.progress});
 
   final PomodoroBreakRunning phase;
   final Duration remaining;
+  final double progress;
 
   static const List<_BreakTip> _tips = <_BreakTip>[
     _BreakTip(icon: PhosphorIconsRegular.eye, colorRole: _TipColorRole.mint, text: 'Ekrana bakma — 20 saniye uzağa odaklan'),
@@ -418,13 +420,13 @@ class _BreakBody extends ConsumerWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: <Widget>[
-                  const RepaintBoundary(
+                  RepaintBoundary(
                     child: CustomPaint(
-                      size: Size(330, 330),
+                      size: const Size(330, 330),
                       painter: SessionRingPainter(
-                        progress: 1,
-                        gradientColors: <Color>[Color(0xFF0D3A31), Color(0xFF4FE0B4), Color(0xFFD6FFF2)],
-                        gradientStops: <double>[0, 0.7, 1],
+                        progress: progress,
+                        gradientColors: const <Color>[Color(0xFF0D3A31), Color(0xFF4FE0B4), Color(0xFFD6FFF2)],
+                        gradientStops: const <double>[0, 0.7, 1],
                       ),
                     ),
                   ),
