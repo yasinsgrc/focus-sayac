@@ -9,7 +9,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
-import 'package:focussayac/core/theme/app_theme.dart';
 import 'package:focussayac/features/stats/stats_screen.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
@@ -18,6 +17,7 @@ import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
 
+import '../../support/localized_test_app.dart';
 import '../../support/recording_ad_service.dart';
 
 /// Gerçek cihazlarda anchored adaptive banner çoğu telefonda 50 değil 90dp
@@ -124,7 +124,7 @@ void main() {
       tester,
       adService: adService,
       database: database,
-      home: MaterialApp(theme: buildAppTheme(), home: const StatsScreen()),
+      home: localizedTestApp(const StatsScreen()),
     );
 
     expect(find.text('TOPLAM ODAK'), findsOneWidget);
@@ -159,7 +159,7 @@ void main() {
       tester,
       adService: adService,
       database: database,
-      home: MaterialApp(theme: buildAppTheme(), home: const StatsScreen()),
+      home: localizedTestApp(const StatsScreen()),
     );
 
     expect(adService.bannerSizeRequests, 1);

@@ -19,6 +19,7 @@ import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
 import '../../domain/settings/settings_providers.dart';
 import '../../domain/time/duration_formatter.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/ads/banner_ad_slot.dart';
 import '../../services/storage/app_database.dart';
 import 'widgets/countdown_ring_painter.dart';
@@ -128,9 +129,9 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
                 return _CountdownBody(exam: exam, nowUtc: _nowUtc, dashController: _dashController);
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (Object error, StackTrace stackTrace) => const _NoExamBody(
-                title: 'SINAV YÜKLENEMEDİ',
-                message: 'Kayıtlı sınavlar okunamadı. Listeden yeniden seçmeyi deneyebilirsin.',
+              error: (Object error, StackTrace stackTrace) => _NoExamBody(
+                title: AppLocalizations.of(context).countdownExamLoadFailedTitle,
+                message: AppLocalizations.of(context).countdownExamLoadFailedMessage,
               ),
             ),
           ),
@@ -163,17 +164,19 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
 /// o dal da buraya bağlandı — sadece başlık/metin değişir, "SINAV SEÇ"
 /// düğmesi (ve içindeki "Kendi sınavımı ekle") her iki durumda da çalışır.
 class _NoExamBody extends StatelessWidget {
-  const _NoExamBody({
-    this.title = 'HEDEF SEÇİLMEDİ',
-    this.message = 'Geri sayımın başlaması için bir sınav seç ya da kendi hedefini ekle.',
-  });
+  const _NoExamBody({this.title, this.message});
 
-  final String title;
-  final String message;
+  /// `null` ise "hedef seçilmedi" boş durumu; hata dalı kendi metnini geçiyor.
+  /// Varsayılanlar ARB'den geldiği için (`const` olamazlar) alanlar nullable.
+  final String? title;
+  final String? message;
 
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String titleText = title ?? l10n.countdownNoExamTitle;
+    final String messageText = message ?? l10n.countdownNoExamMessage;
 
     return Padding(
       // Alt boşluk gezinme çubuğunu (64px + 18px kenar boşluğu) açıkta bırakır.
@@ -192,12 +195,12 @@ class _NoExamBody extends StatelessWidget {
               child: Icon(PhosphorIconsDuotone.calendarBlank, size: 46, color: colors.neutral600),
             ),
             const SizedBox(height: 26),
-            Text(title, style: AppTypography.display(fontSize: 26, weight: FontWeight.w700, color: colors.text)),
+            Text(titleText, style: AppTypography.display(fontSize: 26, weight: FontWeight.w700, color: colors.text)),
             const SizedBox(height: 12),
             SizedBox(
               width: 262,
               child: Text(
-                message,
+                messageText,
                 textAlign: TextAlign.center,
                 style: AppTypography.body(fontSize: 14, color: colors.neutral500),
               ),
@@ -214,7 +217,7 @@ class _NoExamBody extends StatelessWidget {
                 ),
                 onPressed: () => showExamPickerSheet(context),
                 child: Text(
-                  'SINAV SEÇ',
+                  l10n.countdownPickExam,
                   style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w600, color: colors.ember),
                 ),
               ),
@@ -236,6 +239,7 @@ class _CountdownBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final int days = daysTo(exam.dateUtc, nowUtc);
     final double ratio = progressRatio(days);
     final Duration remaining = remainingDuration(exam.dateUtc, nowUtc);
@@ -256,8 +260,9 @@ class _CountdownBody extends ConsumerWidget {
     // yerine yalnızca eylem gösteriliyor — sabit bir "25" yazmak, ayar
     // değiştirildiğinde butonun yanlış süre vaat etmesi demekti.
     final int? focusMinutes = ref.watch(focusMinutesProvider);
-    final String focusButtonLabel =
-        focusMinutes == null ? 'ODAKLAN' : '$focusMinutes DAKİKA ODAKLAN';
+    final String focusButtonLabel = focusMinutes == null
+        ? l10n.countdownFocusButton
+        : l10n.countdownFocusButtonWithMinutes(focusMinutes);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(26, 6, 26, 0),
@@ -273,7 +278,7 @@ class _CountdownBody extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text('HEDEF', style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
+                    Text(l10n.countdownTarget, style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
@@ -339,7 +344,7 @@ class _CountdownBody extends ConsumerWidget {
                           style: AppTypography.counter(fontSize: 100, weight: FontWeight.w700, color: Colors.white, height: 1),
                         ),
                       ),
-                      Text('GÜN KALDI', style: AppTypography.kicker(fontSize: 9.5, color: colors.neutral500)),
+                      Text(l10n.countdownDaysLeft, style: AppTypography.kicker(fontSize: 9.5, color: colors.neutral500)),
                       const SizedBox(height: 16),
                       Row(
                         mainAxisSize: MainAxisSize.min,
@@ -376,7 +381,7 @@ class _CountdownBody extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    Text('BUGÜN', style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
+                    Text(l10n.countdownToday, style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
                     if (streak > 0)
                       Container(
                         height: 25,
@@ -387,7 +392,7 @@ class _CountdownBody extends ConsumerWidget {
                           children: <Widget>[
                             Icon(PhosphorIconsFill.flame, size: 13, color: colors.ember),
                             const SizedBox(width: 5),
-                            Text('$streak gün seri', style: AppTypography.body(fontSize: 11.5, weight: FontWeight.w500, color: colors.ember)),
+                            Text(l10n.countdownStreakBadge(streak), style: AppTypography.body(fontSize: 11.5, weight: FontWeight.w500, color: colors.ember)),
                           ],
                         ),
                       ),
@@ -404,12 +409,12 @@ class _CountdownBody extends ConsumerWidget {
                             text: '${todayParts.hours}',
                             style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
                           ),
-                          TextSpan(text: ' SA ', style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
+                          TextSpan(text: l10n.countdownHoursUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
                           TextSpan(
                             text: '${todayParts.minutes}',
                             style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
                           ),
-                          TextSpan(text: ' DK', style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
+                          TextSpan(text: l10n.countdownMinutesUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
                         ],
                       ),
                     ),
@@ -452,9 +457,9 @@ class _CountdownBody extends ConsumerWidget {
                     TextSpan(
                       style: AppTypography.body(fontSize: 12, color: colors.neutral500),
                       children: <InlineSpan>[
-                        const TextSpan(text: 'Hedefe 1 pomodoro kaldı — serin '),
-                        TextSpan(text: '${streak + 1}\'e', style: TextStyle(color: colors.ember)),
-                        const TextSpan(text: ' çıkar.'),
+                        TextSpan(text: l10n.countdownStreakHintPrefix),
+                        TextSpan(text: l10n.countdownStreakHintValue(streak + 1), style: TextStyle(color: colors.ember)),
+                        TextSpan(text: l10n.countdownStreakHintSuffix),
                       ],
                     ),
                   ),

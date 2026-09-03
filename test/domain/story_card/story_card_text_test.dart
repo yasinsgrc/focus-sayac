@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:focussayac/domain/story_card/story_card_text.dart';
 
+import '../../support/localized_test_app.dart';
+
 StoryCardText _text(
   StoryCardTemplate template, {
   int todayFocusSeconds = 2 * 3600 + 15 * 60,
@@ -11,6 +13,7 @@ StoryCardText _text(
   int? daysRemaining = 132,
 }) {
   return buildStoryCardText(
+    l10n: testL10n,
     template: template,
     todayFocusSeconds: todayFocusSeconds,
     streak: streak,

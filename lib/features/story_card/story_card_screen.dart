@@ -15,6 +15,7 @@ import '../../domain/exams/exam_providers.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
 import '../../domain/settings/settings_providers.dart';
 import '../../domain/story_card/story_card_text.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/export/story_card_exporter.dart';
 import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_providers.dart';
@@ -63,6 +64,7 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final StoryCardExporter exporter = ref.watch(storyCardExporterProvider);
 
     final AppSettingsTableData? settings = ref.watch(appSettingsProvider).value;
@@ -72,6 +74,7 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
     final Exam? exam = ref.watch(activeExamProvider).value;
     final DateTime nowUtc = DateTime.now().toUtc();
     final StoryCardText text = buildStoryCardText(
+      l10n: l10n,
       template: template,
       todayFocusSeconds: ref.watch(todayFocusStatsProvider).totalSeconds,
       streak: ref.watch(streakProvider),
@@ -107,7 +110,7 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
                   ),
                   const SizedBox(width: 14),
                   Text(
-                    'BAŞARI KARTI',
+                    l10n.storyCardTitle,
                     style: AppTypography.display(fontSize: 19, weight: FontWeight.w600, color: colors.text),
                   ),
                 ],
@@ -142,7 +145,7 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
                 enabled: !_busy,
                 onPressed: () => _run(
                   exporter.share,
-                  const _Messages(failed: 'Kart paylaşılamadı.'),
+                  _Messages(failed: l10n.storyCardShareFailed),
                 ),
               ),
               const SizedBox(height: 10),
@@ -151,15 +154,15 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
                   Expanded(
                     child: _SecondaryButton(
                       icon: PhosphorIconsRegular.downloadSimple,
-                      label: 'Kaydet',
+                      label: l10n.storyCardSave,
                       roleColor: colors.mint,
                       enabled: !_busy,
                       onPressed: () => _run(
                         exporter.saveToGallery,
-                        const _Messages(
-                          success: 'Kart galeriye kaydedildi.',
-                          permissionDenied: 'Galeriye kaydetmek için izin gerekiyor.',
-                          failed: 'Kart kaydedilemedi.',
+                        _Messages(
+                          success: l10n.storyCardSaved,
+                          permissionDenied: l10n.storyCardSavePermissionDenied,
+                          failed: l10n.storyCardSaveFailed,
                         ),
                       ),
                     ),
@@ -168,14 +171,14 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
                   Expanded(
                     child: _SecondaryButton(
                       icon: PhosphorIconsRegular.copy,
-                      label: 'Kopyala',
+                      label: l10n.storyCardCopy,
                       roleColor: colors.sky,
                       enabled: !_busy,
                       onPressed: () => _run(
                         exporter.copyToClipboard,
-                        const _Messages(
-                          success: 'Kart panoya kopyalandı.',
-                          failed: 'Kart kopyalanamadı.',
+                        _Messages(
+                          success: l10n.storyCardCopied,
+                          failed: l10n.storyCardCopyFailed,
                         ),
                       ),
                     ),
@@ -184,7 +187,7 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                '1080 × 1920 PNG',
+                l10n.storyCardExportSize,
                 textAlign: TextAlign.center,
                 style: AppTypography.kicker(fontSize: 8.5, color: colors.neutral700, letterSpacingEm: 0.2),
               ),
@@ -249,7 +252,7 @@ class _TemplatePicker extends StatelessWidget {
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        template.label,
+                        template.label(AppLocalizations.of(context)),
                         style: AppTypography.display(
                           fontSize: 11,
                           weight: FontWeight.w600,
@@ -302,7 +305,7 @@ class _ShareButton extends StatelessWidget {
                   Icon(PhosphorIconsRegular.shareNetwork, size: 19, color: colors.accent200),
                   const SizedBox(width: 10),
                   Text(
-                    'PAYLAŞ',
+                    AppLocalizations.of(context).storyCardShare,
                     style: AppTypography.display(fontSize: 15, weight: FontWeight.w600, color: colors.accent200),
                   ),
                 ],

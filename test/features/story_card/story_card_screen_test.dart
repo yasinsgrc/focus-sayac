@@ -11,7 +11,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
-import 'package:focussayac/core/theme/app_theme.dart';
 import 'package:focussayac/domain/story_card/story_card_text.dart';
 import 'package:focussayac/features/story_card/story_card_screen.dart';
 import 'package:focussayac/features/story_card/widgets/story_card_view.dart';
@@ -21,6 +20,8 @@ import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
+
+import '../../support/localized_test_app.dart';
 
 /// Gerekçe için bkz. `test/features/settings/settings_screen_test.dart`.
 Future<void> _settle(WidgetTester tester, {int rounds = 4}) async {
@@ -70,7 +71,7 @@ Future<AppDatabase> _pumpStoryCard(WidgetTester tester) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
 
   await tester.pumpWidget(
-    _appWith(database, prefs, MaterialApp(theme: buildAppTheme(), home: const StoryCardScreen())),
+    _appWith(database, prefs, localizedTestApp(const StoryCardScreen())),
   );
   await _settle(tester);
   return database;
@@ -101,9 +102,8 @@ Future<GlobalKey> _pumpCard(
 }) async {
   final GlobalKey key = GlobalKey();
   await tester.pumpWidget(
-    MaterialApp(
-      theme: buildAppTheme(),
-      home: Scaffold(
+    localizedTestApp(
+      Scaffold(
         body: Center(
           child: SizedBox(
             width: kStoryCardPreviewWidth,
@@ -172,7 +172,7 @@ void main() {
     expect((await _read(tester, database.appSettingsDao.getSettings)).selectedTemplateIndex, 0);
     expect(find.text('BUGÜNÜN ODAĞI'), findsOneWidget);
 
-    await tester.tap(find.text(StoryCardTemplate.streak.label));
+    await tester.tap(find.text(StoryCardTemplate.streak.label(testL10n)));
     await _settle(tester);
 
     expect((await _read(tester, database.appSettingsDao.getSettings)).selectedTemplateIndex, 2);
@@ -196,7 +196,7 @@ void main() {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
-      _appWith(database, prefs, MaterialApp(theme: buildAppTheme(), home: const StoryCardScreen())),
+      _appWith(database, prefs, localizedTestApp(const StoryCardScreen())),
     );
     await _settle(tester);
 
@@ -254,7 +254,7 @@ void main() {
           onboardingCompletedAtLaunchProvider.overrideWithValue(true),
           storyCardExporterProvider.overrideWithValue(const _DeniedExporter()),
         ],
-        child: MaterialApp(theme: buildAppTheme(), home: const StoryCardScreen()),
+        child: localizedTestApp(const StoryCardScreen()),
       ),
     );
     await _settle(tester);

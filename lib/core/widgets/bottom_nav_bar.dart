@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../l10n/gen/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
@@ -19,6 +20,7 @@ class BottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
 
     // Prototip v2 satır 108-115 / 277-283: 5 yuva, aktif olan `flex:1.6`,
     // diğerleri `flex:1`. "Alev" ve "madalya" yuvalarının ayrı ekranı yok,
@@ -28,7 +30,7 @@ class BottomNavBar extends StatelessWidget {
         tab: AppNavTab.countdown,
         icon: PhosphorIconsRegular.timer,
         pill: _PillStyle(
-          label: 'SAYAÇ',
+          label: l10n.navCountdown,
           icon: PhosphorIconsFill.timer,
           gradient: <Color>[colors.accent400.withValues(alpha: 0.55), colors.accent900],
           foreground: const Color(0xFFF5F4FF),
@@ -40,7 +42,7 @@ class BottomNavBar extends StatelessWidget {
         tab: AppNavTab.stats,
         icon: PhosphorIconsRegular.chartBar,
         pill: _PillStyle(
-          label: 'VERİLER',
+          label: l10n.navStats,
           icon: PhosphorIconsFill.chartBar,
           gradient: <Color>[const Color(0xFF1D466E), colors.skyDeep],
           foreground: const Color(0xFFD7ECFF),

@@ -9,6 +9,7 @@ import '../../domain/exams/exam_providers.dart';
 import '../../domain/review/app_review_service.dart';
 import '../../domain/settings/app_data_reset_service.dart';
 import '../../domain/settings/settings_providers.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_providers.dart';
 import '../countdown/widgets/exam_picker_sheet.dart';
@@ -59,7 +60,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (Object error, StackTrace stackTrace) => Center(
               child: Text(
-                'Ayarlar okunamadı.',
+                AppLocalizations.of(context).settingsLoadError,
                 style: AppTypography.body(fontSize: 14, color: colors.neutral500),
               ),
             ),
@@ -71,6 +72,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildContent(AppSettingsTableData settings) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final int focus = _focusMinutes ?? settings.focusMinutes;
     final int shortBreak = _shortBreakMinutes ?? settings.shortBreakMinutes;
     final int longBreak = _longBreakMinutes ?? settings.longBreakMinutes;
@@ -81,7 +83,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           const SizedBox(height: 8),
-          Text('AYARLAR', style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text)),
+          Text(l10n.settingsTitle, style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text)),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(18),
@@ -93,10 +95,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text('SÜRELER', style: AppTypography.kicker(fontSize: 8, color: colors.neutral600, letterSpacingEm: 0.24)),
+                Text(l10n.settingsDurationsSection, style: AppTypography.kicker(fontSize: 8, color: colors.neutral600, letterSpacingEm: 0.24)),
                 const SizedBox(height: 14),
                 _DurationSlider(
-                  label: 'Odak',
+                  label: l10n.settingsFocusDuration,
                   minutes: focus,
                   min: kFocusMinutesMin,
                   max: kFocusMinutesMax,
@@ -106,7 +108,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 14),
                 _DurationSlider(
-                  label: 'Kısa mola',
+                  label: l10n.settingsShortBreak,
                   minutes: shortBreak,
                   min: kBreakMinutesMin,
                   max: kBreakMinutesMax,
@@ -116,7 +118,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 14),
                 _DurationSlider(
-                  label: 'Uzun mola',
+                  label: l10n.settingsLongBreak,
                   minutes: longBreak,
                   min: kBreakMinutesMin,
                   max: kBreakMinutesMax,
@@ -139,8 +141,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.bell,
                     iconColor: colors.accent400,
-                    label: 'Bildirimler',
-                    value: _onOff(settings.notificationsEnabled),
+                    label: l10n.settingsNotifications,
+                    value: _onOff(l10n, settings.notificationsEnabled),
                     valueColor: _onOffColor(settings.notificationsEnabled, colors),
                     onTap: () => _write(
                       AppSettingsTableCompanion(notificationsEnabled: Value<bool>(!settings.notificationsEnabled)),
@@ -149,8 +151,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.speakerHigh,
                     iconColor: colors.accent400,
-                    label: 'Sesli uyarı',
-                    value: _onOff(settings.soundEnabled),
+                    label: l10n.settingsSound,
+                    value: _onOff(l10n, settings.soundEnabled),
                     valueColor: _onOffColor(settings.soundEnabled, colors),
                     onTap: () => _write(
                       AppSettingsTableCompanion(soundEnabled: Value<bool>(!settings.soundEnabled)),
@@ -159,8 +161,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.vibrate,
                     iconColor: colors.accent400,
-                    label: 'Titreşim',
-                    value: _onOff(settings.hapticEnabled),
+                    label: l10n.settingsHaptics,
+                    value: _onOff(l10n, settings.hapticEnabled),
                     valueColor: _onOffColor(settings.hapticEnabled, colors),
                     onTap: () => _write(
                       AppSettingsTableCompanion(hapticEnabled: Value<bool>(!settings.hapticEnabled)),
@@ -169,8 +171,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.flame,
                     iconColor: colors.ember,
-                    label: 'Seri hatırlatması',
-                    value: _onOff(settings.streakReminderEnabled),
+                    label: l10n.settingsStreakReminder,
+                    value: _onOff(l10n, settings.streakReminderEnabled),
                     valueColor: _onOffColor(settings.streakReminderEnabled, colors),
                     onTap: () => _write(
                       AppSettingsTableCompanion(streakReminderEnabled: Value<bool>(!settings.streakReminderEnabled)),
@@ -179,8 +181,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.graduationCap,
                     iconColor: colors.sky,
-                    label: 'Sınav seçimi',
-                    value: activeExam?.name ?? 'Seçilmedi',
+                    label: l10n.settingsExamSelection,
+                    value: activeExam?.name ?? l10n.settingsNoExamSelected,
                     valueColor: colors.neutral500,
                     showCaret: true,
                     onTap: () => showExamPickerSheet(context),
@@ -188,7 +190,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.clockCountdown,
                     iconColor: colors.neutral500,
-                    label: "Gün 04:00'te başlar",
+                    label: l10n.settingsDayStartsAt,
                     // SPEC.md §5.3'ün gün sınırı — dokunulacak bir hedefi yok,
                     // bilgi satırı (bu yüzden `onTap: null` ve ok işareti yok).
                     value: '',
@@ -198,7 +200,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.star,
                     iconColor: colors.ember,
-                    label: 'Uygulamayı değerlendir',
+                    label: l10n.settingsRateApp,
                     value: '',
                     valueColor: colors.neutral500,
                     showCaret: true,
@@ -207,36 +209,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.info,
                     iconColor: colors.accent400,
-                    label: 'Hakkında',
+                    label: l10n.settingsAbout,
                     value: '',
                     valueColor: colors.neutral500,
                     showCaret: true,
                     onTap: () => _showInfoDialog(
-                      title: 'HAKKINDA',
-                      body: 'FocusSayaç, sınavına kalan günü ve odak sürelerini tek yerde tutan '
-                          'bağımsız bir çalışma aracıdır. ÖSYM, MEB veya resmî bir kurumla '
-                          'bağlantılı değildir; sınav tarihleri resmî takvimden doğrulanmalıdır.',
+                      title: l10n.settingsAboutTitle,
+                      body: l10n.settingsAboutBody,
                     ),
                   ),
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.shieldCheck,
                     iconColor: colors.mint,
-                    label: 'Gizlilik politikası',
+                    label: l10n.settingsPrivacy,
                     value: '',
                     valueColor: colors.neutral500,
                     showCaret: true,
                     onTap: () => _showInfoDialog(
-                      title: 'GİZLİLİK POLİTİKASI',
-                      body: 'FocusSayaç hesap açmanı istemez ve kişisel veri toplamaz. Sınavların, '
-                          'odak geçmişin, rozetlerin ve ayarların yalnızca bu cihazda, uygulamanın '
-                          'kendi veritabanında saklanır — hiçbiri sunucuya gönderilmez. Uygulamayı '
-                          'kaldırdığında bu veriler de silinir.',
+                      title: l10n.settingsPrivacyTitle,
+                      body: l10n.settingsPrivacyBody,
                     ),
                   ),
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.trash,
                     iconColor: colors.rose,
-                    label: 'Verileri sıfırla',
+                    label: l10n.settingsResetData,
                     value: '',
                     valueColor: colors.neutral500,
                     showCaret: true,
@@ -252,7 +249,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 14),
             child: Text(
-              'Bağımsız bir çalışma aracıdır; ÖSYM, MEB veya resmî bir kurumla bağlantılı değildir.',
+              l10n.settingsDisclaimer,
               style: AppTypography.body(fontSize: 11.5, color: colors.neutral600, height: 1.5),
             ),
           ),
@@ -261,7 +258,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  static String _onOff(bool enabled) => enabled ? 'Açık' : 'Kapalı';
+  static String _onOff(AppLocalizations l10n, bool enabled) => enabled ? l10n.settingsOn : l10n.settingsOff;
 
   static Color _onOffColor(bool enabled, AppColors colors) => enabled ? colors.mint : colors.neutral500;
 
@@ -271,7 +268,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // Açık bir dokunuş sessizce yutulmamalı (mağaza uygulaması yoksa ya da
     // kanal yanıt vermezse `openStoreListing` false döner).
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Mağaza sayfası açılamadı.')),
+      SnackBar(content: Text(AppLocalizations.of(context).settingsStoreOpenFailed)),
     );
   }
 
@@ -293,7 +290,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await ref.read(appDataResetServiceProvider).resetProgress();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Odak geçmişin ve rozetlerin sıfırlandı.')),
+      SnackBar(content: Text(AppLocalizations.of(context).settingsResetDone)),
     );
   }
 }
@@ -337,7 +334,7 @@ class _DurationSlider extends StatelessWidget {
           children: <Widget>[
             Text(label, style: AppTypography.body(fontSize: 13.5, color: colors.text)),
             Text(
-              '$minutes dk',
+              AppLocalizations.of(context).settingsMinutesValue(minutes),
               style: AppTypography.display(fontSize: 16, weight: FontWeight.w700, color: tint)
                   .copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]),
             ),
@@ -449,7 +446,7 @@ class _RemoveAdsRow extends StatelessWidget {
           Icon(PhosphorIconsDuotone.sealCheck, size: 21, color: colors.ember.withValues(alpha: 0.75)),
           const SizedBox(width: 13),
           Expanded(
-            child: Text('Reklamları kaldır', style: AppTypography.body(fontSize: 13.5, color: colors.neutral400)),
+            child: Text(AppLocalizations.of(context).settingsRemoveAds, style: AppTypography.body(fontSize: 13.5, color: colors.neutral400)),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -458,7 +455,7 @@ class _RemoveAdsRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
-              'YAKINDA',
+              AppLocalizations.of(context).settingsComingSoon,
               style: AppTypography.kicker(fontSize: 8, color: colors.neutral500, letterSpacingEm: 0.16),
             ),
           ),
@@ -499,7 +496,7 @@ class _InfoDialog extends StatelessWidget {
               child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  'Kapat',
+                  AppLocalizations.of(context).commonClose,
                   style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral500),
                 ),
               ),
@@ -519,6 +516,7 @@ class _ResetConfirmDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     return Dialog(
       backgroundColor: const Color(0xF71A1C2A),
       insetPadding: const EdgeInsets.symmetric(horizontal: 28),
@@ -533,11 +531,10 @@ class _ResetConfirmDialog extends StatelessWidget {
           children: <Widget>[
             Icon(PhosphorIconsDuotone.trash, size: 46, color: colors.rose),
             const SizedBox(height: 18),
-            Text('VERİLER SİLİNECEK', style: AppTypography.display(fontSize: 23, weight: FontWeight.w700, color: colors.text)),
+            Text(l10n.settingsResetDialogTitle, style: AppTypography.display(fontSize: 23, weight: FontWeight.w700, color: colors.text)),
             const SizedBox(height: 10),
             Text(
-              'Odak geçmişin ve açılmış rozetlerin kalıcı olarak silinir, serin sıfırlanır. '
-              'Sınavların ve ayarların olduğu gibi kalır. Bu işlem geri alınamaz.',
+              l10n.settingsResetDialogBody,
               textAlign: TextAlign.center,
               style: AppTypography.body(fontSize: 13.5, color: colors.neutral400),
             ),
@@ -561,7 +558,7 @@ class _ResetConfirmDialog extends StatelessWidget {
                     onTap: () => Navigator.of(context).pop(false),
                     child: Center(
                       child: Text(
-                        'VAZGEÇ',
+                        l10n.settingsResetDialogCancel,
                         style: AppTypography.display(fontSize: 13.5, weight: FontWeight.w600, color: colors.mint),
                       ),
                     ),
@@ -585,7 +582,7 @@ class _ResetConfirmDialog extends StatelessWidget {
                     onTap: () => Navigator.of(context).pop(true),
                     child: Center(
                       child: Text(
-                        'Verileri sıfırla',
+                        l10n.settingsResetData,
                         style: AppTypography.display(fontSize: 13.5, weight: FontWeight.w500, color: colors.rose),
                       ),
                     ),

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/l10n_providers.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/notifications/notification_service.dart';
 import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_providers.dart';
@@ -50,12 +52,13 @@ class BadgeUnlockService {
     }
 
     final DateTime now = DateTime.now().toUtc();
+    final AppLocalizations l10n = _ref.read(appLocalizationsProvider);
     for (final String key in newlyEarned) {
       await _ref.read(userBadgeDaoProvider).unlockBadge(badgeKey: key, unlockedAt: now);
       final BadgeDefinition definition = badgeByKey(key);
       await _ref.read(notificationServiceProvider).showBadgeUnlocked(
-            name: definition.name,
-            ruleDescription: definition.rule,
+            name: definition.name(l10n),
+            ruleDescription: definition.rule(l10n),
           );
     }
 

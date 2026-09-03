@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../l10n/gen/app_localizations.dart';
 
 /// `UserBadge.badgeKey` değerleri — bir kez yayınlandıktan sonra
 /// değiştirilmemeli (DB'de metin olarak saklanıyor, `SessionType` ile aynı kısıt).
@@ -40,68 +41,76 @@ enum BadgeTint {
 class BadgeDefinition {
   const BadgeDefinition({
     required this.key,
-    required this.name,
-    required this.rule,
     required this.icon,
     required this.tint,
   });
 
   final String key;
-  final String name;
-  final String rule;
   final IconData icon;
   final BadgeTint tint;
+
+  /// Ad ve kural açıklaması ARB'den (SPEC.md §0 kural 7, Faz 13). Katalog
+  /// `const` kalabilsin diye metinler alan değil metot: `AppLocalizations`
+  /// örneği çalışma zamanında geliyor, [key] ise DB'de saklanan sabit kimlik.
+  String name(AppLocalizations l10n) => switch (key) {
+        BadgeKeys.firstSpark => l10n.badgeFirstSparkName,
+        BadgeKeys.focusTorch => l10n.badgeFocusTorchName,
+        BadgeKeys.morningStar => l10n.badgeMorningStarName,
+        BadgeKeys.nightWatch => l10n.badgeNightWatchName,
+        BadgeKeys.weeklyStreak => l10n.badgeWeeklyStreakName,
+        BadgeKeys.marathon => l10n.badgeMarathonName,
+        BadgeKeys.hundredHours => l10n.badgeHundredHoursName,
+        _ => throw ArgumentError.value(key, 'key', 'Bilinmeyen rozet anahtarı'),
+      };
+
+  String rule(AppLocalizations l10n) => switch (key) {
+        BadgeKeys.firstSpark => l10n.badgeFirstSparkRule,
+        BadgeKeys.focusTorch => l10n.badgeFocusTorchRule,
+        BadgeKeys.morningStar => l10n.badgeMorningStarRule,
+        BadgeKeys.nightWatch => l10n.badgeNightWatchRule,
+        BadgeKeys.weeklyStreak => l10n.badgeWeeklyStreakRule,
+        BadgeKeys.marathon => l10n.badgeMarathonRule,
+        BadgeKeys.hundredHours => l10n.badgeHundredHoursRule,
+        _ => throw ArgumentError.value(key, 'key', 'Bilinmeyen rozet anahtarı'),
+      };
 }
 
 /// Prototip `badgeData()` (design/FocusSayac Prototip v2.dc.html satır 485-495)
-/// ile birebir ad/kural/ikon/renk ve sıra — sıra grid yerleşimini belirler.
+/// ile birebir ikon/renk ve sıra — sıra grid yerleşimini belirler. Ad ve kural
+/// metinleri ARB'de ([BadgeDefinition.name] / [BadgeDefinition.rule]).
 const List<BadgeDefinition> kBadgeCatalog = <BadgeDefinition>[
   BadgeDefinition(
     key: BadgeKeys.firstSpark,
-    name: 'İlk Kıvılcım',
-    rule: 'İlk tamamlanan pomodoro',
     icon: PhosphorIconsFill.sparkle,
     tint: BadgeTint.ember,
   ),
   BadgeDefinition(
     key: BadgeKeys.focusTorch,
-    name: 'Odak Meşalesi',
-    rule: 'Tek günde 4 pomodoro',
     icon: PhosphorIconsFill.flame,
     tint: BadgeTint.ember,
   ),
   BadgeDefinition(
     key: BadgeKeys.morningStar,
-    name: 'Sabah Yıldızı',
-    rule: '08:00 öncesi bir seans',
     icon: PhosphorIconsFill.sunHorizon,
     tint: BadgeTint.mint,
   ),
   BadgeDefinition(
     key: BadgeKeys.nightWatch,
-    name: 'Gece Nöbeti',
-    rule: '23:00 sonrası bir seans',
     icon: PhosphorIconsDuotone.moonStars,
     tint: BadgeTint.sky,
   ),
   BadgeDefinition(
     key: BadgeKeys.weeklyStreak,
-    name: 'Haftalık Seri',
-    rule: '7 gün üst üste ≥1 seans',
     icon: PhosphorIconsDuotone.calendarCheck,
     tint: BadgeTint.accent,
   ),
   BadgeDefinition(
     key: BadgeKeys.marathon,
-    name: 'Maraton',
-    rule: 'Tek günde 8 pomodoro',
     icon: PhosphorIconsDuotone.personSimpleRun,
     tint: BadgeTint.rose,
   ),
   BadgeDefinition(
     key: BadgeKeys.hundredHours,
-    name: '100 Saat Kulübü',
-    rule: 'Kümülatif 100 saat odak',
     icon: PhosphorIconsDuotone.trophy,
     tint: BadgeTint.accent,
   ),

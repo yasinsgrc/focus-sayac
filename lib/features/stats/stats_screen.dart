@@ -10,6 +10,7 @@ import '../../core/widgets/bottom_nav_bar.dart';
 import '../../domain/stats/focus_stats.dart';
 import '../../domain/stats/stats_providers.dart';
 import '../../domain/time/duration_formatter.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/ads/banner_ad_slot.dart';
 import 'widgets/weekly_focus_bar_painter.dart';
 
@@ -25,6 +26,7 @@ class StatsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final FocusStats stats = ref.watch(focusStatsProvider);
 
     return Scaffold(
@@ -55,7 +57,7 @@ class StatsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   const SizedBox(height: 8),
-                  Text('TOPLAM ODAK', style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
+                  Text(l10n.statsTotalFocus, style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerLeft,
@@ -65,7 +67,7 @@ class StatsScreen extends ConsumerWidget {
                         stops: AppColors.chromeGradientStops,
                       ).createShader(bounds),
                       child: Text(
-                        _cumulativeText(stats.cumulativeSeconds),
+                        _cumulativeText(l10n, stats.cumulativeSeconds),
                         style: AppTypography.counter(
                           fontSize: 46,
                           color: Colors.white,
@@ -76,7 +78,7 @@ class StatsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Son 7 gün · günlük ortalama ${_averageText(stats.dailyAverageSeconds)}',
+                    l10n.statsWeeklyAverage(_averageText(l10n, stats.dailyAverageSeconds)),
                     style: AppTypography.body(fontSize: 12.5, color: colors.neutral500),
                   ),
                   const SizedBox(height: 20),
@@ -85,7 +87,7 @@ class StatsScreen extends ConsumerWidget {
                     child: RepaintBoundary(
                       child: CustomPaint(
                         size: const Size(double.infinity, _chartHeight),
-                        painter: WeeklyFocusBarPainter(week: stats.lastWeek, colors: colors),
+                        painter: WeeklyFocusBarPainter(week: stats.lastWeek, colors: colors, l10n: l10n),
                       ),
                     ),
                   ),
@@ -94,17 +96,19 @@ class StatsScreen extends ConsumerWidget {
                     children: <Widget>[
                       Expanded(
                         child: _MetricCard(
-                          label: 'EN UZUN SERİ',
+                          label: l10n.statsLongestStreak,
                           value: '${stats.longestStreak}',
-                          unit: ' GÜN',
+                          unit: l10n.statsDaysUnit,
                           valueColor: colors.ember,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: _MetricCard(
-                          label: 'TAMAMLANMA',
-                          value: stats.completionPercent == null ? '—' : '%${stats.completionPercent}',
+                          label: l10n.statsCompletion,
+                          value: stats.completionPercent == null
+                              ? l10n.commonEmptyValue
+                              : l10n.statsCompletionPercent(stats.completionPercent!),
                           valueColor: colors.mint,
                         ),
                       ),
@@ -142,14 +146,16 @@ class StatsScreen extends ConsumerWidget {
   /// Prototipin `42 SAAT` başlığı. Bir saatin altındaki toplamlar `0 SAAT`
   /// olarak yuvarlanmasın diye dakikaya düşer — ilk günün kullanıcısı da
   /// gerçek emeğini görür.
-  String _cumulativeText(int seconds) {
+  String _cumulativeText(AppLocalizations l10n, int seconds) {
     final FocusDurationParts parts = formatFocusDuration(seconds);
-    return parts.hours > 0 ? '${parts.hours} SAAT' : '${parts.minutes} DAKİKA';
+    return parts.hours > 0 ? l10n.statsCumulativeHours(parts.hours) : l10n.statsCumulativeMinutes(parts.minutes);
   }
 
-  String _averageText(int seconds) {
+  String _averageText(AppLocalizations l10n, int seconds) {
     final FocusDurationParts parts = formatFocusDuration(seconds);
-    return parts.hours > 0 ? '${parts.hours} sa ${parts.minutes} dk' : '${parts.minutes} dk';
+    return parts.hours > 0
+        ? l10n.statsAverageHoursMinutes(parts.hours, parts.minutes)
+        : l10n.statsAverageMinutes(parts.minutes);
   }
 }
 
@@ -243,9 +249,9 @@ class _ProductiveWindowCard extends StatelessWidget {
               TextSpan(
                 style: AppTypography.body(fontSize: 12.5, color: colors.neutral300, height: 1.5),
                 children: <InlineSpan>[
-                  const TextSpan(text: 'En verimli aralığın '),
+                  TextSpan(text: AppLocalizations.of(context).statsProductiveWindowPrefix),
                   TextSpan(text: _windowText, style: TextStyle(color: colors.sky)),
-                  TextSpan(text: ' — tamamlanma %${window.completionPercent}.'),
+                  TextSpan(text: AppLocalizations.of(context).statsProductiveWindowSuffix(window.completionPercent)),
                 ],
               ),
             ),

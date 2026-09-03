@@ -9,6 +9,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/consent/consent_service.dart';
 import '../../services/notifications/notification_service.dart';
 import '../../services/storage/app_database.dart';
@@ -74,6 +75,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: colors.bg,
@@ -101,15 +103,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                   ),
                   const SizedBox(height: 30),
                   Text(
-                    'Y2K · ODAK PROTOKOLÜ',
+                    l10n.onboardingKicker,
                     style: AppTypography.kicker(fontSize: 9, color: colors.neutral600),
                   ),
                   const SizedBox(height: 12),
                   _ShimmerTitle(shimmer: _shimmer),
                   const SizedBox(height: 16),
                   Text(
-                    'Sınavına kalan süreyi gör, 25 dakikalık seanslar tut, seriyi kırmadan '
-                    'devam et. Her şey cihazında kalır.',
+                    l10n.onboardingDescription,
                     style: AppTypography.body(fontSize: 15, color: colors.neutral400, height: 1.6),
                   ),
                   const SizedBox(height: 32),
@@ -119,19 +120,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                     // (prototipin `gap:1px` + kapsayıcı arka planı).
                     child: ColoredBox(
                       color: colors.divider,
-                      child: const Column(
+                      child: Column(
                         children: <Widget>[
                           _PermissionRow(
                             icon: PhosphorIconsDuotone.bellRinging,
-                            title: 'Bildirim',
-                            subtitle: 'Seans bitişi ve seri hatırlatması',
+                            title: l10n.onboardingPermissionNotificationTitle,
+                            subtitle: l10n.onboardingPermissionNotificationSubtitle,
                             tint: _PermissionTint.accent,
                           ),
-                          SizedBox(height: 1),
+                          const SizedBox(height: 1),
                           _PermissionRow(
                             icon: PhosphorIconsDuotone.alarm,
-                            title: 'Tam zamanlı alarm',
-                            subtitle: 'Arka planda da doğru anda biter',
+                            title: l10n.onboardingPermissionAlarmTitle,
+                            subtitle: l10n.onboardingPermissionAlarmSubtitle,
                             tint: _PermissionTint.mint,
                           ),
                         ],
@@ -186,7 +187,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                                   mainAxisSize: MainAxisSize.min,
                                   children: <Widget>[
                                     Text(
-                                      'İZİN VER VE BAŞLA',
+                                      l10n.onboardingGrantAndStart,
                                       style: AppTypography.display(
                                         fontSize: 15.5,
                                         weight: FontWeight.w600,
@@ -214,7 +215,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                               await _finish(grantPermissions: false);
                             },
                       child: Text(
-                        'Şimdi değil',
+                        l10n.onboardingNotNow,
                         style: AppTypography.display(
                           fontSize: 13.5,
                           weight: FontWeight.w500,
@@ -294,7 +295,7 @@ class _ShimmerTitle extends StatelessWidget {
         );
       },
       child: Text(
-        'MEŞALE\nSENDE',
+        AppLocalizations.of(context).onboardingTitle,
         style: AppTypography.display(
           fontSize: 42,
           weight: FontWeight.w700,

@@ -1,0 +1,9 @@
+# SPEC.md §2 "Lokalizasyon: flutter_localizations + intl + ARB (tr varsayılan)".
+# Üretilen dosyalar `lib/l10n/gen/` altında ve `.gitignore`'da — depodaki diğer
+# üretilmiş kodla (`*.g.dart`, `*.freezed.dart`) aynı kural.
+arb-dir: lib/l10n
+template-arb-file: app_tr.arb
+output-dir: lib/l10n/gen
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false

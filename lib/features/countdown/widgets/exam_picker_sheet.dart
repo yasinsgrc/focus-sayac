@@ -8,6 +8,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../domain/countdown/countdown_math.dart';
 import '../../../domain/exams/exam_accent.dart';
 import '../../../domain/exams/exam_providers.dart';
+import '../../../l10n/gen/app_localizations.dart';
 import '../../../services/storage/app_database.dart';
 
 /// Ekran 02'nin "SINAV SEÇ" alt sayfası — prototip satır 116-133 birebir.
@@ -26,6 +27,7 @@ class _ExamPickerSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final AsyncValue<List<Exam>> examsAsync = ref.watch(allExamsProvider);
 
     return SafeArea(
@@ -57,9 +59,9 @@ class _ExamPickerSheet extends ConsumerWidget {
               textBaseline: TextBaseline.alphabetic,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Text('SINAV SEÇ', style: AppTypography.display(fontSize: 21, weight: FontWeight.w600, color: colors.text)),
+                Text(l10n.examPickerTitle, style: AppTypography.display(fontSize: 21, weight: FontWeight.w600, color: colors.text)),
                 Text(
-                  'RESMÎ TAKVİMDEN DOĞRULA',
+                  l10n.examPickerVerifyOfficial,
                   style: AppTypography.kicker(fontSize: 8.5, color: colors.neutral600),
                 ),
               ],
@@ -88,7 +90,7 @@ class _ExamPickerSheet extends ConsumerWidget {
                 },
                 icon: Icon(Icons.add, size: 15, color: colors.neutral300),
                 label: Text(
-                  'Kendi sınavımı ekle',
+                  l10n.examPickerAddOwn,
                   style: AppTypography.display(fontSize: 14, weight: FontWeight.w500, color: colors.neutral300),
                 ),
               ),
@@ -176,7 +178,7 @@ class _ExamRow extends StatelessWidget {
                     ),
                   ),
                   TextSpan(
-                    text: 'g',
+                    text: AppLocalizations.of(context).examPickerDaysSuffix,
                     style: AppTypography.display(fontSize: 11, weight: FontWeight.w700, color: tint.withValues(alpha: 0.7)),
                   ),
                 ],

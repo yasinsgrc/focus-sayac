@@ -9,6 +9,7 @@ import '../../core/theme/app_typography.dart';
 import '../../domain/countdown/countdown_math.dart';
 import '../../domain/exams/exam_accent.dart';
 import '../../domain/exams/exam_providers.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
 
@@ -76,6 +77,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final bool canSave = _nameController.text.trim().isNotEmpty && !_saving;
     final int previewDays = daysTo(_dateUtc, DateTime.now().toUtc());
 
@@ -103,7 +105,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  Text('ÖZEL SINAV', style: AppTypography.display(fontSize: 19, weight: FontWeight.w600, color: colors.text)),
+                  Text(l10n.addExamTitle, style: AppTypography.display(fontSize: 19, weight: FontWeight.w600, color: colors.text)),
                 ],
               ),
               const SizedBox(height: 22),
@@ -112,18 +114,18 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      _FieldLabel('SINAV ADI', colors),
+                      _FieldLabel(l10n.addExamNameLabel, colors),
                       const SizedBox(height: 8),
                       _TextField(
                         controller: _nameController,
-                        hint: 'Ehliyet sınavı',
+                        hint: l10n.addExamNameHint,
                         focusedColor: colors.sky,
                         onChanged: (_) => setState(() {}),
                       ),
                       const SizedBox(height: 16),
-                      _FieldLabel('OTURUM ETİKETİ (OPSİYONEL)', colors),
+                      _FieldLabel(l10n.addExamSubtitleLabel, colors),
                       const SizedBox(height: 8),
-                      _TextField(controller: _subtitleController, hint: 'ör. 2. dönem', focusedColor: colors.sky),
+                      _TextField(controller: _subtitleController, hint: l10n.addExamSubtitleHint, focusedColor: colors.sky),
                       const SizedBox(height: 16),
                       Row(
                         children: <Widget>[
@@ -132,7 +134,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: <Widget>[
-                                _FieldLabel('TARİH', colors),
+                                _FieldLabel(l10n.addExamDateLabel, colors),
                                 const SizedBox(height: 8),
                                 _PickerField(
                                   text: DateFormat('d MMMM y', 'tr').format(_date),
@@ -149,7 +151,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: <Widget>[
-                                _FieldLabel('SAAT', colors),
+                                _FieldLabel(l10n.addExamTimeLabel, colors),
                                 const SizedBox(height: 8),
                                 _PickerField(
                                   text: _timeOfDayText,
@@ -163,7 +165,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      _FieldLabel('VURGU RENGİ', colors),
+                      _FieldLabel(l10n.addExamAccentLabel, colors),
                       const SizedBox(height: 10),
                       Row(
                         children: <Widget>[
@@ -193,7 +195,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                             const SizedBox(width: 11),
                             Expanded(
                               child: Text(
-                                'Özel sınavlar her zaman öncelikli gösterilir; paketle gelen tarih tablosunu ezmez.',
+                                l10n.addExamPriorityNote,
                                 style: AppTypography.body(fontSize: 12, color: colors.neutral300),
                               ),
                             ),
@@ -215,12 +217,12 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                       TextSpan(
                         style: AppTypography.body(fontSize: 12.5, color: colors.neutral300),
                         children: <InlineSpan>[
-                          const TextSpan(text: 'Önizleme: '),
+                          TextSpan(text: l10n.addExamPreviewPrefix),
                           TextSpan(
-                            text: '$previewDays gün',
+                            text: l10n.addExamPreviewDays(previewDays),
                             style: AppTypography.display(fontSize: 15, weight: FontWeight.w700, color: colors.text),
                           ),
-                          const TextSpan(text: ' kaldı'),
+                          TextSpan(text: l10n.addExamPreviewSuffix),
                         ],
                       ),
                     ),
@@ -252,7 +254,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                             Icon(PhosphorIconsRegular.check, size: 17, color: canSave ? colors.mint : colors.neutral600),
                             const SizedBox(width: 9),
                             Text(
-                              'KAYDET',
+                              l10n.addExamSave,
                               style: AppTypography.display(
                                 fontSize: 15,
                                 weight: FontWeight.w600,

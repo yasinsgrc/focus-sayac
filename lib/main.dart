@@ -6,10 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/l10n/l10n_providers.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/time/app_day.dart';
 import 'domain/streak/streak_calculator.dart';
+import 'l10n/gen/app_localizations.dart';
 import 'services/ads/ad_service.dart';
 import 'services/consent/consent_service.dart';
 import 'services/notifications/notification_service.dart';
@@ -30,7 +32,12 @@ Future<void> main() async {
   unawaited(
     ExamSourceService(database: database, prefs: prefs).syncIfNeeded(),
   );
+  // Bildirim metinleri de ARB'den (SPEC.md Ekran 12 "metinler birebir ARB'ye").
+  // Servisin bağlamı yok, bu yüzden `AppLocalizations` örneği kurulumda
+  // veriliyor — `appLocalizationsProvider` ile aynı kaynak.
+  final AppLocalizations l10n = lookupAppLocalizations(kAppLocale);
   final NotificationService notificationService = NotificationService(
+    l10n: l10n,
     readPreferences: () => _readNotificationPreferences(database),
   );
   // Yalnızca platform kanalını açar. İzinler (POST_NOTIFICATIONS →
@@ -111,9 +118,15 @@ class FocusSayacApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final GoRouter router = ref.watch(appRouterProvider);
     return MaterialApp.router(
-      title: 'FocusSayaç',
+      onGenerateTitle: (BuildContext context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      // Tek dil sabitleniyor: cihaz Türkçe değilken de uygulama Türkçe kalır
+      // (ARB'de yalnızca `tr` var). Delegeler Material'ın kendi metinlerini
+      // (tarih/saat seçici, `showDatePicker`) de Türkçeye çeviriyor.
+      locale: kAppLocale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: router,
     );
   }

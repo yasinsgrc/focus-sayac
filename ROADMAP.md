@@ -1,9 +1,9 @@
 # FocusSayaç — Kalan İş Sırası
 
-Durum: **Faz 0-12 bitti** (geri sayım, sınav seçimi, odak/mola durum
+Durum: **Faz 0-13 bitti** (geri sayım, sınav seçimi, odak/mola durum
 makinesi, bildirimler, rozetler, başarı kartı + export, istatistik,
-onboarding + izinler + UMP, reklamlar + satın alma, ayarlar).
-`flutter analyze` 0/0, 121 test geçiyor.
+onboarding + izinler + UMP, reklamlar + satın alma, ayarlar, ARB
+yerelleştirme). `flutter analyze` 0/0, 126 test geçiyor.
 Kaynak plan: `SPEC.md` §8. Kararlar: `DECISIONS.md`.
 
 Aşağıdaki maddeler **teste/yayına çıkma önceliğine** göre sıralı. Her madde tek
@@ -143,14 +143,35 @@ ile değiştirilebilir).
 
 ---
 
-## 7. ARB yerelleştirme (SPEC Faz 13) 🟡 yayın zorunlu
+## 7. ARB yerelleştirme (SPEC Faz 13) ✅ bitti
 
-Tüm metinler şu an kodda gömülü. Son ekran bittikten **sonra** yapılmalı,
-yoksa iki kez çevrilir.
+Tüm kullanıcı metinleri `lib/l10n/app_tr.arb`de (tek dil `tr`); üretim
+`l10n.yaml` → `lib/l10n/gen/` (`.gitignore`'da, `*.g.dart` ile aynı kural).
+`pubspec.yaml`a `flutter_localizations` + `flutter: generate: true` eklendi,
+`intl` kısıtı SDK pini yüzünden `^0.20.2`ye indi.
 
-- Ekran 12'nin 4 bildirim metni **birebir** ARB'ye.
-- Ekran 09'un "molada dene" ipuçları statik katalog → ARB, her molada rastgele 2.
-- Bitişte grep ile doğrula: kodda hard-coded Türkçe metin kalmamalı (SPEC DoD).
+Erişim iki yollu ama tek kaynak: widget'lar `AppLocalizations.of(context)`,
+bağlamsız katmanlar (`NotificationService`, `BadgeUnlockService`)
+`appLocalizationsProvider` (`core/l10n/l10n_providers.dart`).
+`MaterialApp.locale = kAppLocale` ile dil sabit; delegeler Ekran 11'in
+tarih/saat seçicilerini de Türkçeleştiriyor (önce İngilizcelerdi).
+
+- Ekran 12'nin 4 bildirim metni **birebir** ARB'de; kanal ad/açıklamaları da
+  (kimlikler değişmedi — Android kanalı ilk kimlikle tanıyor).
+- Ekran 09'un ipuçları statik katalog → ARB (`domain/pomodoro/break_tips.dart`,
+  6 ipucu), her molada rastgele 2. Tohum molanın `startedAtUtc`'si: ekran
+  saniyede bir çizildiği için `Random()` ipuçlarını titretirdi
+  (`test/domain/pomodoro/break_tips_test.dart`, +5 test).
+- Rozet ad/kuralı ve kart şablonu etiketi alan değil metot
+  (`definition.name(l10n)`, `template.label(l10n)`) — katalog `const` kalıyor,
+  DB'de yine yalnızca `badgeKey`, veri göçü gerekmedi.
+- Testler `localizedTestApp` (`test/support/`) üzerinden çiziyor; delegeler
+  `FocusSayacApp` ile birebir aynı.
+
+**DoD karşılandı:** grep taraması kodda kullanıcıya görünen hiçbir Türkçe metin
+bulmuyor. Kalan 13 literal geliştirici hatası (`UnimplementedError` /
+`ArgumentError`), `Space Grotesk` font adı ve `turkish_suffix.dart`ın ünlü
+uyumu verisi — hiçbiri ekrana çıkmıyor. Kararlar: `DECISIONS.md` "Faz 13".
 
 ---
 
@@ -186,6 +207,6 @@ yoksa iki kez çevrilir.
 - [x] Kart export'u tam 1080×1920
 - [ ] Odak ekranı `--profile` modda sürekli 60 fps *(madde 8)*
 - [ ] Odak seansında dekoratif animasyonlar duruyor *(madde 8)*
-- [ ] Kodda hard-coded Türkçe metin yok *(madde 7)*
+- [x] Kodda hard-coded Türkçe metin yok
 - [ ] Testler geçiyor
 - [ ] `DECISIONS.md` her kararı gerekçesiyle içeriyor

@@ -8,7 +8,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
-import 'package:focussayac/core/theme/app_theme.dart';
 import 'package:focussayac/features/settings/settings_screen.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
@@ -16,6 +15,8 @@ import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
+
+import '../../support/localized_test_app.dart';
 
 /// `testWidgets` gövdesi sahte bir saat altında koşuyor; drift sorguları ve
 /// `onCreate`in `rootBundle` okuması ise **gerçek** zamanda tamamlanıyor.
@@ -74,7 +75,7 @@ Future<AppDatabase> _pumpSettings(WidgetTester tester) async {
   final SharedPreferences prefs = await SharedPreferences.getInstance();
 
   await tester.pumpWidget(
-    _appWith(database, prefs, MaterialApp(theme: buildAppTheme(), home: const SettingsScreen())),
+    _appWith(database, prefs, localizedTestApp(const SettingsScreen())),
   );
   await _settle(tester);
   return database;
@@ -253,7 +254,7 @@ void main() {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
-      _appWith(database, prefs, MaterialApp(theme: buildAppTheme(), home: const SettingsScreen())),
+      _appWith(database, prefs, localizedTestApp(const SettingsScreen())),
     );
     await _settle(tester);
 

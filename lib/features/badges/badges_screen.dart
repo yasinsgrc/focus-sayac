@@ -10,6 +10,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_pill_button.dart';
 import '../../domain/badges/badge_definition.dart';
 import '../../domain/badges/badge_providers.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/storage/app_database.dart';
 
 /// Ekran 04 — rozetler. Prototip satır 181-212 birebir. Bu ekranda alt
@@ -55,7 +56,7 @@ class BadgesScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   const SizedBox(height: 8),
-                  Text('ROZETLER', style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text)),
+                  Text(AppLocalizations.of(context).badgesTitle, style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text)),
                   const SizedBox(height: 14),
                   Row(
                     children: <Widget>[
@@ -138,6 +139,7 @@ class _BadgeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final Color tint = definition.tint.resolve(colors);
     final Color iconBg = unlocked ? tint.withValues(alpha: 0.32) : const Color(0x0DFFFFFF);
     final Color iconColor = unlocked ? tint : colors.neutral700;
@@ -172,9 +174,9 @@ class _BadgeCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(definition.name, style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w600, color: titleColor)),
+              Text(definition.name(l10n), style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w600, color: titleColor)),
               const SizedBox(height: 12),
-              Text(definition.rule, style: AppTypography.body(fontSize: 11.5, color: colors.neutral600, height: 1.45)),
+              Text(definition.rule(l10n), style: AppTypography.body(fontSize: 11.5, color: colors.neutral600, height: 1.45)),
             ],
           ),
         ),
@@ -206,10 +208,12 @@ class _BadgeUnlockDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final Color tint = definition.tint.resolve(colors);
     final Color unlockColor = unlocked ? tint : colors.neutral500;
     final Color glow = unlocked ? tint.withValues(alpha: 0.34) : colors.neutral500.withValues(alpha: 0.24);
-    final String ruleText = unlocked ? 'Açıldı · ${definition.rule}' : 'Nasıl açılır: ${definition.rule}';
+    final String ruleText =
+        unlocked ? l10n.badgeUnlockedRule(definition.rule(l10n)) : l10n.badgeLockedRule(definition.rule(l10n));
 
     return Dialog(
       insetPadding: const EdgeInsets.all(30),
@@ -250,7 +254,7 @@ class _BadgeUnlockDialog extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              definition.name,
+              definition.name(l10n),
               textAlign: TextAlign.center,
               style: AppTypography.display(fontSize: 24, weight: FontWeight.w700, color: colors.text),
             ),
@@ -262,7 +266,7 @@ class _BadgeUnlockDialog extends StatelessWidget {
             ),
             const SizedBox(height: 26),
             AppPillButton(
-              label: 'BAŞARI KARTINI OLUŞTUR',
+              label: l10n.badgeCreateStoryCard,
               roleColor: unlockColor,
               roleDeepColor: glow,
               // Dialog önce kapanıyor: açık kalsaydı Ekran 05'ten geri
@@ -277,7 +281,7 @@ class _BadgeUnlockDialog extends StatelessWidget {
               height: 44,
               child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Kapat', style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral500)),
+                child: Text(l10n.commonClose, style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral500)),
               ),
             ),
           ],

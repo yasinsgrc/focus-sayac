@@ -1,0 +1,351 @@
+{
+  "@@locale": "tr",
+
+  "appTitle": "FocusSayaç",
+  "commonClose": "Kapat",
+  "commonEmptyValue": "—",
+
+  "navCountdown": "SAYAÇ",
+  "navStats": "VERİLER",
+
+  "onboardingKicker": "Y2K · ODAK PROTOKOLÜ",
+  "onboardingTitle": "MEŞALE\nSENDE",
+  "onboardingDescription": "Sınavına kalan süreyi gör, 25 dakikalık seanslar tut, seriyi kırmadan devam et. Her şey cihazında kalır.",
+  "onboardingPermissionNotificationTitle": "Bildirim",
+  "onboardingPermissionNotificationSubtitle": "Seans bitişi ve seri hatırlatması",
+  "onboardingPermissionAlarmTitle": "Tam zamanlı alarm",
+  "onboardingPermissionAlarmSubtitle": "Arka planda da doğru anda biter",
+  "onboardingGrantAndStart": "İZİN VER VE BAŞLA",
+  "onboardingNotNow": "Şimdi değil",
+
+  "countdownTarget": "HEDEF",
+  "countdownDaysLeft": "GÜN KALDI",
+  "countdownToday": "BUGÜN",
+  "countdownStreakBadge": "{days} gün seri",
+  "@countdownStreakBadge": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "countdownHoursUnit": " SA ",
+  "countdownMinutesUnit": " DK",
+  "countdownFocusButton": "ODAKLAN",
+  "countdownFocusButtonWithMinutes": "{minutes} DAKİKA ODAKLAN",
+  "@countdownFocusButtonWithMinutes": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "countdownStreakHintPrefix": "Hedefe 1 pomodoro kaldı — serin ",
+  "countdownStreakHintValue": "{streak}'e",
+  "@countdownStreakHintValue": {
+    "placeholders": { "streak": { "type": "int" } }
+  },
+  "countdownStreakHintSuffix": " çıkar.",
+  "countdownExamLoadFailedTitle": "SINAV YÜKLENEMEDİ",
+  "countdownExamLoadFailedMessage": "Kayıtlı sınavlar okunamadı. Listeden yeniden seçmeyi deneyebilirsin.",
+  "countdownNoExamTitle": "HEDEF SEÇİLMEDİ",
+  "countdownNoExamMessage": "Geri sayımın başlaması için bir sınav seç ya da kendi hedefini ekle.",
+  "countdownPickExam": "SINAV SEÇ",
+
+  "examPickerTitle": "SINAV SEÇ",
+  "examPickerVerifyOfficial": "RESMÎ TAKVİMDEN DOĞRULA",
+  "examPickerAddOwn": "Kendi sınavımı ekle",
+  "examPickerDaysSuffix": "g",
+
+  "examExpiredTitle": "SINAVIN GEÇTİ",
+  "examExpiredSubtitle": "{year} {examName} geride kaldı. Yeni bir hedef seç, sayaç oradan devam etsin.",
+  "@examExpiredSubtitle": {
+    "placeholders": {
+      "year": { "type": "String" },
+      "examName": { "type": "String" }
+    }
+  },
+  "examExpiredPickNew": "YENİ SINAV SEÇ",
+  "examExpiredDataKept": "Odak geçmişin ve rozetlerin korunur.",
+
+  "addExamTitle": "ÖZEL SINAV",
+  "addExamNameLabel": "SINAV ADI",
+  "addExamNameHint": "Ehliyet sınavı",
+  "addExamSubtitleLabel": "OTURUM ETİKETİ (OPSİYONEL)",
+  "addExamSubtitleHint": "ör. 2. dönem",
+  "addExamDateLabel": "TARİH",
+  "addExamTimeLabel": "SAAT",
+  "addExamAccentLabel": "VURGU RENGİ",
+  "addExamPriorityNote": "Özel sınavlar her zaman öncelikli gösterilir; paketle gelen tarih tablosunu ezmez.",
+  "addExamPreviewPrefix": "Önizleme: ",
+  "addExamPreviewDays": "{days} gün",
+  "@addExamPreviewDays": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "addExamPreviewSuffix": " kaldı",
+  "addExamSave": "KAYDET",
+
+  "focusCycleBadge": "ODAK {position}/4",
+  "@focusCycleBadge": {
+    "placeholders": { "position": { "type": "int" } }
+  },
+  "focusRunning": "odak sürüyor",
+  "focusPaused": "duraklatıldı",
+  "focusHintRunning": "Ekran açık kalır · bitişte bildirim kurulu",
+  "focusHintPaused": "Meşale soldu — devam etmek için oynat",
+  "focusAdHidden": "reklam gizli",
+
+  "breakLong": "UZUN MOLA",
+  "breakShort": "KISA MOLA",
+  "breakPomodoroDone": "{position}. pomodoro bitti",
+  "@breakPomodoroDone": {
+    "placeholders": { "position": { "type": "int" } }
+  },
+  "breakRunning": "mola sürüyor",
+  "breakTipsHeading": "molada dene",
+  "breakExtend": "5 dk ekle",
+  "breakReturnToFocus": "ODAĞA DÖN",
+  "breakTipLookAway": "Ekrana bakma — 20 saniye uzağa odaklan",
+  "breakTipDrinkWater": "Bir bardak su iç",
+  "breakTipStandUp": "Ayağa kalk, birkaç adım at",
+  "breakTipBreathe": "Derin nefes al, omuzlarını gevşet",
+  "breakTipStretch": "Boynunu ve bileklerini esnet",
+  "breakTipCloseEyes": "Gözlerini kapat, otuz saniye hiçbir şey yapma",
+
+  "cancelDialogTitle": "SERİYİ KIRIYORSUN",
+  "cancelDialogBody": "{elapsed} odaklandın. Şimdi bırakırsan bu seans kaydedilmez.",
+  "@cancelDialogBody": {
+    "placeholders": { "elapsed": { "type": "String" } }
+  },
+  "cancelDialogBodyWithStreak": "{elapsed} odaklandın. Şimdi bırakırsan bu seans kaydedilmez ve {streak} günlük serin risk altına girer.",
+  "@cancelDialogBodyWithStreak": {
+    "placeholders": {
+      "elapsed": { "type": "String" },
+      "streak": { "type": "int" }
+    }
+  },
+  "cancelDialogRemaining": "{remaining} kaldı — molaya kadar dayanabilirsin.",
+  "@cancelDialogRemaining": {
+    "placeholders": { "remaining": { "type": "String" } }
+  },
+  "cancelDialogKeepGoing": "DEVAM ET",
+  "cancelDialogConfirm": "Seansı iptal et",
+
+  "durationMinutesSeconds": "{minutes} dakika {seconds} saniye",
+  "@durationMinutesSeconds": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "seconds": { "type": "int" }
+    }
+  },
+  "durationHoursMinutes": "{hours} saat {minutes} dakika",
+  "@durationHoursMinutes": {
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  },
+  "durationHours": "{hours} saat",
+  "@durationHours": {
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "durationMinutes": "{minutes} dakika",
+  "@durationMinutes": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+
+  "badgesTitle": "ROZETLER",
+  "badgeUnlockedRule": "Açıldı · {rule}",
+  "@badgeUnlockedRule": {
+    "placeholders": { "rule": { "type": "String" } }
+  },
+  "badgeLockedRule": "Nasıl açılır: {rule}",
+  "@badgeLockedRule": {
+    "placeholders": { "rule": { "type": "String" } }
+  },
+  "badgeCreateStoryCard": "BAŞARI KARTINI OLUŞTUR",
+  "badgeFirstSparkName": "İlk Kıvılcım",
+  "badgeFirstSparkRule": "İlk tamamlanan pomodoro",
+  "badgeFocusTorchName": "Odak Meşalesi",
+  "badgeFocusTorchRule": "Tek günde 4 pomodoro",
+  "badgeMorningStarName": "Sabah Yıldızı",
+  "badgeMorningStarRule": "08:00 öncesi bir seans",
+  "badgeNightWatchName": "Gece Nöbeti",
+  "badgeNightWatchRule": "23:00 sonrası bir seans",
+  "badgeWeeklyStreakName": "Haftalık Seri",
+  "badgeWeeklyStreakRule": "7 gün üst üste ≥1 seans",
+  "badgeMarathonName": "Maraton",
+  "badgeMarathonRule": "Tek günde 8 pomodoro",
+  "badgeHundredHoursName": "100 Saat Kulübü",
+  "badgeHundredHoursRule": "Kümülatif 100 saat odak",
+
+  "storyCardTitle": "BAŞARI KARTI",
+  "storyCardTemplateNightTorch": "GECE MEŞALESİ",
+  "storyCardTemplateMinimal": "MİNİMAL",
+  "storyCardTemplateStreak": "SERİ",
+  "storyCardShare": "PAYLAŞ",
+  "storyCardSave": "Kaydet",
+  "storyCardCopy": "Kopyala",
+  "storyCardExportSize": "1080 × 1920 PNG",
+  "storyCardShareFailed": "Kart paylaşılamadı.",
+  "storyCardSaved": "Kart galeriye kaydedildi.",
+  "storyCardSavePermissionDenied": "Galeriye kaydetmek için izin gerekiyor.",
+  "storyCardSaveFailed": "Kart kaydedilemedi.",
+  "storyCardCopied": "Kart panoya kopyalandı.",
+  "storyCardCopyFailed": "Kart kopyalanamadı.",
+  "storyCardTodayTag": "BUGÜNÜN ODAĞI",
+  "storyCardTodayLine": "Bugün {duration} odaklandım.",
+  "@storyCardTodayLine": {
+    "placeholders": { "duration": { "type": "String" } }
+  },
+  "storyCardExamLine": "{examName}{suffix} {days} gün kaldı",
+  "@storyCardExamLine": {
+    "placeholders": {
+      "examName": { "type": "String" },
+      "suffix": { "type": "String" },
+      "days": { "type": "int" }
+    }
+  },
+  "storyCardTargetTag": "HEDEF",
+  "storyCardNoTargetLine": "hedef seçilmedi.",
+  "storyCardDaysLeftLine": "gün kaldı.",
+  "storyCardStreakTag": "SERİ",
+  "storyCardStreakLine": "gün üst üste odaklandım.",
+  "storyCardStreakZeroLine": "Bugün bir pomodoro seriyi başlatır.",
+  "storyCardStreakNextLine": "Yarın {next}{suffix} çıkıyor",
+  "@storyCardStreakNextLine": {
+    "placeholders": {
+      "next": { "type": "int" },
+      "suffix": { "type": "String" }
+    }
+  },
+
+  "statsTotalFocus": "TOPLAM ODAK",
+  "statsCumulativeHours": "{hours} SAAT",
+  "@statsCumulativeHours": {
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "statsCumulativeMinutes": "{minutes} DAKİKA",
+  "@statsCumulativeMinutes": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "statsWeeklyAverage": "Son 7 gün · günlük ortalama {average}",
+  "@statsWeeklyAverage": {
+    "placeholders": { "average": { "type": "String" } }
+  },
+  "statsAverageHoursMinutes": "{hours} sa {minutes} dk",
+  "@statsAverageHoursMinutes": {
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  },
+  "statsAverageMinutes": "{minutes} dk",
+  "@statsAverageMinutes": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "statsLongestStreak": "EN UZUN SERİ",
+  "statsDaysUnit": " GÜN",
+  "statsCompletion": "TAMAMLANMA",
+  "statsCompletionPercent": "%{percent}",
+  "@statsCompletionPercent": {
+    "placeholders": { "percent": { "type": "int" } }
+  },
+  "statsProductiveWindowPrefix": "En verimli aralığın ",
+  "statsProductiveWindowSuffix": " — tamamlanma %{percent}.",
+  "@statsProductiveWindowSuffix": {
+    "placeholders": { "percent": { "type": "int" } }
+  },
+  "statsBarHours": "{hours}s",
+  "@statsBarHours": {
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "statsBarHoursMinutes": "{hours}s {minutes}",
+  "@statsBarHoursMinutes": {
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  },
+  "statsWeekdayMon": "Pzt",
+  "statsWeekdayTue": "Sal",
+  "statsWeekdayWed": "Çar",
+  "statsWeekdayThu": "Per",
+  "statsWeekdayFri": "Cum",
+  "statsWeekdaySat": "Cmt",
+  "statsWeekdaySun": "Paz",
+
+  "settingsTitle": "AYARLAR",
+  "settingsLoadError": "Ayarlar okunamadı.",
+  "settingsDurationsSection": "SÜRELER",
+  "settingsFocusDuration": "Odak",
+  "settingsShortBreak": "Kısa mola",
+  "settingsLongBreak": "Uzun mola",
+  "settingsMinutesValue": "{minutes} dk",
+  "@settingsMinutesValue": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "settingsNotifications": "Bildirimler",
+  "settingsSound": "Sesli uyarı",
+  "settingsHaptics": "Titreşim",
+  "settingsStreakReminder": "Seri hatırlatması",
+  "settingsExamSelection": "Sınav seçimi",
+  "settingsNoExamSelected": "Seçilmedi",
+  "settingsDayStartsAt": "Gün 04:00'te başlar",
+  "settingsRateApp": "Uygulamayı değerlendir",
+  "settingsAbout": "Hakkında",
+  "settingsAboutTitle": "HAKKINDA",
+  "settingsAboutBody": "FocusSayaç, sınavına kalan günü ve odak sürelerini tek yerde tutan bağımsız bir çalışma aracıdır. ÖSYM, MEB veya resmî bir kurumla bağlantılı değildir; sınav tarihleri resmî takvimden doğrulanmalıdır.",
+  "settingsPrivacy": "Gizlilik politikası",
+  "settingsPrivacyTitle": "GİZLİLİK POLİTİKASI",
+  "settingsPrivacyBody": "FocusSayaç hesap açmanı istemez ve kişisel veri toplamaz. Sınavların, odak geçmişin, rozetlerin ve ayarların yalnızca bu cihazda, uygulamanın kendi veritabanında saklanır — hiçbiri sunucuya gönderilmez. Uygulamayı kaldırdığında bu veriler de silinir.",
+  "settingsResetData": "Verileri sıfırla",
+  "settingsDisclaimer": "Bağımsız bir çalışma aracıdır; ÖSYM, MEB veya resmî bir kurumla bağlantılı değildir.",
+  "settingsOn": "Açık",
+  "settingsOff": "Kapalı",
+  "settingsStoreOpenFailed": "Mağaza sayfası açılamadı.",
+  "settingsResetDone": "Odak geçmişin ve rozetlerin sıfırlandı.",
+  "settingsRemoveAds": "Reklamları kaldır",
+  "settingsComingSoon": "YAKINDA",
+  "settingsResetDialogTitle": "VERİLER SİLİNECEK",
+  "settingsResetDialogBody": "Odak geçmişin ve açılmış rozetlerin kalıcı olarak silinir, serin sıfırlanır. Sınavların ve ayarların olduğu gibi kalır. Bu işlem geri alınamaz.",
+  "settingsResetDialogCancel": "VAZGEÇ",
+
+  "notificationChannelSessionEndName": "Seans bitişi",
+  "notificationChannelSessionEndDescription": "Odak süresi dolduğunda gönderilir.",
+  "notificationChannelSessionEndSilentName": "Seans bitişi (sessiz)",
+  "notificationChannelSessionEndSilentDescription": "Odak süresi dolduğunda sessiz gönderilir.",
+  "notificationChannelOngoingName": "Odak sürüyor",
+  "notificationChannelOngoingDescription": "Odak seansı sürerken gösterilen kalıcı bildirim.",
+  "notificationChannelStreakRiskName": "Seri riski",
+  "notificationChannelStreakRiskDescription": "Günlük seri kapanmadan önce gönderilen hatırlatma.",
+  "notificationChannelStreakRiskSilentName": "Seri riski (sessiz)",
+  "notificationChannelStreakRiskSilentDescription": "Günlük seri kapanmadan önce sessiz gönderilen hatırlatma.",
+  "notificationChannelBadgeName": "Yeni rozet",
+  "notificationChannelBadgeDescription": "Bir rozet açıldığında gönderilir.",
+  "notificationChannelBadgeSilentName": "Yeni rozet (sessiz)",
+  "notificationChannelBadgeSilentDescription": "Bir rozet açıldığında sessiz gönderilir.",
+
+  "notificationSessionEndTitle": "Seans tamamlandı",
+  "notificationSessionEndBody": "{focusMinutes} dakika odak bitti. Meşalen büyüdü — {breakMinutes} dakika mola vakti.",
+  "@notificationSessionEndBody": {
+    "placeholders": {
+      "focusMinutes": { "type": "int" },
+      "breakMinutes": { "type": "int" }
+    }
+  },
+  "notificationBreakEndTitle": "Mola bitti",
+  "notificationBreakEndBody": "{breakMinutes} dakika mola bitti. Meşaleyi yeniden yakmaya hazır mısın?",
+  "@notificationBreakEndBody": {
+    "placeholders": { "breakMinutes": { "type": "int" } }
+  },
+  "notificationOngoingTitle": "Odak · {position}. pomodoro",
+  "@notificationOngoingTitle": {
+    "placeholders": { "position": { "type": "int" } }
+  },
+  "notificationStreakRiskTitle": "Serin risk altında",
+  "notificationStreakRiskBody": "{streak} günlük seri için bugün 1 pomodoro yeter. Gün 04:00'te kapanıyor.",
+  "@notificationStreakRiskBody": {
+    "placeholders": { "streak": { "type": "int" } }
+  },
+  "notificationBadgeTitle": "Yeni rozet: {name}",
+  "@notificationBadgeTitle": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "notificationBadgeBody": "{rule} Başarı kartını paylaş.",
+  "@notificationBadgeBody": {
+    "placeholders": { "rule": { "type": "String" } }
+  }
+}

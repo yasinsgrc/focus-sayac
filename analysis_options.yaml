@@ -22,6 +22,8 @@ analyzer:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - "**/*.gr.dart"
+    # `flutter gen-l10n` çıktısı — diğer üretilmiş kodla aynı kural.
+    - "lib/l10n/gen/**"
 
 linter:
   rules:

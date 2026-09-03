@@ -5,18 +5,30 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/stats/focus_stats.dart';
+import '../../../l10n/gen/app_localizations.dart';
 
-/// Türkçe kısa gün adları, `DateTime.weekday - 1` ile indekslenir
-/// (prototipin `dayNames` dizisi birebir). `intl` üzerinden üretmek yerine
-/// sabit liste: chart'ın `initializeDateFormatting` çağrılmadan da doğru
-/// çizilmesi gerekiyor. Faz 13'te bu liste de ARB'ye taşınacak.
-const List<String> kShortDayNames = <String>['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+/// Kısa gün adları, `DateTime.weekday - 1` ile indekslenir (prototipin
+/// `dayNames` dizisi birebir). `intl`in `DateFormat.E` biçimlendiricisi yerine
+/// ARB kataloğu: chart'ın `initializeDateFormatting` çağrılmadan da doğru
+/// çizilmesi gerekiyor (Faz 9 kararı) ve SPEC.md §0 kural 7 metinleri ARB'de
+/// istiyor.
+List<String> shortDayNames(AppLocalizations l10n) => <String>[
+      l10n.statsWeekdayMon,
+      l10n.statsWeekdayTue,
+      l10n.statsWeekdayWed,
+      l10n.statsWeekdayThu,
+      l10n.statsWeekdayFri,
+      l10n.statsWeekdaySat,
+      l10n.statsWeekdaySun,
+    ];
 
 /// Prototipin sütun üstündeki değer etiketi: `1s 35` / `2s` / veri yoksa `—`.
-String formatBarValue(int minutes) {
-  if (minutes <= 0) return '—';
+String formatBarValue(AppLocalizations l10n, int minutes) {
+  if (minutes <= 0) return l10n.commonEmptyValue;
   final int remainder = minutes % 60;
-  return '${minutes ~/ 60}s${remainder > 0 ? ' $remainder' : ''}';
+  return remainder > 0
+      ? l10n.statsBarHoursMinutes(minutes ~/ 60, remainder)
+      : l10n.statsBarHours(minutes ~/ 60);
 }
 
 /// Ekran 06'nın 7 günlük bar chart'ı (SPEC.md Faz 9 "`CustomPainter` bar
@@ -24,11 +36,15 @@ String formatBarValue(int minutes) {
 /// ölçeklenir — sabit bir tavan, az çalışılan bir haftada tüm sütunları
 /// okunmaz biçimde kısaltırdı.
 class WeeklyFocusBarPainter extends CustomPainter {
-  const WeeklyFocusBarPainter({required this.week, required this.colors});
+  const WeeklyFocusBarPainter({required this.week, required this.colors, required this.l10n});
 
   /// Eskiden yeniye 7 gün; son eleman bugün (bkz. [FocusStats.lastWeek]).
   final List<DailyFocus> week;
   final AppColors colors;
+
+  /// Gün adları ve sütun değer etiketleri ARB'den; `CustomPainter`ın
+  /// `BuildContext`i olmadığı için çağıran (`StatsScreen`) geçiriyor.
+  final AppLocalizations l10n;
 
   /// Prototipteki sütun aralığı / köşe yarıçapı / en kısa sütun.
   static const double _barGap = 11;
@@ -42,6 +58,7 @@ class WeeklyFocusBarPainter extends CustomPainter {
 
     final int maxMinutes = week.fold(0, (int max, DailyFocus d) => math.max(max, d.minutes));
     final double barWidth = (size.width - _barGap * (week.length - 1)) / week.length;
+    final List<String> dayNames = shortDayNames(l10n);
 
     final TextPainter valuePainter = TextPainter(textDirection: TextDirection.ltr);
     final TextPainter dayPainter = TextPainter(textDirection: TextDirection.ltr);
@@ -49,10 +66,10 @@ class WeeklyFocusBarPainter extends CustomPainter {
     // Etiket yükseklikleri sütun alanını belirlediği için önce bir kez ölçülür
     // (iki etiket de tek satır ve aynı fontta, ölçüm sütuna göre değişmez).
     valuePainter
-      ..text = TextSpan(text: '—', style: _valueStyle(colors.neutral600))
+      ..text = TextSpan(text: l10n.commonEmptyValue, style: _valueStyle(colors.neutral600))
       ..layout();
     dayPainter
-      ..text = TextSpan(text: kShortDayNames.first, style: _dayStyle(colors.neutral600))
+      ..text = TextSpan(text: dayNames.first, style: _dayStyle(colors.neutral600))
       ..layout();
     final double barAreaHeight =
         size.height - valuePainter.height - dayPainter.height - _labelGap * 2;
@@ -89,13 +106,13 @@ class WeeklyFocusBarPainter extends CustomPainter {
       );
 
       valuePainter
-        ..text = TextSpan(text: formatBarValue(day.minutes), style: _valueStyle(colors.neutral600))
+        ..text = TextSpan(text: formatBarValue(l10n, day.minutes), style: _valueStyle(colors.neutral600))
         ..layout();
       valuePainter.paint(canvas, Offset(left + (barWidth - valuePainter.width) / 2, 0));
 
       dayPainter
         ..text = TextSpan(
-          text: kShortDayNames[day.dayKey.weekday - 1].toUpperCase(),
+          text: dayNames[day.dayKey.weekday - 1].toUpperCase(),
           style: _dayStyle(isToday ? colors.ember : colors.neutral600),
         )
         ..layout();
@@ -114,7 +131,9 @@ class WeeklyFocusBarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant WeeklyFocusBarPainter oldDelegate) {
-    if (oldDelegate.colors != colors || oldDelegate.week.length != week.length) return true;
+    if (oldDelegate.colors != colors || oldDelegate.l10n != l10n || oldDelegate.week.length != week.length) {
+      return true;
+    }
     for (int i = 0; i < week.length; i++) {
       if (oldDelegate.week[i].minutes != week[i].minutes ||
           oldDelegate.week[i].dayKey != week[i].dayKey) {

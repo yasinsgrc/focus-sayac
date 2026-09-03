@@ -10,10 +10,12 @@ import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_pill_button.dart';
+import '../../domain/pomodoro/break_tips.dart';
 import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_math.dart';
 import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
+import '../../l10n/gen/app_localizations.dart';
 import 'widgets/flame_widget.dart';
 import 'widgets/session_ring_painter.dart';
 
@@ -168,12 +170,14 @@ void _confirmCancel(BuildContext context, WidgetRef ref, PomodoroPhase phase) {
   final TodayFocusStats stats = ref.read(todayFocusStatsProvider);
   final int streak = ref.read(streakProvider);
   final bool showStreakRisk = stats.completedCount == 0 && streak >= 1;
+  final AppLocalizations l10n = AppLocalizations.of(context);
 
   showDialog<void>(
     context: context,
     barrierColor: const Color(0xA8040509),
     builder: (BuildContext dialogContext) {
       return _CancelConfirmDialog(
+        l10n: l10n,
         elapsed: elapsed,
         remaining: currentRemaining,
         streak: streak,
@@ -206,12 +210,12 @@ class _FocusBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final Color clockColor = running ? colors.text : colors.neutral500;
     final Color phaseColor = running ? colors.ember : colors.rose;
     final Color hintIconColor = running ? colors.mint : colors.rose;
-    final String phaseLabel = running ? 'odak sürüyor' : 'duraklatıldı';
-    final String hintLine =
-        running ? 'Ekran açık kalır · bitişte bildirim kurulu' : 'Meşale soldu — devam etmek için oynat';
+    final String phaseLabel = running ? l10n.focusRunning : l10n.focusPaused;
+    final String hintLine = running ? l10n.focusHintRunning : l10n.focusHintPaused;
 
     return SafeArea(
       child: Padding(
@@ -230,7 +234,7 @@ class _FocusBody extends ConsumerWidget {
                     children: <Widget>[
                       Container(width: 6, height: 6, decoration: BoxDecoration(color: colors.ember, shape: BoxShape.circle)),
                       const SizedBox(width: 8),
-                      Text('ODAK $_cyclePosition/4', style: AppTypography.kicker(fontSize: 9, color: colors.ember)),
+                      Text(l10n.focusCycleBadge(_cyclePosition), style: AppTypography.kicker(fontSize: 9, color: colors.ember)),
                     ],
                   ),
                 ),
@@ -239,7 +243,7 @@ class _FocusBody extends ConsumerWidget {
                   children: <Widget>[
                     Icon(PhosphorIconsRegular.eyeSlash, size: 14, color: colors.neutral600),
                     const SizedBox(width: 6),
-                    Text('reklam gizli', style: AppTypography.body(fontSize: 11.5, color: colors.neutral600)),
+                    Text(l10n.focusAdHidden, style: AppTypography.body(fontSize: 11.5, color: colors.neutral600)),
                   ],
                 ),
               ],
@@ -401,16 +405,15 @@ class _BreakBody extends ConsumerWidget {
   final Duration remaining;
   final double progress;
 
-  static const List<_BreakTip> _tips = <_BreakTip>[
-    _BreakTip(icon: PhosphorIconsRegular.eye, colorRole: _TipColorRole.mint, text: 'Ekrana bakma — 20 saniye uzağa odaklan'),
-    _BreakTip(icon: PhosphorIconsRegular.drop, colorRole: _TipColorRole.sky, text: 'Bir bardak su iç'),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
-    final String breakLabel = phase.isLong ? 'UZUN MOLA' : 'KISA MOLA';
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String breakLabel = phase.isLong ? l10n.breakLong : l10n.breakShort;
     final bool canExtend = phase.extensionsUsed < kMaxBreakExtensions;
+    // SPEC.md Ekran 09: katalogdan rastgele 2 ipucu. Seçim molanın başlangıç
+    // anından türüyor, `build` saniyede bir koştuğu için (bkz. `selectBreakTips`).
+    final List<BreakTip> tips = selectBreakTips(breakStartedAtUtc: phase.startedAtUtc);
 
     return SafeArea(
       child: Padding(
@@ -445,7 +448,7 @@ class _BreakBody extends ConsumerWidget {
                       children: <Widget>[
                         Icon(PhosphorIconsRegular.checkCircle, size: 14, color: colors.mint),
                         const SizedBox(width: 6),
-                        Text('${phase.cyclePosition}. pomodoro bitti', style: AppTypography.body(fontSize: 11.5, color: colors.neutral500)),
+                        Text(l10n.breakPomodoroDone(phase.cyclePosition), style: AppTypography.body(fontSize: 11.5, color: colors.neutral500)),
                       ],
                     ),
                   ),
@@ -476,7 +479,7 @@ class _BreakBody extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(formatClock(remaining), style: AppTypography.counter(fontSize: 72, color: const Color(0xFFE7FFF8), height: 1)),
                       const SizedBox(height: 6),
-                      Text('mola sürüyor', style: AppTypography.kicker(fontSize: 9, color: colors.mint)),
+                      Text(l10n.breakRunning, style: AppTypography.kicker(fontSize: 9, color: colors.mint)),
                     ],
                   ),
                 ],
@@ -494,16 +497,16 @@ class _BreakBody extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('molada dene', style: AppTypography.kicker(fontSize: 8, color: colors.neutral600)),
+                  Text(l10n.breakTipsHeading, style: AppTypography.kicker(fontSize: 8, color: colors.neutral600)),
                   const SizedBox(height: 10),
-                  for (final _BreakTip tip in _tips)
+                  for (final BreakTip tip in tips)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Row(
                         children: <Widget>[
-                          Icon(tip.icon, size: 16, color: tip.colorRole == _TipColorRole.mint ? colors.mint : colors.sky),
+                          Icon(tip.icon, size: 16, color: tip.tint == BreakTipTint.mint ? colors.mint : colors.sky),
                           const SizedBox(width: 10),
-                          Expanded(child: Text(tip.text, style: AppTypography.body(fontSize: 13, color: colors.neutral300))),
+                          Expanded(child: Text(tip.text(l10n), style: AppTypography.body(fontSize: 13, color: colors.neutral300))),
                         ],
                       ),
                     ),
@@ -515,7 +518,7 @@ class _BreakBody extends ConsumerWidget {
               children: <Widget>[
                 Expanded(
                   child: AppPillButton(
-                    label: '5 dk ekle',
+                    label: l10n.breakExtend,
                     icon: PhosphorIconsRegular.plus,
                     roleColor: canExtend ? colors.neutral300 : colors.neutral700,
                     roleDeepColor: Colors.transparent,
@@ -526,7 +529,7 @@ class _BreakBody extends ConsumerWidget {
                 Expanded(
                   flex: 2,
                   child: AppPillButton(
-                    label: 'ODAĞA DÖN',
+                    label: l10n.breakReturnToFocus,
                     icon: PhosphorIconsFill.play,
                     roleColor: colors.ember,
                     roleDeepColor: colors.emberDeep,
@@ -546,19 +549,10 @@ class _BreakBody extends ConsumerWidget {
   }
 }
 
-enum _TipColorRole { mint, sky }
-
-class _BreakTip {
-  const _BreakTip({required this.icon, required this.colorRole, required this.text});
-
-  final IconData icon;
-  final _TipColorRole colorRole;
-  final String text;
-}
-
 /// Ekran 10 — prototip satır 379-401.
 class _CancelConfirmDialog extends StatelessWidget {
   const _CancelConfirmDialog({
+    required this.l10n,
     required this.elapsed,
     required this.remaining,
     required this.streak,
@@ -566,24 +560,24 @@ class _CancelConfirmDialog extends StatelessWidget {
     required this.onConfirmCancel,
   });
 
+  /// Dialog `showDialog`un kendi ağacında çiziliyor; metinler çağıranın
+  /// bağlamından geçiriliyor ki `_confirmCancel` iki çağıranında da (X düğmesi
+  /// ve sistem geri tuşu) aynı kaynak kullanılsın.
+  final AppLocalizations l10n;
   final Duration elapsed;
   final Duration remaining;
   final int streak;
   final bool showStreakRisk;
   final VoidCallback onConfirmCancel;
 
-  static String _words(Duration d) {
-    final int minutes = d.inMinutes;
-    final int seconds = d.inSeconds % 60;
-    return '$minutes dakika $seconds saniye';
-  }
+  String _words(Duration d) => l10n.durationMinutesSeconds(d.inMinutes, d.inSeconds % 60);
 
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     final String bodyText = showStreakRisk
-        ? '${_words(elapsed)} odaklandın. Şimdi bırakırsan bu seans kaydedilmez ve $streak günlük serin risk altına girer.'
-        : '${_words(elapsed)} odaklandın. Şimdi bırakırsan bu seans kaydedilmez.';
+        ? l10n.cancelDialogBodyWithStreak(_words(elapsed), streak)
+        : l10n.cancelDialogBody(_words(elapsed));
 
     return Dialog(
       backgroundColor: const Color(0xF71A1C2A),
@@ -603,7 +597,7 @@ class _CancelConfirmDialog extends StatelessWidget {
             // renkle taşıyor (Faz 5 kararı).
             Icon(PhosphorIconsDuotone.flame, size: 46, color: colors.rose),
             const SizedBox(height: 18),
-            Text('SERİYİ KIRIYORSUN', style: AppTypography.display(fontSize: 23, weight: FontWeight.w700, color: colors.text)),
+            Text(l10n.cancelDialogTitle, style: AppTypography.display(fontSize: 23, weight: FontWeight.w700, color: colors.text)),
             const SizedBox(height: 10),
             Text(bodyText, textAlign: TextAlign.center, style: AppTypography.body(fontSize: 13.5, color: colors.neutral400)),
             const SizedBox(height: 18),
@@ -617,7 +611,7 @@ class _CancelConfirmDialog extends StatelessWidget {
                   const SizedBox(width: 11),
                   Expanded(
                     child: Text(
-                      '${_words(remaining)} kaldı — molaya kadar dayanabilirsin.',
+                      l10n.cancelDialogRemaining(_words(remaining)),
                       style: AppTypography.body(fontSize: 12.5, color: colors.neutral300),
                     ),
                   ),
@@ -626,7 +620,7 @@ class _CancelConfirmDialog extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             AppPillButton(
-              label: 'DEVAM ET',
+              label: l10n.cancelDialogKeepGoing,
               roleColor: colors.mint,
               roleDeepColor: colors.mintDeep,
               onPressed: () => Navigator.of(context).pop(),
@@ -646,7 +640,7 @@ class _CancelConfirmDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(18),
                     onTap: onConfirmCancel,
                     child: Center(
-                      child: Text('Seansı iptal et', style: AppTypography.display(fontSize: 13.5, weight: FontWeight.w500, color: colors.rose)),
+                      child: Text(l10n.cancelDialogConfirm, style: AppTypography.display(fontSize: 13.5, weight: FontWeight.w500, color: colors.rose)),
                     ),
                   ),
                 ),

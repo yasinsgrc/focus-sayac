@@ -7,7 +7,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
-import 'package:focussayac/core/theme/app_theme.dart';
 import 'package:focussayac/features/stats/stats_screen.dart';
 import 'package:focussayac/features/stats/widgets/weekly_focus_bar_painter.dart';
 import 'package:focussayac/main.dart';
@@ -16,6 +15,8 @@ import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
+
+import '../../support/localized_test_app.dart';
 
 /// Gerekçe için bkz. `test/features/settings/settings_screen_test.dart` —
 /// drift sorguları gerçek zamanda, widget ağacı sahte saatte ilerliyor.
@@ -90,10 +91,10 @@ Future<void> _disposeTree(WidgetTester tester) async {
 void main() {
   group('formatBarValue', () {
     test('prototipin sütun etiketi biçimi', () {
-      expect(formatBarValue(0), '—');
-      expect(formatBarValue(50), '0s 50');
-      expect(formatBarValue(95), '1s 35');
-      expect(formatBarValue(120), '2s');
+      expect(formatBarValue(testL10n, 0), '—');
+      expect(formatBarValue(testL10n, 50), '0s 50');
+      expect(formatBarValue(testL10n, 95), '1s 35');
+      expect(formatBarValue(testL10n, 120), '2s');
     });
   });
 
@@ -133,7 +134,7 @@ void main() {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
-      _appWith(database, prefs, MaterialApp(theme: buildAppTheme(), home: const StatsScreen())),
+      _appWith(database, prefs, localizedTestApp(const StatsScreen())),
     );
     await _settle(tester);
 
@@ -161,7 +162,7 @@ void main() {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
-      _appWith(database, prefs, MaterialApp(theme: buildAppTheme(), home: const StatsScreen())),
+      _appWith(database, prefs, localizedTestApp(const StatsScreen())),
     );
     await _settle(tester);
 

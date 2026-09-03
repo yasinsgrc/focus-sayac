@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/time/app_day.dart';
 import '../../domain/exams/exam_providers.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/storage/app_database.dart';
 
 /// Ekran 08 — sınav tarihi geçti. Prototip satır 319-333 birebir. "Odak
@@ -20,10 +21,13 @@ class ExamExpiredScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final Exam? exam = ref.watch(activeExamProvider).value;
+    // Yıl `String` olarak geçiyor: `int` yer tutucusu binlik ayırıcıyla
+    // biçimlenip "2.027" yazabilirdi.
     final String subtitle = exam == null
         ? ''
-        : '${toIstanbulWallClock(exam.dateUtc).year} ${exam.name} geride kaldı. Yeni bir hedef seç, sayaç oradan devam etsin.';
+        : l10n.examExpiredSubtitle('${toIstanbulWallClock(exam.dateUtc).year}', exam.name);
 
     return Scaffold(
       backgroundColor: colors.bg,
@@ -63,7 +67,7 @@ class ExamExpiredScreen extends ConsumerWidget {
                       child: Icon(PhosphorIconsDuotone.calendarX, size: 46, color: colors.neutral600),
                     ),
                     const SizedBox(height: 26),
-                    Text('SINAVIN GEÇTİ', style: AppTypography.display(fontSize: 28, weight: FontWeight.w700, color: colors.text)),
+                    Text(l10n.examExpiredTitle, style: AppTypography.display(fontSize: 28, weight: FontWeight.w700, color: colors.text)),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: 262,
@@ -99,14 +103,14 @@ class ExamExpiredScreen extends ConsumerWidget {
                           if (context.mounted) context.go(RoutePaths.countdown, extra: true);
                         },
                         child: Text(
-                          'YENİ SINAV SEÇ',
+                          l10n.examExpiredPickNew,
                           style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w600, color: colors.accent200),
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Odak geçmişin ve rozetlerin korunur.',
+                      l10n.examExpiredDataKept,
                       style: AppTypography.body(fontSize: 12.5, color: colors.neutral600),
                     ),
                   ],

@@ -736,3 +736,47 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   — doğrulanması gereken şey kanal değil, satın alma **akışının** `isPremium`e nasıl çevrildiği.
   İmzası `in_app_purchase`ten dışa aktarılmayan bir türe bağlı olan `getPlatformAddition` yalnızca
   o tür için paket bağımlılığı eklemek yerine `noSuchMethod` iletimine bırakıldı.
+
+## Faz 13 — ARB yerelleştirme (ROADMAP madde 7)
+
+- **Erişim iki yollu, ikisi de aynı kaynağa bakıyor.** Widget'lar
+  `AppLocalizations.of(context)` kullanıyor (Flutter'ın kendi yolu; `Localizations`
+  zaten ağaçta ve `MaterialApp.locale` neyse o geçerli). Bağlamı olmayan katmanlar
+  (`NotificationService`, `BadgeUnlockService`) `appLocalizationsProvider`dan
+  (`core/l10n/l10n_providers.dart`) alıyor — bir bildirim gövdesi `BuildContext`
+  olmadan, hatta hiçbir ekran açık değilken kuruluyor. Elle yazılmış statik bir
+  singleton yerine sağlayıcı: SPEC §1 "singleton servisler yasak" ve diğer
+  servislerle aynı DI kalıbı.
+- **Tek dil `MaterialApp.locale = kAppLocale` ile sabitlendi.** ARB'de yalnızca `tr`
+  var; cihaz dili İngilizce olan bir kullanıcıda `supportedLocales` eşleşmesi yine
+  Türkçeye düşerdi ama bunu şansa bırakmak yerine açıkça yazılıyor. Delegeler
+  Material'ın kendi metinlerini de (`showDatePicker`/`showTimePicker`, Ekran 11)
+  Türkçeleştiriyor — daha önce o diyaloglar İngilizceydi.
+- **Üretilen Dart `.gitignore`'da** (`lib/l10n/gen/`), kaynak `lib/l10n/app_tr.arb`
+  depoda. Depodaki diğer üretilmiş kodla (`*.g.dart`, `*.freezed.dart`) aynı kural;
+  `analysis_options.yaml` da aynı gerekçeyle hariç tutuyor.
+- **`intl` kısıtı `^0.20.3` → `^0.20.2`'ye indirildi.** `flutter_localizations` SDK'dan
+  `intl`i tam 0.20.2'ye sabitliyor; daha yüksek bir alt sınır çözülemiyordu.
+  `pubspec.yaml`da `flutter: generate: true` de zorunlu, yoksa `gen-l10n` çıktıyı
+  içe aktarılamaz sayıyor.
+- **Rozet ad/kuralları ile şablon etiketleri alan değil metot oldu**
+  (`BadgeDefinition.name(l10n)`, `StoryCardTemplate.label(l10n)`). Böylece
+  `kBadgeCatalog` `const` kalıyor ve DB'de saklanan tek şey yine `badgeKey` —
+  Faz 7'nin "ad/kural Türkçe çünkü ARB geçişi Faz 13'te" notu kapandı, veri
+  göçü gerekmedi.
+- **Kanal ad/açıklamaları `static const` olmaktan çıkıp getter oldu.** Kanal
+  *kimlikleri* (`session_end`, `ongoing_focus`, …) değişmedi ve değişmemeli —
+  Android kanalı ilk kimlikle tanıyor; kullanıcıya görünen ad/açıklama ise ARB'den.
+- **Ekran 09'un ipuçları katalog oldu** (`domain/pomodoro/break_tips.dart`, 6 ipucu,
+  SPEC "her molada rastgele 2"). Tohum `Random()` **değil molanın `startedAtUtc`'si**:
+  `_BreakBody.build` saniyede bir koşuyor, her karede zar atmak ipuçlarını gözün
+  önünde titretirdi. Aynı mola boyunca sabit, her yeni molada farklı — regresyonu
+  `test/domain/pomodoro/break_tips_test.dart`te.
+- **Testler `localizedTestApp` üzerinden çiziyor** (`test/support/`). Tek bir ekranı
+  çıplak `MaterialApp` ile çizen testlerde `Localizations` ağaçta olmadığı için
+  `AppLocalizations.of` patlıyordu; delegeler `FocusSayacApp` ile birebir aynı
+  yerde tutuluyor ki test ile uygulama aynı ağacı kursun.
+- **`countdownStreakHintValue` ARB'de `{streak}'e` olarak duruyor** — mevcut davranış
+  birebir korundu. Sayının okunuşuna göre doğrusu bazen `'ye` (2, 6, 7, 9, 10…);
+  `domain/text/turkish_suffix.dart`in `dativeSuffix`i bunu zaten biliyor ama
+  bağlamak görünen metni değiştireceği için bu maddenin dışında bırakıldı.

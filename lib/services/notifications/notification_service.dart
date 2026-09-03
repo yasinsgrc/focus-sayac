@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../core/l10n/l10n_providers.dart';
+import '../../l10n/gen/app_localizations.dart';
+
 /// SPEC.md §3 Ekran 12'nin tek sahibi olan Riverpod sağlayıcı. `main.dart`
 /// gerçek [NotificationService] örneğiyle geçersiz kılar; SPEC §1'in
 /// "singleton servisler yasak" kuralı gereği elle yazılmış statik bir
@@ -61,16 +64,28 @@ typedef NotificationPreferencesReader = Future<NotificationPreferences> Function
 /// olan yine `cancel*` çağrılarıdır — onları da kapatmak, kapatma anında
 /// ekranda duran kalıcı bildirimi kalıcı olarak orada bırakırdı.
 class NotificationService {
-  NotificationService({NotificationPreferencesReader? readPreferences})
-      : _plugin = FlutterLocalNotificationsPlugin(),
+  NotificationService({required AppLocalizations l10n, NotificationPreferencesReader? readPreferences})
+      : _l10n = l10n,
+        _plugin = FlutterLocalNotificationsPlugin(),
         _readPreferences = readPreferences ?? _allEnabled;
 
-  NotificationService.disabled({NotificationPreferencesReader? readPreferences})
-      : _plugin = null,
+  NotificationService.disabled({AppLocalizations? l10n, NotificationPreferencesReader? readPreferences})
+      : _l10n = l10n ?? _fallbackL10n,
+        _plugin = null,
         _readPreferences = readPreferences ?? _allEnabled;
 
   static Future<NotificationPreferences> _allEnabled() async => const NotificationPreferences.allEnabled();
 
+  /// [NotificationService.disabled] hiçbir şey göndermediği için metinlere de
+  /// ihtiyacı yok; yine de alan `late` olmasın diye uygulamanın tek diliyle
+  /// dolduruluyor (testlerin her `disabled()` çağrısına ARB örneği taşımasına
+  /// gerek kalmıyor).
+  static final AppLocalizations _fallbackL10n = lookupAppLocalizations(kAppLocale);
+
+  /// SPEC.md Ekran 12: dört bildirim metni **birebir** ARB'den. Servisin
+  /// `BuildContext`i yok (bildirim ekran açık değilken de kuruluyor), bu yüzden
+  /// örnek kurulumda veriliyor — `core/l10n/l10n_providers.dart` ile aynı kaynak.
+  final AppLocalizations _l10n;
   final FlutterLocalNotificationsPlugin? _plugin;
   final NotificationPreferencesReader _readPreferences;
   tz.Location? _istanbul;
@@ -88,61 +103,65 @@ class NotificationService {
   /// seçiliyor; tek kanalda bayrağı çevirmek ilk kurulumdan sonra hiçbir
   /// etki yaratmazdı. "Kalıcı" bildirimin zaten sesi yok (SPEC Ekran 12),
   /// bu yüzden onun sessiz ikizi yok.
-  static const AndroidNotificationDetails _sessionEndAndroidDetails = AndroidNotificationDetails(
-    'session_end',
-    'Seans bitişi',
-    channelDescription: 'Odak süresi dolduğunda gönderilir.',
-    importance: Importance.high,
-    priority: Priority.high,
-  );
+  /// Kanal kimlikleri kullanıcıya görünmez ve **değiştirilmemeli** (Android
+  /// kanalı ilk oluşturulduğu kimlikle tanır); ad/açıklama ise Android'in
+  /// bildirim ayarlarında görünen kullanıcı metni, o yüzden ARB'den geliyor.
+  /// `const` olamamalarının tek sebebi bu — davranışları değişmedi.
+  AndroidNotificationDetails get _sessionEndAndroidDetails => AndroidNotificationDetails(
+        'session_end',
+        _l10n.notificationChannelSessionEndName,
+        channelDescription: _l10n.notificationChannelSessionEndDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+      );
 
-  static const AndroidNotificationDetails _sessionEndSilentAndroidDetails = AndroidNotificationDetails(
-    'session_end_silent',
-    'Seans bitişi (sessiz)',
-    channelDescription: 'Odak süresi dolduğunda sessiz gönderilir.',
-    importance: Importance.high,
-    priority: Priority.high,
-    playSound: false,
-  );
+  AndroidNotificationDetails get _sessionEndSilentAndroidDetails => AndroidNotificationDetails(
+        'session_end_silent',
+        _l10n.notificationChannelSessionEndSilentName,
+        channelDescription: _l10n.notificationChannelSessionEndSilentDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: false,
+      );
 
-  static const AndroidNotificationDetails _ongoingAndroidDetails = AndroidNotificationDetails(
-    'ongoing_focus',
-    'Odak sürüyor',
-    channelDescription: 'Odak seansı sürerken gösterilen kalıcı bildirim.',
-    importance: Importance.low,
-    priority: Priority.low,
-    ongoing: true,
-    autoCancel: false,
-    showWhen: false,
-    playSound: false,
-    enableVibration: false,
-  );
+  AndroidNotificationDetails get _ongoingAndroidDetails => AndroidNotificationDetails(
+        'ongoing_focus',
+        _l10n.notificationChannelOngoingName,
+        channelDescription: _l10n.notificationChannelOngoingDescription,
+        importance: Importance.low,
+        priority: Priority.low,
+        ongoing: true,
+        autoCancel: false,
+        showWhen: false,
+        playSound: false,
+        enableVibration: false,
+      );
 
-  static const AndroidNotificationDetails _streakRiskAndroidDetails = AndroidNotificationDetails(
-    'streak_risk',
-    'Seri riski',
-    channelDescription: 'Günlük seri kapanmadan önce gönderilen hatırlatma.',
-  );
+  AndroidNotificationDetails get _streakRiskAndroidDetails => AndroidNotificationDetails(
+        'streak_risk',
+        _l10n.notificationChannelStreakRiskName,
+        channelDescription: _l10n.notificationChannelStreakRiskDescription,
+      );
 
-  static const AndroidNotificationDetails _streakRiskSilentAndroidDetails = AndroidNotificationDetails(
-    'streak_risk_silent',
-    'Seri riski (sessiz)',
-    channelDescription: 'Günlük seri kapanmadan önce sessiz gönderilen hatırlatma.',
-    playSound: false,
-  );
+  AndroidNotificationDetails get _streakRiskSilentAndroidDetails => AndroidNotificationDetails(
+        'streak_risk_silent',
+        _l10n.notificationChannelStreakRiskSilentName,
+        channelDescription: _l10n.notificationChannelStreakRiskSilentDescription,
+        playSound: false,
+      );
 
-  static const AndroidNotificationDetails _badgeAndroidDetails = AndroidNotificationDetails(
-    'badge_unlocked',
-    'Yeni rozet',
-    channelDescription: 'Bir rozet açıldığında gönderilir.',
-  );
+  AndroidNotificationDetails get _badgeAndroidDetails => AndroidNotificationDetails(
+        'badge_unlocked',
+        _l10n.notificationChannelBadgeName,
+        channelDescription: _l10n.notificationChannelBadgeDescription,
+      );
 
-  static const AndroidNotificationDetails _badgeSilentAndroidDetails = AndroidNotificationDetails(
-    'badge_unlocked_silent',
-    'Yeni rozet (sessiz)',
-    channelDescription: 'Bir rozet açıldığında sessiz gönderilir.',
-    playSound: false,
-  );
+  AndroidNotificationDetails get _badgeSilentAndroidDetails => AndroidNotificationDetails(
+        'badge_unlocked_silent',
+        _l10n.notificationChannelBadgeSilentName,
+        channelDescription: _l10n.notificationChannelBadgeSilentDescription,
+        playSound: false,
+      );
 
   /// `timezone` veritabanını yükler ve platform kanalını başlatır. İzin
   /// **istemez**: açılışta hiçbir bağlam vermeden sistem diyaloğu açmak,
@@ -198,8 +217,8 @@ class NotificationService {
     if (preferences == null) return;
     await plugin.zonedSchedule(
       id: _sessionEndNotificationId,
-      title: 'Seans tamamlandı',
-      body: '$focusMinutes dakika odak bitti. Meşalen büyüdü — $breakMinutes dakika mola vakti.',
+      title: _l10n.notificationSessionEndTitle,
+      body: _l10n.notificationSessionEndBody(focusMinutes, breakMinutes),
       scheduledDate: tz.TZDateTime.from(endAtUtc, _location),
       notificationDetails: NotificationDetails(
         android: preferences.soundEnabled ? _sessionEndAndroidDetails : _sessionEndSilentAndroidDetails,
@@ -228,8 +247,8 @@ class NotificationService {
     if (preferences == null) return;
     await plugin.zonedSchedule(
       id: _breakEndNotificationId,
-      title: 'Mola bitti',
-      body: '$breakMinutes dakika mola bitti. Meşaleyi yeniden yakmaya hazır mısın?',
+      title: _l10n.notificationBreakEndTitle,
+      body: _l10n.notificationBreakEndBody(breakMinutes),
       scheduledDate: tz.TZDateTime.from(endAtUtc, _location),
       notificationDetails: NotificationDetails(
         android: preferences.soundEnabled ? _sessionEndAndroidDetails : _sessionEndSilentAndroidDetails,
@@ -252,8 +271,8 @@ class NotificationService {
     if (await _allowedPreferences() == null) return;
     await plugin.show(
       id: _ongoingFocusNotificationId,
-      title: 'Odak · $cyclePosition. pomodoro',
-      notificationDetails: const NotificationDetails(android: _ongoingAndroidDetails),
+      title: _l10n.notificationOngoingTitle(cyclePosition),
+      notificationDetails: NotificationDetails(android: _ongoingAndroidDetails),
     );
   }
 
@@ -284,8 +303,8 @@ class NotificationService {
     if (!target.isAfter(now)) return;
     await plugin.zonedSchedule(
       id: _streakRiskNotificationId,
-      title: 'Serin risk altında',
-      body: "$streak günlük seri için bugün 1 pomodoro yeter. Gün 04:00'te kapanıyor.",
+      title: _l10n.notificationStreakRiskTitle,
+      body: _l10n.notificationStreakRiskBody(streak),
       scheduledDate: target,
       notificationDetails: NotificationDetails(
         android: preferences.soundEnabled ? _streakRiskAndroidDetails : _streakRiskSilentAndroidDetails,
@@ -304,8 +323,8 @@ class NotificationService {
     if (preferences == null) return;
     await plugin.show(
       id: name.hashCode & 0x7fffffff,
-      title: 'Yeni rozet: $name',
-      body: '$ruleDescription Başarı kartını paylaş.',
+      title: _l10n.notificationBadgeTitle(name),
+      body: _l10n.notificationBadgeBody(ruleDescription),
       notificationDetails: NotificationDetails(
         android: preferences.soundEnabled ? _badgeAndroidDetails : _badgeSilentAndroidDetails,
       ),

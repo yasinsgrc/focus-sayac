@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:focussayac/services/notifications/notification_service.dart';
 
+import '../../support/localized_test_app.dart';
+
 /// Eklentinin Android kanalı. Gerçek platform yok; kanal sahte bir işleyiciyle
 /// dinleniyor ki servisin **hangi** çağrıyı yaptığı (ya da yapmadığı)
 /// görülebilsin. `NotificationService.disabled()` bu testler için uygun değil:
@@ -44,6 +46,7 @@ void main() {
 
   Future<NotificationService> serviceWith({required bool notificationsEnabled}) async {
     final NotificationService service = NotificationService(
+      l10n: testL10n,
       readPreferences: () async => NotificationPreferences(
         notificationsEnabled: notificationsEnabled,
         soundEnabled: true,
