@@ -44,23 +44,32 @@ class AppPillButton extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(18),
             onTap: onPressed,
+            // Uzun etiketler (ör. "BAŞARI KARTINI OLUŞTUR") dar ekranda ya da
+            // büyük yazı tipi ölçeğinde butona sığmıyor; kırpmak yerine
+            // küçültülüyor — `scaleDown` yalnızca taşma varsa devreye giriyor.
             child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  if (icon != null) ...<Widget>[
-                    Icon(icon, size: 14, color: roleColor),
-                    const SizedBox(width: 8),
-                  ],
-                  Text(
-                    label,
-                    style: AppTypography.display(
-                      fontSize: 13.5,
-                      weight: weight,
-                      color: roleColor,
-                    ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      if (icon != null) ...<Widget>[
+                        Icon(icon, size: 14, color: roleColor),
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        label,
+                        style: AppTypography.display(
+                          fontSize: 13.5,
+                          weight: weight,
+                          color: roleColor,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

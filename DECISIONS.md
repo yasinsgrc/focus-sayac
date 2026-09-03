@@ -539,6 +539,53 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   karşılığı tepedeki çeyrek yay; `drawOval` + `drawArc` bunu tek boyamada veriyor (Faz 4/7'deki
   halka painter'larıyla aynı yaklaşım).
 
+## Faz 8 — Ekran 05 (başarı kartı) + 1080×1920 export
+
+- **Kartın mantıksal boyutu 270×480, prototipin 248×441'i değil** — DoD "tam 1080×1920" istiyor.
+  248 genişlikle `pixelRatio = 1080/248 = 4.3548` olur, yükseklik `441 × 4.3548 = 1920.47`e düşer ve
+  `OffsetLayer.toImage` bunu **1921**'e yukarı yuvarlar. 270×480 aynı 9:16 oranını verir ama çarpanı
+  tam sayı yapar (`1080/270 = 4`, `480 × 4 = 1920`). Prototipin tüm kart ölçüleri `270/248` katsayısı
+  (`_s`) ile ölçeklendi, oranlar birebir korundu. Ekranda kart yine prototipin 248px'inde görünüyor:
+  önizleme bir `FittedBox` — `RepaintBoundary` kendi katmanını 270×480'de tuttuğu için bu küçültme
+  dışa aktarımı etkilemiyor (regresyon testi PNG'yi çözüp gerçek pikselleri ölçüyor).
+- **Önizleme ve export aynı widget** (`StoryCardView`) — ayrı bir "export layout"u yazmak, paylaşılan
+  görselin kullanıcının gördüğünden sapabileceği tek yer olurdu.
+- **Kart renkleri `AppColors`tan değil, sabit** — kart bir **görsel** olarak cihazdan çıkıyor; tema
+  uzantısına bağlanırsa aynı şablon ileride tema değiştiğinde farklı renkte paylaşılırdı.
+- **Taşma kırpmayla değil küçültmeyle çözülüyor** — büyük sayı `Flexible` + `FittedBox(scaleDown)`
+  içinde, hem genişliğe hem kalan yüksekliğe uyuyor; etiket/satırlar `maxLines` + ellipsis. SPEC §9'un
+  "3 haneli gün + uzun rumuz" testi üç şablonu da tek tek pompalayıp `takeException`ı denetliyor.
+  Aynı taşma `AppPillButton`da da vardı ("BAŞARI KARTINI OLUŞTUR" rozet dialogunda 7.6px taşıyordu) —
+  o da `scaleDown`a alındı; buton başka ekranlarda kısa etiketlerle kullanıldığı için görünürde
+  hiçbir şey değişmiyor.
+- **Türkçe yönelme eki koddan türetiliyor (`domain/text/turkish_suffix.dart`)** — prototip eki sabit
+  yazıyor (`ex.name + "'e "`, `"Yarın 7'ye"`), bu da `YKS 2027'e` üretirdi. Sözcük rakamla bitiyorsa
+  ek sayının **okunuşundan** seçiliyor (`…yedi` → `'ye`, `…altı` → `'ya`, `2000` → bin → `'e`),
+  aksi hâlde son ünlünün kalınlık/incelik uyumundan. Kısaltmalarda (`KPSS`) ünlü yok, harf okunuşu
+  ince bittiği için ince ek veriliyor. Paylaşılan bir görselde yanlış ek kalıcı olduğu için bu
+  ~40 satır ve testleri, prototipe birebir sadakatten daha değerli görüldü.
+- **Şablon adları prototip v2'den: `GECE MEŞALESİ` / `MİNİMAL` / `SERİ`** — SPEC Ekran 05 satırı
+  `MİNİMAL SAYAÇ` diyor ama prototipin düğmesi üçe bölünmüş bir şeritte ve v2 `MİNİMAL` yazıyor;
+  düğme genişliği uzun adı zaten küçültürdü.
+- **Aktif sınav yokken sayı uydurulmuyor** — Ekran 08'den çıkışta seçim tamamen kalkabiliyor.
+  `GECE MEŞALESİ`nin ikinci satırı boş kalıyor (kart o satırı hiç çizmiyor), `MİNİMAL` `—` +
+  "hedef seçilmedi." gösteriyor. Seri sıfırken "Yarın 1'e çıkıyor" yerine "Bugün bir pomodoro seriyi
+  başlatır." — birincisi olmamış bir seriyi varmış gibi anlatırdı.
+- **`selectedTemplateIndex` kolonu artık okunuyor ve yazılıyor** — Faz 3'te açılıp Faz 12'de
+  "tüketicisi yok" diye bırakılmıştı; seçim dokunuşta doğrudan DB'ye yazılıyor (sürükleme yok, ayar
+  ekranının yerel-durum kalıbına gerek kalmıyor) ve ekran değeri `appSettingsProvider` akışından
+  okuyor, böylece seçim ekran kapanıp açıldığında korunuyor.
+- **Üç aksiyon tek servise (`StoryCardExporter`) toplandı ve sonucu bir enum** — `success` /
+  `permissionDenied` / `failed`. Galeri izninin reddi "kaydedilemedi" ile aynı mesajı almıyor:
+  kullanıcının yapabileceği bir şey var. Paylaşımın **başarısı** mesaj göstermiyor (sistem sayfası
+  zaten geri bildirim), yalnız hatası gösteriyor. Servis `Provider` üzerinden geldiği ve metotları
+  sanal olduğu için testler alt sınıfla değiştirebiliyor — eklenti kanalı olmayan koşumda gerçek
+  paylaşım/galeri çağrısı denenmiyor.
+- **`gal` için `WRITE_EXTERNAL_STORAGE` (maxSdkVersion 29) manifeste eklendi** — `minSdk = 23`
+  olduğu için Android 10 öncesi cihazlarda MediaStore yazımı hâlâ izin istiyor.
+- **Rozet dialogu Ekran 05'e geçmeden önce kapanıyor** — açık bırakılsaydı kullanıcı karttan geri
+  döndüğünde kendini yine dialogun üstünde bulurdu.
+
 ## Faz 9 — Ekran 06 (istatistik) + `CustomPainter` bar chart
 
 - **Agregasyonlar SQL'de değil, saf Dart'ta (`domain/stats/focus_stats.dart`)** — SPEC Faz 9 "SQL

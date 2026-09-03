@@ -10,6 +10,7 @@ import '../../features/focus_session/focus_session_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/stats/stats_screen.dart';
+import '../../features/story_card/story_card_screen.dart';
 import 'route_paths.dart';
 
 /// Açılış anındaki `AppSettings.onboardingCompleted` değeri. `main.dart`
@@ -57,6 +58,10 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: RoutePaths.badges,
         builder: (BuildContext context, GoRouterState state) => const BadgesScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.storyCard,
+        builder: (BuildContext context, GoRouterState state) => const StoryCardScreen(),
       ),
       GoRoute(
         path: RoutePaths.stats,

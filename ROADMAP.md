@@ -1,8 +1,8 @@
 # FocusSayaç — Kalan İş Sırası
 
-Durum: **Faz 0-7 + 9 + 10 + 12 bitti** (geri sayım, sınav seçimi, odak/mola
-durum makinesi, bildirimler, rozetler, istatistik, onboarding + izinler + UMP,
-ayarlar). `flutter analyze` 0/0, 66 test geçiyor.
+Durum: **Faz 0-10 + 12 bitti** (geri sayım, sınav seçimi, odak/mola durum
+makinesi, bildirimler, rozetler, başarı kartı + export, istatistik,
+onboarding + izinler + UMP, ayarlar). `flutter analyze` 0/0, 86 test geçiyor.
 Kaynak plan: `SPEC.md` §8. Kararlar: `DECISIONS.md`.
 
 Aşağıdaki maddeler **teste/yayına çıkma önceliğine** göre sıralı. Her madde tek
@@ -64,17 +64,23 @@ Kalan bağlı iş: banner hâlâ `BANNER 320×50` yer tutucusu — gerçek rekla
 
 ---
 
-## 4. Ekran 05 — Başarı kartı + export (SPEC Faz 8) 🟠
+## 4. Ekran 05 — Başarı kartı + export (SPEC Faz 8) ✅ bitti
 
-`badges_screen.dart:264` bu ekranı bekliyor. `selectedTemplateIndex` kolonu
-(`tables.dart:59`) şu an **hiç okunmuyor** — kullanıcısı bu madde.
+`lib/features/story_card/story_card_screen.dart`, rota `app_router.dart`e
+eklendi; rozet dialogundaki "BAŞARI KARTINI OLUŞTUR" artık buraya gidiyor.
+Üç şablon (`GECE MEŞALESİ` / `MİNİMAL` / `SERİ`) üçü de ücretsiz; seçim
+`selectedTemplateIndex` kolonuna yazılıyor (kolonun ilk kullanıcısı bu madde).
+Kart mantıksal boyutu **270×480**, `pixelRatio = 1080/270 = 4` → export tam
+**1080×1920** (prototipin 248×441'i 1921 verirdi; gerekçe `DECISIONS.md`
+"Faz 8"). PAYLAŞ (`share_plus`) / Kaydet (`gal`) / Kopyala (`pasteboard`)
+tek servise toplandı (`services/export/story_card_exporter.dart`), izin reddi
+ayrı mesaj alıyor. `focussayac.app` filigranı sabit. Kart metinlerindeki
+Türkçe yönelme eki `domain/text/turkish_suffix.dart` ile okunuştan türüyor
+(`YKS 2027'ye`, `Yarın 7'ye`).
 
-- 3 şablon: `GECE MEŞALESİ` / `MİNİMAL SAYAÇ` / 3. şablon — üçü de v1'de ücretsiz.
-- `RenderRepaintBoundary`, `pixelRatio = 1080 / kartMantıksalGenişlik`.
-- PAYLAŞ (`share_plus`) / Kaydet (`gal`) / Kopyala (`pasteboard`).
-- `focussayac.app` sabit filigran — kaldırma özelliği **yok**.
-
-**DoD:** Export tam **1080×1920**. 3 haneli gün + uzun rumuzda taşma yok (SPEC §9).
+**DoD karşılandı:** export testi PNG'yi çözüp 1080×1920 ölçüyor; 3 haneli gün
++ uzun sınav adı üç şablonda da taşmıyor
+(`test/features/story_card/story_card_screen_test.dart`).
 
 ---
 
@@ -158,7 +164,7 @@ yoksa iki kez çevrilir.
 - [x] Tarihi geçmiş sınav → Ekran 08, rozet/geçmiş korunuyor
 - [ ] Ekran 03'te hiçbir reklam isteği atılmıyor *(madde 6)*
 - [ ] `isPremium` iken hiçbir reklam isteği atılmıyor *(madde 6)*
-- [ ] Kart export'u tam 1080×1920 *(madde 4)*
+- [x] Kart export'u tam 1080×1920
 - [ ] Odak ekranı `--profile` modda sürekli 60 fps *(madde 8)*
 - [ ] Odak seansında dekoratif animasyonlar duruyor *(madde 8)*
 - [ ] Kodda hard-coded Türkçe metin yok *(madde 7)*

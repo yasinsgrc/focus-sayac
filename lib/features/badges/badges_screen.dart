@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_pill_button.dart';
@@ -261,10 +265,12 @@ class _BadgeUnlockDialog extends StatelessWidget {
               label: 'BAŞARI KARTINI OLUŞTUR',
               roleColor: unlockColor,
               roleDeepColor: glow,
-              // Ekran 05 (başarı kartı) henüz yok (Faz 8) — Faz 4'ün alt
-              // gezinme çubuğu emsaliyle aynı çözüm: görsel birebir,
-              // `onPressed: null` var olmayan bir rotaya gitmeyi engeller.
-              onPressed: null,
+              // Dialog önce kapanıyor: açık kalsaydı Ekran 05'ten geri
+              // dönüldüğünde kullanıcıyı yine kendi üstünde bulurdu.
+              onPressed: () {
+                Navigator.of(context).pop();
+                unawaited(context.push(RoutePaths.storyCard));
+              },
               weight: FontWeight.w600,
             ),
             SizedBox(
