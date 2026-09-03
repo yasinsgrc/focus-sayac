@@ -329,4 +329,31 @@ void main() {
     expect(breakRow.startedAt.isAtSameMomentAs(focusEndUtc), isTrue);
     expect(breakRow.completedAt!.isAtSameMomentAs(breakEndUtc), isTrue);
   });
+
+  test('bozuk kalıcı faz kaydı patlamak yerine idle ile açılır', () async {
+    // Regresyon: `_restoreFromPrefs` yalnızca `FormatException` yakalıyordu;
+    // geçerli JSON ama eksik/yanlış tipte alan `_decodePhase`'de `TypeError`
+    // fırlatıp `Notifier.build()` içinde patlıyor, uygulama hiç açılmıyordu.
+    final List<String> corruptRecords = <String>[
+      '{ bozuk json', // hiç ayrıştırılamaz
+      jsonEncode(<Object?>[1, 2]), // Map değil
+      jsonEncode(<String, Object?>{'type': 'focusRunning'}), // alanlar eksik
+      jsonEncode(<String, Object?>{
+        'type': 'focusRunning',
+        'sessionId': 'yedi', // yanlış tip
+        'examId': null,
+        'startedAtUtc': DateTime.now().toUtc().toIso8601String(),
+        'plannedDurationSec': 1500,
+        'cyclePosition': 1,
+      }),
+    ];
+
+    for (final String raw in corruptRecords) {
+      final ProviderContainer container = await _buildContainer();
+      addTearDown(container.dispose);
+      await container.read(sharedPreferencesProvider).setString(kPomodoroPhasePrefsKey, raw);
+
+      expect(container.read(pomodoroControllerProvider), isA<PomodoroIdle>(), reason: raw);
+    }
+  });
 }

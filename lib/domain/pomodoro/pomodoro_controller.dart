@@ -56,7 +56,10 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     try {
       final Map<String, Object?> json = jsonDecode(raw) as Map<String, Object?>;
       return _decodePhase(json);
-    } on FormatException {
+    } catch (_) {
+      // Bozuk/eski biçimli kayıt uygulamayı açtırmamalı: burada yutulmayan
+      // her hata `build()` içinde patlar. `FormatException`'ın yanı sıra
+      // eksik/yanlış tipteki alanlar `_decodePhase`'de `TypeError` fırlatır.
       return null;
     }
   }
