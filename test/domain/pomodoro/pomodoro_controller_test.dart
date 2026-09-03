@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_controller.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_phase.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_stats_providers.dart';
+import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
@@ -32,6 +33,7 @@ Future<ProviderContainer> _buildContainer({
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sharedPreferencesProvider.overrideWithValue(prefs),
+      adServiceProvider.overrideWithValue(AdService.disabled()),
       notificationServiceProvider.overrideWithValue(notifications ?? NotificationService.disabled()),
     ],
   );

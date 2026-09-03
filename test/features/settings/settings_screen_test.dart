@@ -11,6 +11,7 @@ import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/core/theme/app_theme.dart';
 import 'package:focussayac/features/settings/settings_screen.dart';
 import 'package:focussayac/main.dart';
+import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
@@ -48,6 +49,7 @@ Widget _appWith(AppDatabase database, SharedPreferences prefs, Widget home) {
     overrides: [
       appDatabaseProvider.overrideWithValue(database),
       sharedPreferencesProvider.overrideWithValue(prefs),
+      adServiceProvider.overrideWithValue(AdService.disabled()),
       notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
       // Faz 10: başlangıç rotası `onboardingCompleted` bayrağına bakıyor —
       // bu dosyanın testleri onboarding'i tamamlamış kullanıcıyı doğruluyor.

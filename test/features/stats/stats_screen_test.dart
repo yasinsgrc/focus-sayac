@@ -11,6 +11,7 @@ import 'package:focussayac/core/theme/app_theme.dart';
 import 'package:focussayac/features/stats/stats_screen.dart';
 import 'package:focussayac/features/stats/widgets/weekly_focus_bar_painter.dart';
 import 'package:focussayac/main.dart';
+import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
@@ -49,6 +50,7 @@ Widget _appWith(AppDatabase database, SharedPreferences prefs, Widget home) {
     overrides: [
       appDatabaseProvider.overrideWithValue(database),
       sharedPreferencesProvider.overrideWithValue(prefs),
+      adServiceProvider.overrideWithValue(AdService.disabled()),
       notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
       onboardingCompletedAtLaunchProvider.overrideWithValue(true),
     ],

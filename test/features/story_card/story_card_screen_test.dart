@@ -17,6 +17,7 @@ import 'package:focussayac/features/story_card/story_card_screen.dart';
 import 'package:focussayac/features/story_card/widgets/story_card_view.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/export/story_card_exporter.dart';
+import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
@@ -53,6 +54,7 @@ Widget _appWith(AppDatabase database, SharedPreferences prefs, Widget home) {
     overrides: [
       appDatabaseProvider.overrideWithValue(database),
       sharedPreferencesProvider.overrideWithValue(prefs),
+      adServiceProvider.overrideWithValue(AdService.disabled()),
       notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
       onboardingCompletedAtLaunchProvider.overrideWithValue(true),
     ],
@@ -247,6 +249,7 @@ void main() {
         overrides: [
           appDatabaseProvider.overrideWithValue(database),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          adServiceProvider.overrideWithValue(AdService.disabled()),
           notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
           onboardingCompletedAtLaunchProvider.overrideWithValue(true),
           storyCardExporterProvider.overrideWithValue(const _DeniedExporter()),

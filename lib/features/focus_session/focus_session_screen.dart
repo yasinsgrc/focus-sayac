@@ -535,18 +535,10 @@ class _BreakBody extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              height: 44,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0x1FFFFFFF)),
-              ),
-              child: Center(
-                child: Text('interstitial · 3 pomodoroda 1', style: AppTypography.kicker(fontSize: 8, color: colors.neutral700)),
-              ),
-            ),
+            // Prototipin `interstitial · 3 pomodoroda 1` yer tutucusu
+            // kaldırıldı: gerçek interstitial tam **bu** anda (mola
+            // başlangıcı) `PomodoroController._completeFocus` üzerinden tam
+            // ekran açılıyor (SPEC.md §7.2), ekranda yer kaplamıyor.
           ],
         ),
       ),

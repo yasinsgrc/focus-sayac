@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/consent/consent_service.dart';
+import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
@@ -91,6 +92,7 @@ Future<_Harness> _pumpApp(WidgetTester tester, {required bool onboardingComplete
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         sharedPreferencesProvider.overrideWithValue(prefs),
+        adServiceProvider.overrideWithValue(AdService.disabled()),
         notificationServiceProvider.overrideWithValue(notifications),
         consentServiceProvider.overrideWithValue(consent),
         onboardingCompletedAtLaunchProvider.overrideWithValue(onboardingCompleted),

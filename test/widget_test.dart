@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/main.dart';
+import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
 
@@ -34,6 +35,8 @@ void main() {
         overrides: [
           appDatabaseProvider.overrideWithValue(database),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          // Faz 11: Ekran 02'nin banner yuvası `adServiceProvider`ı okuyor.
+          adServiceProvider.overrideWithValue(AdService.disabled()),
           // Faz 10: başlangıç rotası `onboardingCompleted` bayrağına bakıyor.
           // Bu test onboarding'i geçmiş kullanıcının açılışını doğruluyor;
           // ilk açılış Ekran 01'e düşer (onboarding_test.dart).

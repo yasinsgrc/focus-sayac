@@ -19,6 +19,7 @@ import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
 import '../../domain/settings/settings_providers.dart';
 import '../../domain/time/duration_formatter.dart';
+import '../../services/ads/banner_ad_slot.dart';
 import '../../services/storage/app_database.dart';
 import 'widgets/countdown_ring_painter.dart';
 import 'widgets/exam_picker_sheet.dart';
@@ -497,17 +498,8 @@ class _CountdownBody extends ConsumerWidget {
             ),
           ),
           const Spacer(),
-          Container(
-            height: 50,
-            margin: const EdgeInsets.only(bottom: 88),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0x1FFFFFFF)),
-            ),
-            child: Center(
-              child: Text('BANNER 320×50', style: AppTypography.kicker(fontSize: 8.5, color: colors.neutral700)),
-            ),
-          ),
+          // SPEC.md §7.1: banner yalnızca Ekran 02 ve Ekran 06.
+          const BannerAdSlot(bottomMargin: 88),
         ],
       ),
     );

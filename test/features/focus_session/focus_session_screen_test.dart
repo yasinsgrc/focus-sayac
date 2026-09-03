@@ -12,9 +12,13 @@ import 'package:focussayac/domain/pomodoro/pomodoro_phase.dart';
 import 'package:focussayac/features/focus_session/focus_session_screen.dart';
 import 'package:focussayac/features/focus_session/widgets/session_ring_painter.dart';
 import 'package:focussayac/main.dart';
+import 'package:focussayac/services/ads/ad_service.dart';
+import 'package:focussayac/services/ads/banner_ad_slot.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
+
+import '../../support/recording_ad_service.dart';
 
 /// Fazı sabit tutan ve `tick()` çağrılarını sayan sahte controller. İki işi
 /// var: (1) ekran testin ortasında `idle`'a düşüp kendini kapatmasın,
@@ -57,6 +61,7 @@ void _stubWakelockChannel() {
 Future<_CountingPomodoroController> _pumpFocusSession(
   WidgetTester tester, {
   required PomodoroPhase phase,
+  AdService? adService,
 }) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -75,6 +80,7 @@ Future<_CountingPomodoroController> _pumpFocusSession(
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         sharedPreferencesProvider.overrideWithValue(prefs),
+        adServiceProvider.overrideWithValue(adService ?? AdService.disabled()),
         notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
         onboardingCompletedAtLaunchProvider.overrideWithValue(true),
         pomodoroControllerProvider.overrideWith(() => controller),
@@ -251,6 +257,50 @@ void main() {
 
     expect(find.byType(FocusSessionScreen, skipOffstage: false), findsOneWidget);
     expect(find.text('SERİYİ KIRIYORSUN'), findsNothing);
+
+    await _disposeTree(tester);
+  });
+
+  // SPEC.md §7.1 + §10 DoD: "Ekran 03'te hiçbir reklam isteği atılmıyor" —
+  // banner gizlenmiyor, **hiç istenmiyor**.
+  //
+  // Ekran 03'e Ekran 02 üzerinden geliniyor (aktif seans kurtarma yolu) ve
+  // Ekran 02 `push` edildiği için yığında kalıyor; oradaki yuvanın **bir**
+  // isteği meşru (SPEC §7.1 banner'a izin verilen iki ekrandan biri). Bu
+  // yüzden ölçüt "sıfır istek" değil, odak ekranının kendisinin hiç yuva
+  // içermemesi ve geldikten sonra sayının artmaması.
+  testWidgets("Ekran 03'te hiçbir reklam isteği atılmıyor", (WidgetTester tester) async {
+    final RecordingAdService adService = RecordingAdService();
+
+    await _pumpFocusSession(
+      tester,
+      adService: adService,
+      phase: PomodoroPhase.focusRunning(
+        sessionId: 1,
+        examId: null,
+        startedAtUtc: DateTime.now().toUtc(),
+        plannedDurationSec: 25 * 60,
+        cyclePosition: 1,
+      ),
+    );
+
+    expect(
+      find.descendant(
+        of: find.byType(FocusSessionScreen, skipOffstage: false),
+        matching: find.byType(BannerAdSlot, skipOffstage: false),
+      ),
+      findsNothing,
+    );
+    // Prototipin `interstitial · 3 pomodoroda 1` yer tutucusu da kalktı;
+    // gerçek interstitial ekranın üstünde değil, tam ekran açılıyor.
+    expect(find.textContaining('interstitial', skipOffstage: false), findsNothing);
+    expect(adService.interstitialRequests, 0);
+
+    final int bannerRequestsOnArrival = adService.bannerRequests;
+    for (int i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(adService.bannerRequests, bannerRequestsOnArrival);
 
     await _disposeTree(tester);
   });

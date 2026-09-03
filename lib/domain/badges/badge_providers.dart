@@ -33,7 +33,11 @@ class BadgeUnlockService {
   /// tek giriş noktası. Tüm tamamlanmış odak geçmişini yeniden değerlendirir
   /// (saf fonksiyon idempotent'tir) — bu yüzden geriye dönük hesap hatası
   /// riski yok, yalnızca zaten açık olanları tekrar yazmaz.
-  Future<void> evaluateAfterFocusCompletion() async {
+  ///
+  /// **Bu çağrıda** açılan rozetlerin anahtarlarını döndürür: SPEC.md §7.2'nin
+  /// "interstitial rozet açılışının üstüne asla binmez" kuralını uygulayan
+  /// `InterstitialManager` bunu kullanıyor.
+  Future<Set<String>> evaluateAfterFocusCompletion() async {
     final List<PomodoroSession> sessions =
         await _ref.read(pomodoroSessionDaoProvider).getAllCompletedFocusSessions();
     final Set<String> earnedKeys = evaluateEarnedBadgeKeys(completedFocusSessions: sessions);
@@ -42,7 +46,7 @@ class BadgeUnlockService {
     final Set<String> existingKeys = existing.map((UserBadge b) => b.badgeKey).toSet();
     final Set<String> newlyEarned = earnedKeys.difference(existingKeys);
     if (newlyEarned.isEmpty) {
-      return;
+      return const <String>{};
     }
 
     final DateTime now = DateTime.now().toUtc();
@@ -59,5 +63,6 @@ class BadgeUnlockService {
     if (settings.hapticEnabled) {
       unawaited(HapticFeedback.heavyImpact());
     }
+    return newlyEarned;
   }
 }

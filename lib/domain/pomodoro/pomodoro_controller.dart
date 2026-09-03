@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../services/ads/interstitial_manager.dart';
 import '../../services/notifications/notification_service.dart';
 import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_enums.dart';
@@ -355,8 +356,15 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     // anıyla yapılıyor (bkz. [tick]).
     await _scheduleBreakEndFor(breakPhase);
     await _notifications.rescheduleStreakRiskReminder(completedToday: true, streak: ref.read(streakProvider));
-    await ref.read(badgeUnlockServiceProvider).evaluateAfterFocusCompletion();
+    final Set<String> unlockedBadges =
+        await ref.read(badgeUnlockServiceProvider).evaluateAfterFocusCompletion();
     await _haptic();
+    // SPEC.md §7.2: interstitial **mola başlangıcında**. Kurallar (3'te 1,
+    // 180 sn, uzak bayrak, premium/onay kapısı) `InterstitialManager`da;
+    // burada yalnızca an ve "rozet açıldı mı" bilgisi veriliyor.
+    await ref.read(interstitialManagerProvider).maybeShowOnBreakStart(
+          badgeUnlocked: unlockedBadges.isNotEmpty,
+        );
   }
 
   /// [endedAtUtc] molanın **planlanan bitiş anı**dır — bkz. [_completeFocus].

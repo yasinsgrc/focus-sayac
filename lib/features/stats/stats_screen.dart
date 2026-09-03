@@ -10,6 +10,7 @@ import '../../core/widgets/bottom_nav_bar.dart';
 import '../../domain/stats/focus_stats.dart';
 import '../../domain/stats/stats_providers.dart';
 import '../../domain/time/duration_formatter.dart';
+import '../../services/ads/banner_ad_slot.dart';
 import 'widgets/weekly_focus_bar_painter.dart';
 
 /// Ekran 06 — istatistik. Prototip v2 satır 248-285 birebir. Prototipin
@@ -114,19 +115,8 @@ class StatsScreen extends ConsumerWidget {
                     _ProductiveWindowCard(window: stats.productiveWindow!),
                   ],
                   const Spacer(),
-                  // Faz 11'de gerçek `AnchoredAdaptiveBannerAdSize` bunun
-                  // yerine geçer (SPEC.md §7.1: banner yalnızca Ekran 02 ve 06).
-                  Container(
-                    height: 50,
-                    margin: const EdgeInsets.only(bottom: 88),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0x1FFFFFFF)),
-                    ),
-                    child: Center(
-                      child: Text('BANNER 320×50', style: AppTypography.kicker(fontSize: 8.5, color: colors.neutral700)),
-                    ),
-                  ),
+                  // SPEC.md §7.1: banner yalnızca Ekran 02 ve Ekran 06.
+                  const BannerAdSlot(bottomMargin: 88),
                 ],
               ),
             ),

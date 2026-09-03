@@ -1,8 +1,9 @@
 # FocusSayaç — Kalan İş Sırası
 
-Durum: **Faz 0-10 + 12 bitti** (geri sayım, sınav seçimi, odak/mola durum
+Durum: **Faz 0-12 bitti** (geri sayım, sınav seçimi, odak/mola durum
 makinesi, bildirimler, rozetler, başarı kartı + export, istatistik,
-onboarding + izinler + UMP, ayarlar). `flutter analyze` 0/0, 95 test geçiyor.
+onboarding + izinler + UMP, reklamlar + satın alma, ayarlar).
+`flutter analyze` 0/0, 121 test geçiyor.
 Kaynak plan: `SPEC.md` §8. Kararlar: `DECISIONS.md`.
 
 Aşağıdaki maddeler **teste/yayına çıkma önceliğine** göre sıralı. Her madde tek
@@ -21,8 +22,8 @@ ayarlar korunuyor); `in_app_review` 3. tamamlanan seanstan sonra bir kez
 (`domain/review/app_review_service.dart`, tetik `_completeBreak`); "Reklamları
 kaldır · yakında" satırı pasif. Kararlar: `DECISIONS.md` "Faz 12".
 
-Kalan bağlı iş: bildirim kapısının regresyon testi **madde 5**'te, gizlilik
-metninin reklamlara göre güncellenmesi **madde 6/9**'da.
+Kalan bağlı iş: bildirim kapısının regresyon testi **madde 5**'te bitti,
+gizlilik metninin reklamlara göre güncellenmesi **madde 9**'da.
 
 ---
 
@@ -40,8 +41,8 @@ dokunuşunda çalışıyor; "Şimdi değil" izinsiz devam ediyor. UMP consent ak
 override eder) üzerinden Ekran 01 ya da Ekran 02. Sahte `9:41` durum çubuğu
 çizilmiyor. Kararlar: `DECISIONS.md` "Faz 10".
 
-Kalan bağlı iş: gerçek reklam isteğinin `canRequestAds` kapısı **madde 6**'da;
-gizlilik metninin reklamlara/UMP'ye göre güncellenmesi **madde 6/9**'da.
+Kalan bağlı iş: `canRequestAds` kapısı **madde 6**'da eklendi; gizlilik
+metninin reklamlara/UMP'ye göre güncellenmesi **madde 9**'da.
 
 ---
 
@@ -59,8 +60,7 @@ tek gün / hafta sınırı / 04:00 kesimi testleri `test/domain/stats/`de.
 Prototipin demo sayıları (42 SAAT, %86, 11 GÜN) kodda yok — regresyon testi
 `test/features/stats/stats_screen_test.dart`.
 
-Kalan bağlı iş: banner hâlâ `BANNER 320×50` yer tutucusu — gerçek reklam
-**madde 6**'da.
+Banner yer tutucusu **madde 6**'da gerçek `BannerAdSlot` ile değişti.
 
 ---
 
@@ -106,25 +106,40 @@ Türkçe yönelme eki `domain/text/turkish_suffix.dart` ile okunuştan türüyor
 
 ---
 
-## 6. Reklamlar + satın alma (SPEC Faz 11) 🟠 yayın zorunlu
+## 6. Reklamlar + satın alma (SPEC Faz 11) ✅ bitti
 
-**Bağımlılık:** madde 3 (Ekran 06 banner hedefi) bitti — banner yeri hazır,
-`BANNER 320×50` yer tutucusu gerçeğiyle değiştirilecek. UMP consent (madde 2) bitti —
-`ConsentService` var; bu maddede `canRequestAds()` eklenip her reklam isteğinin
-önüne konulmalı.
+Her reklam isteği tek kapıdan geçiyor: `services/ads/ad_service.dart`
+(`canRequestAds` = `isPremium` değil **ve** UMP onayı var). `ConsentService`e
+`canRequestAds()` eklendi, `adServiceProvider` `main.dart`ta gerçek örnekle
+geçersiz kılınıyor (diğer servislerle aynı DI kalıbı; varsayılanı hâlâ
+`UnimplementedError`).
 
-- Banner **yalnızca** Ekran 02 ve Ekran 06, `AnchoredAdaptiveBannerAdSize`.
-  Yüklenemezse aynı yükseklikte `SizedBox` → layout zıplamaz.
-- Interstitial: kuralları tek yerde (`InterstitialManager`) — mola
-  **başlangıcında**, 3 tamamlanan pomodoroda 1, iki gösterim arası min. 180 sn.
-  Rozet açılışının/kart export'unun üstüne **asla** binmez.
-  `RemoteFlags.interstitialEnabled` ile kapatılabilir (varsayılan `true`).
-- `purchase_service.dart` + `pro_lifetime` akışı **tam kodlanır**, UI pasif kalır.
-- Ekranlardaki `BANNER 320×50` / `interstitial · 3 pomodoroda 1` placeholder
-  metinlerini gerçekleriyle değiştir.
+- **Banner** yalnızca Ekran 02 ve Ekran 06 (`services/ads/banner_ad_slot.dart`,
+  `AdSize.getLargeAnchoredAdaptiveBannerAdSize` — 9.x'te `Anchored…` sürümü
+  `@Deprecated`). Yükseklik istekten önce ayrılıyor, yüklenemese de korunuyor;
+  reklam **hiç istenmiyorsa** (premium/onay yok) yuva 88px payıyla kapanıyor.
+  Boyut sorgusu cevapsız kalırsa prototipin 320×50'siyle isteniyor.
+- **Interstitial** `services/ads/interstitial_manager.dart`: mola
+  başlangıcında, 3 tamamlanan pomodoroda 1, iki gösterim arası min. 180 sn
+  (son gösterim anı `SharedPreferences`ta kalıcı). Rozet açıldığı tamamlanışta
+  bastırılıyor — `BadgeUnlockService.evaluateAfterFocusCompletion()` artık o
+  çağrıda açılan anahtarları döndürüyor. `RemoteFlags.interstitialEnabled`
+  (`services/remote/remote_flags.dart`, varsayılan `true`) ile kapatılabiliyor.
+- `services/purchase/purchase_service.dart` + `pro_lifetime` akışı tam kodlandı
+  (ürün sorgusu, satın alma, restore, `completePurchase`); v1'de **hiçbir
+  çağıranı yok**, ayarlardaki satır pasif kalıyor (SPEC §7.3).
+- Placeholder'ların ikisi de kalktı: `BANNER 320×50` → gerçek yuva,
+  `interstitial · 3 pomodoroda 1` → gerçek tam ekran reklam.
 
-**DoD:** Ekran 03'te **hiçbir** reklam isteği atılmıyor. `isPremium == true` iken
-hiçbir reklam isteği atılmıyor.
+**DoD karşılandı:** Ekran 03'te hiçbir reklam isteği atılmıyor ve `isPremium`
+iken hiçbir istek atılmıyor — istekleri sayan `RecordingAdService`
+(`test/support/`) ile `test/features/ads/banner_placement_test.dart`,
+`test/features/focus_session/focus_session_screen_test.dart`,
+`test/services/ads/` altında doğrulandı (+26 test).
+
+Kalan bağlı iş: gerçek AdMob birim/uygulama kimlikleri ve gizlilik politikası
+metni **madde 9**'da (şu an Google'ın resmî test kimlikleri, `--dart-define`
+ile değiştirilebilir).
 
 ---
 
@@ -166,8 +181,8 @@ yoksa iki kez çevrilir.
 - [x] Cihaz saati geriye alındığında seans yanlış "tamamlandı" sayılmıyor
 - [x] İzinler reddedildiğinde uygulama tam çalışıyor
 - [x] Tarihi geçmiş sınav → Ekran 08, rozet/geçmiş korunuyor
-- [ ] Ekran 03'te hiçbir reklam isteği atılmıyor *(madde 6)*
-- [ ] `isPremium` iken hiçbir reklam isteği atılmıyor *(madde 6)*
+- [x] Ekran 03'te hiçbir reklam isteği atılmıyor
+- [x] `isPremium` iken hiçbir reklam isteği atılmıyor
 - [x] Kart export'u tam 1080×1920
 - [ ] Odak ekranı `--profile` modda sürekli 60 fps *(madde 8)*
 - [ ] Odak seansında dekoratif animasyonlar duruyor *(madde 8)*

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/main.dart';
+import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
@@ -36,6 +37,7 @@ Future<void> _pumpCountdown(WidgetTester tester, {required int focusMinutes}) as
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         sharedPreferencesProvider.overrideWithValue(prefs),
+        adServiceProvider.overrideWithValue(AdService.disabled()),
         notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
         // Faz 10: test edilen akış Ekran 02'den başlıyor — onboarding'i
         // tamamlamış kullanıcının açılışı.

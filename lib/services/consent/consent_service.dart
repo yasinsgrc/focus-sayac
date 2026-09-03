@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -33,8 +34,8 @@ class ConsentService {
   /// Onay bilgisini tazeler ve gerekiyorsa UMP formunu gösterir. Akışın
   /// herhangi bir adımı başarısız olursa **sessizce** geçilir: onay
   /// alınamadığında doğru davranış kullanıcıyı onboarding'de kilitlemek değil,
-  /// reklamsız devam etmektir (reklam isteğinin koşulu Faz 11'de
-  /// `canRequestAds` olacak, onay durumu UMP SDK'sında saklı kalır).
+  /// reklamsız devam etmektir — reklam isteğinin koşulu [canRequestAds],
+  /// onay durumu UMP SDK'sında saklı kalır.
   Future<void> gatherConsent() async {
     final ConsentInformation? consentInformation = _consentInformation;
     if (consentInformation == null) return;
@@ -50,5 +51,24 @@ class ConsentService {
     );
     await updated.future;
     await ConsentForm.loadAndShowConsentFormIfRequired((FormError? error) {});
+  }
+
+  /// SPEC.md §7'nin yasal kapısı: UMP'ye göre reklam isteği atılabilir mi
+  /// (`AdService.canRequestAds` bunu her istekten önce sorar). Onay durumu
+  /// UMP SDK'sında saklı olduğu için burada önbelleğe alınmıyor — kullanıcı
+  /// formu sonradan değiştirirse cevap kendiliğinden güncel kalıyor.
+  ///
+  /// Servis kapalıyken (testler) ve kanal hata verdiğinde `false`: bilinmeyen
+  /// onay durumunda doğru davranış reklam **istememektir**.
+  Future<bool> canRequestAds() async {
+    final ConsentInformation? consentInformation = _consentInformation;
+    if (consentInformation == null) return false;
+    try {
+      return await consentInformation.canRequestAds();
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
   }
 }

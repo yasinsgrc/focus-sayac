@@ -10,6 +10,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/time/app_day.dart';
 import 'domain/streak/streak_calculator.dart';
+import 'services/ads/ad_service.dart';
 import 'services/consent/consent_service.dart';
 import 'services/notifications/notification_service.dart';
 import 'services/storage/app_database.dart';
@@ -39,6 +40,16 @@ Future<void> main() async {
   // tekrar kullanıyor (Faz 6 kararı, DECISIONS.md).
   await notificationService.initialize();
   unawaited(_rescheduleStreakRiskReminder(database, notificationService));
+  // SPEC.md §7: UMP onayı Ekran 01'de toplanıyor, reklam isteğinin kapısı
+  // `AdService.canRequestAds` (onay + `isPremium`). SDK'nın başlatılması
+  // reklam istemek değil, o yüzden açılışta ve onaydan bağımsız yapılıyor;
+  // ilk istek her hâlükârda kapıdan geçiyor.
+  final ConsentService consentService = ConsentService();
+  final AdService adService = AdService(
+    readIsPremium: () async => (await database.appSettingsDao.getSettings()).isPremium,
+    readConsentAllowsAds: consentService.canRequestAds,
+  );
+  unawaited(adService.initialize());
   // Başlangıç rotasının (Ekran 01 mi Ekran 02 mi) senkron bilmesi gereken tek
   // değer; `appSettingsDaoProvider` yerine `database` doğrudan okunuyor çünkü
   // Riverpod ağacı henüz kurulmadı (`_rescheduleStreakRiskReminder` ile aynı
@@ -50,7 +61,8 @@ Future<void> main() async {
         appDatabaseProvider.overrideWithValue(database),
         sharedPreferencesProvider.overrideWithValue(prefs),
         notificationServiceProvider.overrideWithValue(notificationService),
-        consentServiceProvider.overrideWithValue(ConsentService()),
+        consentServiceProvider.overrideWithValue(consentService),
+        adServiceProvider.overrideWithValue(adService),
         onboardingCompletedAtLaunchProvider.overrideWithValue(launchSettings.onboardingCompleted),
       ],
       child: const FocusSayacApp(),

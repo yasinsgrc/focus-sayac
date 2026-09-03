@@ -670,3 +670,69 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   üretilen kayıt defterinin işi). Anahtar açık hâldeki karşı kontrolde **seri riski (1003)
   beklenmiyor**: o bildirim yalnızca günün 21:00'i henüz gelmediyse kuruluyor, testi çalıştırma
   saatine bağlamamak için kapsam dışı bırakıldı.
+
+## Faz 11 — Reklamlar (banner + interstitial) + `purchase_service` (UI pasif)
+
+- **Her reklam isteğinin tek kapısı `AdService.canRequestAds()`** (`services/ads/ad_service.dart`).
+  Kapıyı çağıranlara (banner yuvası, `InterstitialManager`) dağıtmak yerine tek noktada tutmak,
+  `NotificationService`in bildirim anahtarını tek noktada uygulamasıyla aynı gerekçe: SPEC §10'un
+  iki DoD maddesi ("Ekran 03'te hiçbir reklam isteği atılmıyor", "`isPremium` iken hiçbir reklam
+  isteği atılmıyor") kontrolün unutulabildiği her yerde sessizce ihlal edilir. Sıra bilinçli:
+  önce `isPremium`, sonra UMP — premium kullanıcı için onay durumunu hiç sormaya gerek yok
+  (`ad_service_test.dart` bunu ayrıca doğruluyor).
+- **`isPremium` servise depolama katmanından değil bir okuyucu fonksiyonla geliyor**
+  (`PremiumStatusReader`), `NotificationPreferencesReader` ile birebir aynı kalıp: `services/ads`
+  `services/storage`a bağlanmıyor, eşleme `main.dart`ta. Her istek anında yeniden okunuyor —
+  satın alma sonrası servisi haberdar edecek ayrı bir senkronizasyon yolu gerekmesin diye.
+- **SDK'ya dokunan üç metot kapının arkasında ayrı duruyor** (`requestBanner`, `requestBannerSize`,
+  `requestInterstitial`). Testler yalnızca bu seam'leri override edip **istek sayısını** ölçüyor
+  (`test/support/recording_ad_service.dart`), böylece kapının kendisi gerçek koduyla koşuyor.
+  `AdService.disabled()` ile ölçülen "istek yok" sonucu kapıyı değil kapalı servisi doğrulardı.
+- **`adServiceProvider` varsayılanı `UnimplementedError` fırlatıyor**, `AdService.disabled()`
+  değil — `notificationServiceProvider`/`consentServiceProvider` ile aynı karar. Sessiz bir no-op
+  varsayılan, `main.dart`ta unutulan bir override'ı "reklamlar hiç görünmüyor" olarak gizlerdi.
+  Bedeli, reklam yuvası ya da odak tamamlanışı içeren her testin override yazması (11 dosya).
+- **Banner yüksekliği reklam gelmeden ayrılıyor ve yüklenemese de korunuyor** (SPEC §7.1 "layout
+  zıplamaz"). Tek istisna reklamın **hiç istenmediği** hâl (premium ya da onay yok): orada yuva
+  `SizedBox.shrink()`e kapanıyor, alt gezinme çubuğunun 88px payı da onunla birlikte kalkıyor —
+  asla dolmayacak bir boşluğu ayırmak, reklamsız sürümün kazandırdığı alanı geri vermemek olurdu.
+- **`AdSize.getLargeAnchoredAdaptiveBannerAdSize` kullanılıyor**, `getAnchoredAdaptiveBannerAdSize`
+  değil: ikincisi `google_mobile_ads` 9.x'te `@Deprecated` ve `analysis_options.yaml` 0 uyarı
+  istiyor. Adaptive yükseklik çoğu telefonda prototipin 50'si değil 90 dönüyor; yerleşimin bunu
+  taşırmadığı 390×844 yüzeyde `banner_placement_test.dart` ile doğrulandı. Boyut sorgusu cevapsız
+  kalırsa (kanalsız koşum) banner'dan vazgeçilmiyor, prototipin 320×50'siyle isteniyor.
+- **Interstitial kuralları tek yerde** (`InterstitialManager`): mola başlangıcı, 3 tamamlanan
+  pomodoroda 1, iki gösterim arası min. 180 sn. "3'te 1" ile "180 sn" bağımsız iki sayaç; ikisini
+  çağırana dağıtmak, ileride ikinci bir tetik noktası eklendiğinde sessizce iki kat reklam demekti.
+  Son gösterim anı `SharedPreferences`ta kalıcı — uygulama öldürülüp hemen açılırsa kural yine
+  geçerli. Damga yalnızca reklam **gerçekten gösterildiyse** atılıyor: yüklenemeyen bir reklam
+  180 sn'lik pencereyi harcamamalı.
+- **"3 tamamlanan pomodoro" sayısı `PomodoroSessionDao.getAllCompletedFocusSessions()`ten geliyor**,
+  ayrı bir sayaç tutulmuyor — `AppReviewService` ve `BadgeUnlockService` de aynı kaynağı okuyor.
+  İptal edilen seanslar (`completed = false`) doğal olarak sayıya girmiyor.
+- **Rozet açılışı interstitial'ı bastırıyor** (SPEC §7.2 "asla binmez"). Bunun için
+  `BadgeUnlockService.evaluateAfterFocusCompletion()` artık **o çağrıda** açılan anahtarları
+  döndürüyor (`Future<void>` → `Future<Set<String>>`); `PomodoroController._completeFocus` bu
+  bilgiyi `maybeShowOnBreakStart`a geçiriyor. Bastırma 180 sn penceresini harcamıyor, sonraki mola
+  gösterebiliyor. Kart export'u (Ekran 05) için ayrı bir koşul yok: o ekran yalnızca Ekran 04'ün
+  rozet dialogundan açılıyor ve mola sürerken erişilemiyor.
+- **Ekran 09'un `interstitial · 3 pomodoroda 1` yer tutucusu kaldırıldı** — gerçek reklam tam o
+  anda tam ekran açılıyor, molanın gövdesinde yer kaplamasının anlamı yok.
+- **`RemoteFlags` `SharedPreferences` üstünde duruyor** (`services/remote/remote_flags.dart`).
+  Gerçek bir backend hâlâ verilmedi (`ExamSourceService` ile aynı durum, Faz 3): uzak yapılandırma
+  bağlandığında yazacağı yer burası, okuyan taraf değişmiyor. Anahtar hiç yazılmamışken derleme
+  zamanı varsayılanı (`--dart-define INTERSTITIAL_ENABLED`) geçerli — acil kapatma için kod
+  değişikliği gerekmiyor.
+- **Reklam birimi kimlikleri Google'ın resmî test birimleri**, `--dart-define` ile geçersiz
+  kılınabiliyor (`AdUnitIds`). Gerçek AdMob hesabı açılmadan gerçek birimlerle koşmak politika
+  ihlali sayılan trafik üretirdi; `AndroidManifest.xml`deki `APPLICATION_ID` de aynı sebeple test
+  değeri (Play yayınından önce ikisi birlikte değişecek — ROADMAP madde 9).
+- **`purchase_service.dart` tam kodlandı, hiçbir çağıranı yok** (SPEC §7.3: UI pasif). Ürün
+  sorgusu, satın alma, mağaza tarafından başlatılan/geri yüklenen işlemler ve `completePurchase`
+  eksiksiz ve testli; açılacağı sürümde `main.dart` `start()`i, ayarlardaki satır
+  `buyProLifetime()`i çağıracak. Hata/iptal durumunda da `completePurchase` çağrılıyor: açık
+  bırakılan işlem her açılışta yeniden yayınlanır ve aynı ürünün ikinci denemesini bloklar.
+- **`PurchaseService` testi eklenti kanalını taklit etmiyor, `InAppPurchase`i `implements` ediyor**
+  — doğrulanması gereken şey kanal değil, satın alma **akışının** `isPremium`e nasıl çevrildiği.
+  İmzası `in_app_purchase`ten dışa aktarılmayan bir türe bağlı olan `getPlatformAddition` yalnızca
+  o tür için paket bağımlılığı eklemek yerine `noSuchMethod` iletimine bırakıldı.
