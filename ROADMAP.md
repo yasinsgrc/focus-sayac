@@ -1,7 +1,8 @@
 # FocusSayaç — Kalan İş Sırası
 
-Durum: **Faz 0-7 + 12 bitti** (geri sayım, sınav seçimi, odak/mola durum
-makinesi, bildirimler, rozetler, ayarlar). `flutter analyze` 0/0, 49 test geçiyor.
+Durum: **Faz 0-7 + 10 + 12 bitti** (geri sayım, sınav seçimi, odak/mola durum
+makinesi, bildirimler, rozetler, onboarding + izinler + UMP, ayarlar).
+`flutter analyze` 0/0, 53 test geçiyor.
 Kaynak plan: `SPEC.md` §8. Kararlar: `DECISIONS.md`.
 
 Aşağıdaki maddeler **teste/yayına çıkma önceliğine** göre sıralı. Her madde tek
@@ -25,21 +26,22 @@ metninin reklamlara göre güncellenmesi **madde 6/9**'da.
 
 ---
 
-## 2. Ekran 01 — Onboarding + izinler + UMP (SPEC Faz 10) 🔴 teste çıkış engeli
+## 2. Ekran 01 — Onboarding + izinler + UMP (SPEC Faz 10) ✅ bitti
 
-**Neden:** Şu an `main.dart:35` açılışta hiçbir bağlam vermeden bildirim izni
-istiyor. UMP consent akışı yok — reklamlardan **önce** zorunlu (yasal).
+`lib/features/onboarding/onboarding_screen.dart`, rota `app_router.dart`e
+eklendi. İzin isteği `NotificationService.initialize()`ten ayrılıp
+`requestPermissions()`a taşındı (`POST_NOTIFICATIONS` →
+`SCHEDULE_EXACT_ALARM`, sırayla) ve artık açılışta değil "İZİN VER VE BAŞLA"
+dokunuşunda çalışıyor; "Şimdi değil" izinsiz devam ediyor. UMP consent akışı
+`lib/services/consent/consent_service.dart` (`ConsentService.gatherConsent`,
+`google_mobile_ads`in UMP API'si) ve **iki** çıkışta da toplanıyor. Bitişte
+`onboardingCompleted = true`; başlangıç rotası
+`onboardingCompletedAtLaunchProvider` (açılış anlık görüntüsü, `main.dart`
+override eder) üzerinden Ekran 01 ya da Ekran 02. Sahte `9:41` durum çubuğu
+çizilmiyor. Kararlar: `DECISIONS.md` "Faz 10".
 
-- `POST_NOTIFICATIONS` → `SCHEDULE_EXACT_ALARM` **sırayla** iste (mevcut
-  `NotificationService.initialize()` tekrar kullanılacak, Faz 6 kararı).
-- "Şimdi değil" → izinsiz devam, uygulama tam çalışır (SPEC DoD).
-- UMP Consent akışı burada, ilk reklam isteğinden önce.
-- Bitişte `onboardingCompleted = true`; `app_router.dart:14` `initialLocation`
-  bu bayrağa göre onboarding ya da countdown.
-- Prototipteki sahte `9:41` durum çubuğunu **çizme**.
-
-**DoD:** İzinler reddedildiğinde uygulama tam çalışıyor. İkinci açılışta
-onboarding gösterilmiyor.
+Kalan bağlı iş: gerçek reklam isteğinin `canRequestAds` kapısı **madde 6**'da;
+gizlilik metninin reklamlara/UMP'ye göre güncellenmesi **madde 6/9**'da.
 
 ---
 
@@ -93,7 +95,9 @@ Tek oturumda toplu yapılabilir, hepsi küçük:
 
 ## 6. Reklamlar + satın alma (SPEC Faz 11) 🟠 yayın zorunlu
 
-**Bağımlılık:** madde 2 (UMP consent) ve madde 3 (Ekran 06 banner hedefi).
+**Bağımlılık:** madde 3 (Ekran 06 banner hedefi). UMP consent (madde 2) bitti —
+`ConsentService` var; bu maddede `canRequestAds()` eklenip her reklam isteğinin
+önüne konulmalı.
 
 - Banner **yalnızca** Ekran 02 ve Ekran 06, `AnchoredAdaptiveBannerAdSize`.
   Yüklenemezse aynı yükseklikte `SizedBox` → layout zıplamaz.
@@ -146,7 +150,7 @@ yoksa iki kez çevrilir.
 - [x] 10 dk arka plandan dönüşte sayaç doğru
 - [x] Uygulama öldürülüp açıldığında aktif seans kurtarılıyor
 - [x] Cihaz saati geriye alındığında seans yanlış "tamamlandı" sayılmıyor
-- [ ] İzinler reddedildiğinde uygulama tam çalışıyor *(madde 2)*
+- [x] İzinler reddedildiğinde uygulama tam çalışıyor
 - [x] Tarihi geçmiş sınav → Ekran 08, rozet/geçmiş korunuyor
 - [ ] Ekran 03'te hiçbir reklam isteği atılmıyor *(madde 6)*
 - [ ] `isPremium` iken hiçbir reklam isteği atılmıyor *(madde 6)*

@@ -492,3 +492,49 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   metin cihazda saklanan veriyi olduğu gibi anlatıyor. **Faz 11 (reklamlar) bu metni geçersiz
   kılacak**: AdMob/UMP geldiğinde gizlilik metni ve Play listesindeki politika bağlantısı birlikte
   güncellenmeli.
+
+## Faz 10 — Ekran 01 (onboarding) + izin akışı + UMP consent
+
+- **İzin isteği `NotificationService.initialize()`ten `requestPermissions()`e ayrıldı** — Faz 6'da
+  ikisi tek metotta duruyordu ve `main.dart` onu açılışta çağırdığı için uygulama, kullanıcı henüz
+  hiçbir şey görmeden `POST_NOTIFICATIONS` diyaloğunu açıyordu. SPEC Ekran 01'in tüm işi bu isteğin
+  **gerekçesini** göstermek; gerekçe ekranı yazılınca isteğin de oraya taşınması gerekiyordu. Kanal
+  başlatma (`plugin.initialize` + `timezone`) açılışta kaldı: kurulmuş bildirimlerin iptali izinden
+  bağımsız çalışmalı ve onboarding'i çoktan geçmiş kullanıcı için her açılışta hazır olmalı.
+- **Başlangıç rotası bayrağın canlı akışını değil açılış anlık görüntüsünü okuyor**
+  (`onboardingCompletedAtLaunchProvider`, `main.dart` override eder) — `appSettingsProvider`
+  akışından izlenseydi, onboarding'in sonunda bayrak yazılır yazılmaz `appRouterProvider` yeniden
+  kurulur, o anki gezinme yığını sıfırlanırdı. Bayrağın tek tüketicisi zaten `initialLocation`.
+  Sağlayıcı `notificationServiceProvider` gibi override edilmeden fırlatıyor: sessiz bir varsayılan,
+  testlerde yanlış ekranın doğrulandığını fark ettirmezdi.
+- **UMP onayı "Şimdi değil" dalında da toplanıyor** — iki buton yalnızca bildirim izni konusunda
+  ayrışıyor. Onay, reklam göstermenin yasal ön koşulu (SPEC §7.1), bildirim izninin bir alt seçeneği
+  değil; "Şimdi değil"de atlanırsa Faz 11'de ilk banner isteğinde onaysız kalınırdı.
+- **`ConsentService` sahte `ConsentInformation` yerine `disabled()` ikizi kullanıyor** — eklenti
+  `requestConsentInfoUpdate` içindeki kanal çağrısını kendi `async` gövdesinde yapıp yalnızca
+  `PlatformException`ı yakalıyor; kanalın hiç olmadığı koşumlarda (widget testleri) atılan
+  `MissingPluginException` dışarıdan yakalanamıyor, yakalanmamış asenkron hataya dönüşürdü.
+  `NotificationService.disabled` / `AppDatabase.forTesting` ile aynı kalıp.
+- **Onay akışının her hatası sessizce geçiliyor** — `requestConsentInfoUpdate`in hata dinleyicisi de
+  `Completer`ı tamamlıyor. Onay alınamadığında doğru davranış kullanıcıyı onboarding'de kilitlemek
+  değil, reklamsız devam etmek; reklam isteğinin asıl kapısı Faz 11'de `canRequestAds()` olacak.
+  Bu yüzden `canRequestAds()` şimdiden eklenmedi — tüketicisi olmayan bir API olurdu.
+- **`onboardingCompleted` bayrağı akışın en sonunda yazılıyor** (izin → onay → bayrak). Ortada
+  uygulama öldürülürse onboarding bir sonraki açılışta tekrar gösterilir; yarım kalmış bir izin/onay
+  dizisiyle geri sayıma düşmek, kullanıcının onay formunu bir daha hiç görmemesi demekti.
+- **Prototipin "25 dakikalık seanslar tut" cümlesi ayardan okunmuyor, sabit** — SPEC DoD'nin
+  yasakladığı demo sayıları (132, 42, %86, 6, 3/7, 11) arasında 25 yok; 25 pomodoro varsayılanının
+  kendisi ve bu ekran tanım gereği hiçbir ayar değiştirilmeden önce, yalnızca ilk açılışta
+  görünüyor. Ayar akışına bağlamak, karşılama metnini ilk karede sayısız gösterip sonra
+  sıçratmaktan başka bir şey kazandırmazdı (Ekran 02'nin buton etiketi bunun tersi: orada ayar
+  gerçekten değişmiş olabilir).
+- **Prototipin dört dekoratif animasyonundan ikisi uygulandı** — shimmer (SPEC §6.3 bunu
+  **yalnızca** bu ekranda açıkça istiyor) ve meşale halkasının dönüşü. `glow` nabzı orta değerinde,
+  `sheen` parlaması üstten sönen durağan gradient, `aurora` kayması sabit (Ekran 02'nin aurora
+  kararıyla aynı); üçü de ekranın durağan karesinde zaten böyle görünüyor ve ömründe bir kez açılan
+  bir ekran için ek `repeat()` denetleyicileri SPEC §6'nın "aynı görünen ama daha ucuz" kuralına
+  aykırıydı.
+- **Halkanın parlak tepe yayı `CustomPainter` ile çiziliyor** — prototip `border-top-color` ile tek
+  kenarı boyuyor, Flutter'da `BoxShape.circle` kenarlığı kenar başına renk almıyor. Dairede
+  karşılığı tepedeki çeyrek yay; `drawOval` + `drawArc` bunu tek boyamada veriyor (Faz 4/7'deki
+  halka painter'larıyla aynı yaklaşım).

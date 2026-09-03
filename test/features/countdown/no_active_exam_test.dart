@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
@@ -40,6 +41,9 @@ Future<void> _pumpWithoutActiveExam(WidgetTester tester) async {
         appDatabaseProvider.overrideWithValue(database),
         sharedPreferencesProvider.overrideWithValue(prefs),
         notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
+        // Faz 10: test edilen akış Ekran 02'den başlıyor — onboarding'i
+        // tamamlamış kullanıcının açılışı.
+        onboardingCompletedAtLaunchProvider.overrideWithValue(true),
       ],
       child: const FocusSayacApp(),
     ),

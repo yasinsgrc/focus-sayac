@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
@@ -33,6 +34,10 @@ void main() {
         overrides: [
           appDatabaseProvider.overrideWithValue(database),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          // Faz 10: başlangıç rotası `onboardingCompleted` bayrağına bakıyor.
+          // Bu test onboarding'i geçmiş kullanıcının açılışını doğruluyor;
+          // ilk açılış Ekran 01'e düşer (onboarding_test.dart).
+          onboardingCompletedAtLaunchProvider.overrideWithValue(true),
         ],
         child: const FocusSayacApp(),
       ),

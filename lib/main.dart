@@ -10,6 +10,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/time/app_day.dart';
 import 'domain/streak/streak_calculator.dart';
+import 'services/consent/consent_service.dart';
 import 'services/notifications/notification_service.dart';
 import 'services/storage/app_database.dart';
 import 'services/storage/exam_source_service.dart';
@@ -31,18 +32,26 @@ Future<void> main() async {
   final NotificationService notificationService = NotificationService(
     readPreferences: () => _readNotificationPreferences(database),
   );
-  // SPEC.md Ekran 01: POST_NOTIFICATIONS → SCHEDULE_EXACT_ALARM izinleri de
-  // burada istenir. Onboarding ekranının kendisi (Faz 10) henüz yok; izin
-  // reddedilse de uygulama tam çalışmaya devam eder (SPEC DoD) — Faz 10
-  // aynı servisi tekrar kullanacak (Faz 6 kararı, DECISIONS.md).
+  // Yalnızca platform kanalını açar. İzinler (POST_NOTIFICATIONS →
+  // SCHEDULE_EXACT_ALARM) artık burada değil, Ekran 01'in "İZİN VER VE BAŞLA"
+  // dokunuşuyla isteniyor: açılışta bağlamsız bir sistem diyaloğu açmak
+  // SPEC.md Ekran 01'in anlattığı gerekçeyi atlıyordu. Ekran 01 aynı servisi
+  // tekrar kullanıyor (Faz 6 kararı, DECISIONS.md).
   await notificationService.initialize();
   unawaited(_rescheduleStreakRiskReminder(database, notificationService));
+  // Başlangıç rotasının (Ekran 01 mi Ekran 02 mi) senkron bilmesi gereken tek
+  // değer; `appSettingsDaoProvider` yerine `database` doğrudan okunuyor çünkü
+  // Riverpod ağacı henüz kurulmadı (`_rescheduleStreakRiskReminder` ile aynı
+  // gerekçe).
+  final AppSettingsTableData launchSettings = await database.appSettingsDao.getSettings();
   runApp(
     ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(database),
         sharedPreferencesProvider.overrideWithValue(prefs),
         notificationServiceProvider.overrideWithValue(notificationService),
+        consentServiceProvider.overrideWithValue(ConsentService()),
+        onboardingCompletedAtLaunchProvider.overrideWithValue(launchSettings.onboardingCompleted),
       ],
       child: const FocusSayacApp(),
     ),

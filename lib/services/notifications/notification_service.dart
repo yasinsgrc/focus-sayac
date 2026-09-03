@@ -144,12 +144,13 @@ class NotificationService {
     playSound: false,
   );
 
-  /// `timezone` veritabanını yükler, platform kanalını başlatır ve SPEC.md
-  /// Ekran 01 sırasıyla (`POST_NOTIFICATIONS` → `SCHEDULE_EXACT_ALARM`) izin
-  /// ister. Ekran 01'in kendisi (onboarding UI) Faz 10'da geliyor; bu
-  /// çağrı `main.dart`'ta açılışta tetiklenir — reddedilse de uygulama
-  /// tam çalışmaya devam eder (SPEC DoD), Faz 10 aynı servisi tekrar
-  /// kullanacak (Faz 6 kararı).
+  /// `timezone` veritabanını yükler ve platform kanalını başlatır. İzin
+  /// **istemez**: açılışta hiçbir bağlam vermeden sistem diyaloğu açmak,
+  /// SPEC.md Ekran 01'in işi olan "neden gerekli" anlatısını atlıyordu. İzin
+  /// isteği [requestPermissions]'a ayrıldı ve onboarding'den tetikleniyor
+  /// (Faz 10, "aynı servis tekrar kullanılacak" — Faz 6 kararı). Kanal
+  /// başlatma açılışta kalıyor: kurulmuş bildirimlerin iptali izinden
+  /// bağımsız çalışmalı.
   Future<void> initialize() async {
     final FlutterLocalNotificationsPlugin? plugin = _plugin;
     if (plugin == null) return;
@@ -157,6 +158,15 @@ class NotificationService {
     _istanbul = tz.getLocation('Europe/Istanbul');
     const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     await plugin.initialize(settings: const InitializationSettings(android: androidInit));
+  }
+
+  /// SPEC.md Ekran 01 "İZİN VER VE BAŞLA": `POST_NOTIFICATIONS` →
+  /// `SCHEDULE_EXACT_ALARM` **sırayla**. İkisi de reddedilse uygulama tam
+  /// çalışmaya devam ettiği için (SPEC DoD) dönüş değeri yok — çağıran akış
+  /// sonuca göre dallanmıyor, yalnızca sırayı bekliyor.
+  Future<void> requestPermissions() async {
+    final FlutterLocalNotificationsPlugin? plugin = _plugin;
+    if (plugin == null) return;
     final AndroidFlutterLocalNotificationsPlugin? android = plugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await android?.requestNotificationsPermission();

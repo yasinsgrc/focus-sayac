@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/core/theme/app_theme.dart';
 import 'package:focussayac/features/settings/settings_screen.dart';
 import 'package:focussayac/main.dart';
@@ -48,6 +49,9 @@ Widget _appWith(AppDatabase database, SharedPreferences prefs, Widget home) {
       appDatabaseProvider.overrideWithValue(database),
       sharedPreferencesProvider.overrideWithValue(prefs),
       notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
+      // Faz 10: başlangıç rotası `onboardingCompleted` bayrağına bakıyor —
+      // bu dosyanın testleri onboarding'i tamamlamış kullanıcıyı doğruluyor.
+      onboardingCompletedAtLaunchProvider.overrideWithValue(true),
     ],
     child: home,
   );

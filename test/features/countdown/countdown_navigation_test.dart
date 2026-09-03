@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_controller.dart';
 import 'package:focussayac/features/focus_session/focus_session_screen.dart';
 import 'package:focussayac/main.dart';
@@ -55,6 +56,9 @@ Future<void> _pumpApp(WidgetTester tester, {Map<String, Object> initialPrefs = c
         appDatabaseProvider.overrideWithValue(database),
         sharedPreferencesProvider.overrideWithValue(prefs),
         notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
+        // Faz 10: test edilen akış Ekran 02'den başlıyor — onboarding'i
+        // tamamlamış kullanıcının açılışı.
+        onboardingCompletedAtLaunchProvider.overrideWithValue(true),
       ],
       child: const FocusSayacApp(),
     ),
