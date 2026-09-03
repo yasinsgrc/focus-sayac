@@ -23,7 +23,32 @@ class _FlameWidgetState extends State<FlameWidget> with SingleTickerProviderStat
   late final AnimationController _flick = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1700),
-  )..repeat();
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _syncFlick();
+  }
+
+  @override
+  void didUpdateWidget(FlameWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncFlick();
+  }
+
+  /// SPEC.md §6: odak ekranı 25 dakika wakelock ile açık kalıyor. Duraklatılmış
+  /// seansta alev soluyor (`_desaturate`) ama titremeye devam ediyordu —
+  /// süresiz durabilen bir ekranda saniyede 60 kare çizmenin sebebi yok, ve
+  /// donmuş alev "duraklatıldı"yı zaten en doğru anlatan hâl. §6.4'ün "meşale
+  /// ve halka çalışmaya devam eder" istisnası **süren** seans için.
+  void _syncFlick() {
+    if (widget.running && !_flick.isAnimating) {
+      _flick.repeat();
+    } else if (!widget.running && _flick.isAnimating) {
+      _flick.stop();
+    }
+  }
 
   @override
   void dispose() {
@@ -58,17 +83,28 @@ class _FlameWidgetState extends State<FlameWidget> with SingleTickerProviderStat
           child: child,
         );
       },
-      child: const _FlameShape(),
+      // SPEC.md §6 kural 5 ("`RepaintBoundary` ile meşaleyi ayır"), içteki
+      // yarısı: alevin şekli hiç değişmiyor, yalnızca üstündeki `Transform`
+      // değişiyor. Sınır sayesinde `Transform` bileşikleşiyor (composited) ve
+      // kare başına iş, hazır katmanın matrisini güncellemeye iniyor —
+      // gradyanlı gövde yeniden rasterize edilmiyor.
+      child: const RepaintBoundary(child: _FlameShape()),
     );
 
     if (!widget.running) {
       flame = ColorFiltered(colorFilter: _desaturate, child: flame);
     }
 
-    return Transform.scale(
-      scale: growthScale,
-      alignment: Alignment.bottomCenter,
-      child: flame,
+    // Dıştaki yarısı: bu sınır olmadan `Transform`un her karedeki
+    // `markNeedsPaint`i en yakın üst sınıra kadar çıkıyordu — o sınır Ekran
+    // 03'te alevle **aynı** katmanda duran 72px sayaç metnini de kapsıyor, yani
+    // saat saniyede 60 kez yeniden çiziliyordu.
+    return RepaintBoundary(
+      child: Transform.scale(
+        scale: growthScale,
+        alignment: Alignment.bottomCenter,
+        child: flame,
+      ),
     );
   }
 }

@@ -1,9 +1,9 @@
 # FocusSayaç — Kalan İş Sırası
 
-Durum: **Faz 0-13 bitti** (geri sayım, sınav seçimi, odak/mola durum
-makinesi, bildirimler, rozetler, başarı kartı + export, istatistik,
-onboarding + izinler + UMP, reklamlar + satın alma, ayarlar, ARB
-yerelleştirme). `flutter analyze` 0/0, 126 test geçiyor.
+Durum: **Faz 0-13 bitti**, **Faz 14'ün kod tarafı bitti** (geri sayım, sınav
+seçimi, odak/mola durum makinesi, bildirimler, rozetler, başarı kartı + export,
+istatistik, onboarding + izinler + UMP, reklamlar + satın alma, ayarlar, ARB
+yerelleştirme, performans geçişi). `flutter analyze` 0/0, 131 test geçiyor.
 Kaynak plan: `SPEC.md` §8. Kararlar: `DECISIONS.md`.
 
 Aşağıdaki maddeler **teste/yayına çıkma önceliğine** göre sıralı. Her madde tek
@@ -175,11 +175,37 @@ uyumu verisi — hiçbiri ekrana çıkmıyor. Kararlar: `DECISIONS.md` "Faz 13".
 
 ---
 
-## 8. Performans geçişi (SPEC Faz 14) 🟡
+## 8. Performans geçişi (SPEC Faz 14) 🟡 kod tarafı bitti, ölçüm cihazda
 
-- `--profile` modda odak ekranı **sürekli 60 fps**.
-- Odak seansında dekoratif animasyonlar duruyor (SPEC DoD).
-- SPEC §6'daki tüm maddeleri tek tek doğrula.
+SPEC §6'nın altı kuralı tek tek geçildi. 1-3 (runtime blur yok, `BackdropFilter`
+yok, krom tipografi `ShaderMask` + shimmer yalnızca Ekran 01) Faz 2'de zaten
+böyle inşa edilmişti; artık `test/performance/runtime_blur_scan_test.dart`
+kaynağın tamamını tarayıp pinliyor (madde 7'nin grep yaklaşımı). Kural 4 ve 5
+gerçek iş çıkardı:
+
+- **Kural 4 — Ekran 02'nin saniye tikleyicisi odak seansı boyunca duruyor.**
+  Odak ekranı Ekran 02'nin üstüne `push` ediliyor ve Ekran 02 yığında kalıyor.
+  Halkanın `AnimationController`ı `Overlay`in `TickerMode`u sayesinde zaten
+  susuyordu, ama `Timer.periodic` `TickerMode`a bakmıyor: kapalı rota, odak
+  ekranı 60 fps çizerken saniyede bir `setState` ile yeniden build + layout
+  oluyordu — 25 dakika boyunca, görünmeyen bir ekran için. Tikleyici artık
+  `didChangeDependencies`te aynı `TickerMode` sinyaline bağlı.
+- **Kural 5 — meşale iki `RepaintBoundary` ile ayrıldı.** Dıştaki, alevin kare
+  başına `markNeedsPaint`ini 72px sayaç metninden ayırıyor (saat saniyede 60 kez
+  yeniden çiziliyordu); içteki `Transform`u bileşikleştirip alev gövdesinin
+  rasterini saklıyor. Halkanın sınırı zaten vardı.
+- **Duraklatılmış seansta alev donuyor.** §6.4'ün "meşale çalışmaya devam eder"
+  istisnası **süren** seans için; duraklatılmış ekran wakelock ile süresiz açık
+  kalabiliyor ve orada kare üretecek bir sebep yok.
+
+Testler: `test/features/countdown/countdown_ticker_test.dart` (+2, karşı
+kontrolüyle), `focus_session_screen_test.dart` (+2), blur taraması (+1) — üçü de
+düzeltme geri alındığında düşüyor.
+
+**Kalan:** `flutter run --profile` ile odak ekranının sürekli 60 fps olduğunun
+gerçek bir Android cihazında doğrulanması. Bu makinede Android cihaz/emülatör
+bağlı değil (`flutter devices` yalnızca Windows/Chrome/Edge veriyor), ölçüm
+yapılamadı.
 
 ---
 
@@ -205,8 +231,8 @@ uyumu verisi — hiçbiri ekrana çıkmıyor. Kararlar: `DECISIONS.md` "Faz 13".
 - [x] Ekran 03'te hiçbir reklam isteği atılmıyor
 - [x] `isPremium` iken hiçbir reklam isteği atılmıyor
 - [x] Kart export'u tam 1080×1920
-- [ ] Odak ekranı `--profile` modda sürekli 60 fps *(madde 8)*
-- [ ] Odak seansında dekoratif animasyonlar duruyor *(madde 8)*
+- [ ] Odak ekranı `--profile` modda sürekli 60 fps *(madde 8 — cihaz gerekiyor)*
+- [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
 - [ ] Testler geçiyor
 - [ ] `DECISIONS.md` her kararı gerekçesiyle içeriyor

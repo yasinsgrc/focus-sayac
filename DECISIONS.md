@@ -780,3 +780,56 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   birebir korundu. Sayının okunuşuna göre doğrusu bazen `'ye` (2, 6, 7, 9, 10…);
   `domain/text/turkish_suffix.dart`in `dativeSuffix`i bunu zaten biliyor ama
   bağlamak görünen metni değiştireceği için bu maddenin dışında bırakıldı.
+
+## Faz 14 — Performans geçişi (ROADMAP madde 8)
+
+- **SPEC §6'nın 1-3. kuralları için yazılacak kod kalmamıştı** — Faz 2 kararı (yukarıda
+  "Aurora zeminler ve kartlar BÖLÜM 6'nın performans kurallarına göre baştan inşa edildi")
+  bunları en baştan uygulamıştı. Bu maddede yapılan, kuralı **pinlemek**: üçü de "şu kod hiç
+  yazılmasın" biçiminde olduğu için widget testiyle doğrulanamıyor (bir test yalnızca o an
+  çizilen ağacı görür), kaynak taramasıyla doğrulanıyor —
+  `test/performance/runtime_blur_scan_test.dart`, ROADMAP madde 7'nin "kodda hard-coded Türkçe
+  metin yok" grep taramasıyla aynı yaklaşım. Tarama satır içi yorumları atıyor: SPEC
+  kararlarının gerekçeleri `BackdropFilter`/`ImageFilter.blur` adlarını zaten anıyor ve bir
+  yasağı anlatan yorum yasağın ihlali değil. `BoxShadow.blurRadius` yasak listesinde yok — tek
+  geçişte çizilen bir gölge, her karede yeniden rasterize edilen bir filtre katmanı değil.
+- **Ekran 02'nin saniye tikleyicisi `TickerMode`a bağlandı** (`didChangeDependencies`).
+  `Overlay`, üstteki opak rotanın altında kalan girdileri `tickerEnabled: false` ile kuruyor;
+  geri sayım halkasının `AnimationController`ı bu yüzden odak ekranı açıkken kendiliğinden
+  susuyordu — ama `Timer.periodic` `TickerMode`a bakmaz. Kapalı rota, odak ekranı 60 fps
+  çizerken saniyede bir `setState` ile yeniden build + layout oluyordu; 25 dakika süren,
+  ekranda hiç görünmeyen bir iş. `maintainState: true` (ModalRoute varsayılanı) rotayı ağaçta
+  tuttuğu için Flutter bunu kendiliğinden durdurmuyor. Aynı sinyale bağlanınca ikisi birlikte
+  duruyor, odak ekranı poplandığında ikisi birlikte geri geliyor; tikleyici yeniden kurulurken
+  `_nowUtc` ilk periyodik tik beklenmeden yakalanıyor (yoksa dönüşte bir saniyelik eski değer
+  görünürdü). `TickerMode.getNotifier` yerine `TickerMode.of`: tek fazladan rebuild'e karşılık
+  ağaç taşındığında elle yeniden abone olma yükü yok.
+- **Meşale iki `RepaintBoundary` ile ayrıldı** (SPEC §6 kural 5). Dıştaki olmadan alevin kare
+  başına `markNeedsPaint`i en yakın üst sınıra çıkıyordu — o sınır Ekran 03'te alevle aynı
+  katmanda duran **72px sayaç metnini** de kapsıyor, yani saat saniyede 60 kez yeniden
+  çiziliyordu. İçteki (`_FlameShape` çevresinde) `Transform`u bileşikleştiriyor: alevin şekli
+  hiç değişmediği için kare başına iş, hazır katmanın matrisini güncellemeye iniyor.
+- **Duraklatılmış seansta alev donuyor.** SPEC §5.5 duraklamada yalnızca doygunluğu 0'a
+  indiriyor, titreşim hakkında bir şey demiyordu; §6.4'ün "meşale ve halka çalışmaya devam
+  eder" istisnası ise **süren** seans için. Duraklatılmış ekran wakelock ile süresiz açık
+  kalabildiğinden orada 60 fps üretmenin sebebi yok, ve donmuş alev "duraklatıldı"yı zaten en
+  doğru anlatan hâl. `_flick` artık `initState`/`didUpdateWidget`te `running`e göre
+  `repeat()`/`stop()` ediyor.
+- **Odak ekranında bilerek değiştirilmeyenler:** saniyelik `setState` (kalan süre wall-clock'tan
+  okunuyor; 1 Hz'de tüm gövdeyi yeniden kurmanın maliyeti ölçülebilir değil ve fazı parçalamak
+  Faz 5'in tek durum makinesi kararını bozardı) ve `SessionRingPainter` (`shouldRepaint`
+  yalnızca `progress`/renk değişince `true`, yani zaten 1 Hz).
+- **`--profile` 60 fps ölçümü yapılmadı.** Uygulama Android hedefli, bu makinede bağlı Android
+  cihaz/emülatör yok (`flutter devices`: Windows/Chrome/Edge). Ölçümün doğrulayacağı kod tarafı
+  bitti — odak ekranında kare başına rasterize edilen bir şey kalmadı — ama SPEC §10'un ilgili
+  kutusu cihazda koşulana kadar işaretlenmedi.
+- **Yeni testlerin üçü de düzeltme geri alındığında düşüyor** (elle doğrulandı). Ölçüt metin
+  değil **widget nesne kimliği**: `_nowUtc` gerçek duvar saatinden okunuyor, testin sahte saati
+  ilerlese de `hh:mm:ss` metni değişmeyebilir; kimlik ise doğrudan aranan şeyi söylüyor — tik
+  gövdeyi yeniden kurdu mu? `Finder`lar da her ölçümde yeniden kuruluyor: `FinderBase` sonucunu
+  önbelleklediği için dosya düzeyinde paylaşılan tek bir örnek, ikinci testte ilk testin çöpe
+  gitmiş ağacını döndürüyordu.
+- **`countdown_ticker_test.dart` veritabanını `runAsync` içinde tohumluyor** (Faz 9/11
+  testlerindeki `_newDatabase` kalıbı): drift gerçek zamanda, widget ağacı sahte saatte
+  ilerliyor. Kalıba uymayan ilk sürüm, bir isolate'in **ikinci** testinde göç tamamlanmadığı
+  için Ekran 02'yi aktif sınavsız çiziyordu.

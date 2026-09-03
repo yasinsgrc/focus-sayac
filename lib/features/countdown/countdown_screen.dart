@@ -47,9 +47,9 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
   void initState() {
     super.initState();
     _dashController = AnimationController(vsync: this, duration: const Duration(seconds: 40))..repeat();
-    _secondTicker = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _nowUtc = DateTime.now().toUtc());
-    });
+    // Saniye tikleyicisi `initState`te değil `didChangeDependencies`te kuruluyor
+    // (o da ilk build'den önce bir kez çalışır) — kurulması ve durması tek
+    // koşula bağlı kalsın diye; bkz. `_setSecondTickerEnabled`.
     if (widget.autoOpenSheet) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) showExamPickerSheet(context);
@@ -76,6 +76,35 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
     if (ref.read(pomodoroControllerProvider) is PomodoroIdle) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.push(RoutePaths.focusSession);
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // SPEC.md §6 kural 4: odak seansı sürerken dekoratif animasyonlar durur.
+    // Odak ekranı bu rotanın **üstüne** `push` ediliyor ve `Overlay`, üstteki
+    // opak rotanın altında kalan girdilerin `TickerMode`unu kapatıyor — halkanın
+    // `_dashController`ı bu yüzden kendiliğinden susuyor. `Timer.periodic` ise
+    // `TickerMode`a bakmaz: kapalı kalan bu rota, odak ekranı 60 fps çizerken
+    // saniyede bir `setState` ile yeniden build + layout oluyordu (görünmeyen,
+    // 25 dakika süren bir iş). Tikleyici aynı sinyale bağlanınca ikisi birlikte
+    // duruyor, odak ekranı popladığında ikisi birlikte geri geliyor.
+    _setSecondTickerEnabled(TickerMode.of(context));
+  }
+
+  void _setSecondTickerEnabled(bool enabled) {
+    if (enabled == (_secondTicker != null)) return;
+    if (!enabled) {
+      _secondTicker?.cancel();
+      _secondTicker = null;
+      return;
+    }
+    // Tikleyici durduğu sürece saat ilerledi; ilk periyodik tik beklenmeden
+    // yakalanıyor (bu çağrı build'den önce, `setState` gerekmiyor).
+    _nowUtc = DateTime.now().toUtc();
+    _secondTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() => _nowUtc = DateTime.now().toUtc());
     });
   }
 

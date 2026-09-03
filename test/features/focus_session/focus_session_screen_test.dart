@@ -10,6 +10,7 @@ import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_controller.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_phase.dart';
 import 'package:focussayac/features/focus_session/focus_session_screen.dart';
+import 'package:focussayac/features/focus_session/widgets/flame_widget.dart';
 import 'package:focussayac/features/focus_session/widgets/session_ring_painter.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
@@ -110,6 +111,21 @@ Future<void> _pressSystemBack(WidgetTester tester) async {
     const JSONMethodCodec().encodeMethodCall(const MethodCall('popRoute')),
     (ByteData? _) {},
   );
+}
+
+/// Her ölçümde yeni bir `Finder`: `FinderBase` sonucunu önbelleklediği için
+/// paylaşılan tek bir örnek, ikinci testte ilk testin çöpe gitmiş ağacını
+/// döndürüyor.
+Finder get _flame => find.byType(FlameWidget, skipOffstage: false);
+
+/// Alevin titreşim dönüşümü — `FlameWidget` içindeki **en içteki** `Transform`
+/// (dıştaki `Transform.scale` yalnızca `progress` ile değişiyor, kare kare
+/// değil).
+Matrix4 _flameFlickTransform(WidgetTester tester) {
+  return tester
+      .widgetList<Transform>(find.descendant(of: _flame, matching: find.byType(Transform, skipOffstage: false)))
+      .last
+      .transform;
 }
 
 SessionRingPainter _ringPainter(WidgetTester tester) {
@@ -301,6 +317,63 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(adService.bannerRequests, bannerRequestsOnArrival);
+
+    await _disposeTree(tester);
+  });
+
+  // SPEC.md §6 kural 5: "`RepaintBoundary` ile meşale/halkayı ayır". İki sınır
+  // var — dıştaki alevi 72px sayaç metninden ayırıyor (yoksa `Transform`un
+  // kare başına `markNeedsPaint`i saati de yeniden çizdiriyordu), içteki
+  // `Transform`u bileşikleştirip alev gövdesinin rasterini saklıyor.
+  testWidgets('süren seansta alev titriyor ve kendi katmanında duruyor', (WidgetTester tester) async {
+    await _pumpFocusSession(
+      tester,
+      phase: PomodoroPhase.focusRunning(
+        sessionId: 1,
+        examId: null,
+        startedAtUtc: DateTime.now().toUtc(),
+        plannedDurationSec: 25 * 60,
+        cyclePosition: 1,
+      ),
+    );
+
+    final Finder boundaries = find.descendant(of: _flame, matching: find.byType(RepaintBoundary, skipOffstage: false));
+    expect(boundaries, findsNWidgets(2));
+    expect(
+      find.descendant(of: boundaries.first, matching: find.byType(Text, skipOffstage: false)),
+      findsNothing,
+      reason: 'sayaç metni alevin sınırının içinde kalmamalı',
+    );
+
+    final Matrix4 before = _flameFlickTransform(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(_flameFlickTransform(tester), isNot(before));
+
+    await _disposeTree(tester);
+  });
+
+  // SPEC.md §6: ekran 25 dakika wakelock ile açık kalıyor ve duraklatılmış bir
+  // seans süresiz durabiliyor — o hâlde kare üretecek bir animasyon kalmamalı.
+  // §6.4'ün "meşale çalışmaya devam eder" istisnası **süren** seans için.
+  testWidgets('duraklatılmış seansta alev titremiyor', (WidgetTester tester) async {
+    await _pumpFocusSession(
+      tester,
+      phase: PomodoroPhase.focusPaused(
+        sessionId: 1,
+        examId: null,
+        startedAtUtc: DateTime.now().toUtc().subtract(const Duration(minutes: 5)),
+        plannedDurationSec: 25 * 60,
+        cyclePosition: 1,
+        remainingAtPause: const Duration(minutes: 20),
+      ),
+    );
+
+    final Matrix4 before = _flameFlickTransform(tester);
+    // Saniye tikleyicisi bu süre içinde ekranı iki kez yeniden kuruyor; alev
+    // yine de aynı karede donmuş olmalı.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(_flameFlickTransform(tester), before);
 
     await _disposeTree(tester);
   });
