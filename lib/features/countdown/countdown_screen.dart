@@ -17,6 +17,7 @@ import '../../domain/exams/exam_providers.dart';
 import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
+import '../../domain/settings/settings_providers.dart';
 import '../../domain/time/duration_formatter.dart';
 import '../../services/storage/app_database.dart';
 import 'widgets/countdown_ring_painter.dart';
@@ -64,7 +65,7 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
   /// Kontrol yalnızca burada, ekran ilk kurulurken bir kez yapılıyor:
   /// `sharedPreferencesProvider` hazır bir değerle override edildiği için
   /// (`main.dart`) kurtarılan faz bu noktada senkron okunabiliyor. Bu kontrol
-  /// `build()` içinde fazı izleyerek yapılsaydı "25 DAKİKA ODAKLAN" butonunun
+  /// `build()` içinde fazı izleyerek yapılsaydı "… DAKİKA ODAKLAN" butonunun
   /// `startFocus()` çağrısı da fazı `idle` dışına taşıdığı için tetiklenir,
   /// butonun kendi `push`'uyla birlikte yığına iki `FocusSessionScreen`
   /// eklenirdi; seans bitişindeki tek `pop()` o zaman yalnızca üsttekini
@@ -173,6 +174,14 @@ class _CountdownBody extends ConsumerWidget {
     final int streak = ref.watch(streakProvider);
     final FocusDurationParts todayParts = formatFocusDuration(todayStats.totalSeconds);
     final int cycleDots = todayStats.completedCount.clamp(0, 4);
+
+    // Süre `AppSettings.focusMinutes`ten gelir (`startFocus()` de aynı ayarı
+    // okur); ayar akışı ilk değerini yayınlamadan önceki tek karede sayı
+    // yerine yalnızca eylem gösteriliyor — sabit bir "25" yazmak, ayar
+    // değiştirildiğinde butonun yanlış süre vaat etmesi demekti.
+    final int? focusMinutes = ref.watch(focusMinutesProvider);
+    final String focusButtonLabel =
+        focusMinutes == null ? 'ODAKLAN' : '$focusMinutes DAKİKA ODAKLAN';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(26, 6, 26, 0),
@@ -404,7 +413,7 @@ class _CountdownBody extends ConsumerWidget {
                       children: <Widget>[
                         Icon(PhosphorIconsFill.play, size: 16, color: colors.ember),
                         const SizedBox(width: 10),
-                        Text('25 DAKİKA ODAKLAN', style: AppTypography.display(fontSize: 15.5, weight: FontWeight.w600, color: colors.ember)),
+                        Text(focusButtonLabel, style: AppTypography.display(fontSize: 15.5, weight: FontWeight.w600, color: colors.ember)),
                       ],
                     ),
                   ),

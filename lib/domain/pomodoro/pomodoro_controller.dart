@@ -86,7 +86,8 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     }
   }
 
-  /// Ekran 02'nin "25 DAKİKA ODAKLAN" butonu. Yalnızca `idle`'dan çağrılabilir.
+  /// Ekran 02'nin "… DAKİKA ODAKLAN" butonu (süre `settings.focusMinutes`).
+  /// Yalnızca `idle`'dan çağrılabilir.
   Future<void> startFocus() async {
     if (state is! PomodoroIdle) return;
     final AppSettingsTableData settings = await ref.read(appSettingsDaoProvider).getSettings();
