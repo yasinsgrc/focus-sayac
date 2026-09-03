@@ -39,7 +39,6 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
   Timer? _secondTicker;
   DateTime _nowUtc = DateTime.now().toUtc();
   bool _redirectedForExpiry = false;
-  bool _redirectedForActiveSession = false;
 
   @override
   void initState() {
@@ -53,6 +52,28 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
         if (mounted) showExamPickerSheet(context);
       });
     }
+    _redirectIfSessionRecovered();
+  }
+
+  /// SPEC.md DoD: "Uygulama öldürülüp açıldığında aktif seans kurtarılıyor"
+  /// — `PomodoroController.build()` `SharedPreferences`'tan aktif fazı geri
+  /// yüklerse (Faz 5), soğuk başlangıçta uygulama her zaman bu ekrandan
+  /// (initialLocation) açıldığı için buradan odak/mola ekranına yönlendirmek
+  /// gerekiyor.
+  ///
+  /// Kontrol yalnızca burada, ekran ilk kurulurken bir kez yapılıyor:
+  /// `sharedPreferencesProvider` hazır bir değerle override edildiği için
+  /// (`main.dart`) kurtarılan faz bu noktada senkron okunabiliyor. Bu kontrol
+  /// `build()` içinde fazı izleyerek yapılsaydı "25 DAKİKA ODAKLAN" butonunun
+  /// `startFocus()` çağrısı da fazı `idle` dışına taşıdığı için tetiklenir,
+  /// butonun kendi `push`'uyla birlikte yığına iki `FocusSessionScreen`
+  /// eklenirdi; seans bitişindeki tek `pop()` o zaman yalnızca üsttekini
+  /// kapatıp kullanıcıyı boş bir odak ekranında bırakıyordu.
+  void _redirectIfSessionRecovered() {
+    if (ref.read(pomodoroControllerProvider) is PomodoroIdle) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.push(RoutePaths.focusSession);
+    });
   }
 
   @override
@@ -76,19 +97,6 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
         });
       }
     });
-
-    // SPEC.md DoD: "Uygulama öldürülüp açıldığında aktif seans kurtarılıyor"
-    // — `PomodoroController.build()` `SharedPreferences`'tan aktif fazı geri
-    // yüklerse (Faz 5), soğuk başlangıçta uygulama her zaman bu ekrandan
-    // (initialLocation) açıldığı için buradan odak/mola ekranına yönlendirmek
-    // gerekiyor.
-    final PomodoroPhase pomodoroPhase = ref.watch(pomodoroControllerProvider);
-    if (pomodoroPhase is! PomodoroIdle && !_redirectedForActiveSession) {
-      _redirectedForActiveSession = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.push(RoutePaths.focusSession);
-      });
-    }
 
     return Scaffold(
       backgroundColor: colors.bg,
