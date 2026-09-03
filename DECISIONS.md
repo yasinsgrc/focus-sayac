@@ -538,3 +538,45 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   kenarı boyuyor, Flutter'da `BoxShape.circle` kenarlığı kenar başına renk almıyor. Dairede
   karşılığı tepedeki çeyrek yay; `drawOval` + `drawArc` bunu tek boyamada veriyor (Faz 4/7'deki
   halka painter'larıyla aynı yaklaşım).
+
+## Faz 9 — Ekran 06 (istatistik) + `CustomPainter` bar chart
+
+- **Agregasyonlar SQL'de değil, saf Dart'ta (`domain/stats/focus_stats.dart`)** — SPEC Faz 9 "SQL
+  agregasyonlar" diyor; sapmanın gerekçesi gün sınırı: uygulama günü 04:00 TSİ'de kapanıyor ve bu
+  kayma `core/time/app_day.dart`ta test edilmiş halde duruyor. Aynı kaymayı SQL'de
+  `date(..., '-1 hour')` ile ikinci kez yazmak, Ekran 02'nin "bugün" kartıyla Ekran 06'nın aynı günü
+  farklı sayması riskini açardı. Fonksiyon `nowUtc`'yi parametre aldığı için SPEC §9'un istediği
+  "boş veri / tek gün / hafta sınırı" testleri sahte saate ya da veritabanına ihtiyaç duymadan
+  yazılabildi. SPEC'in **asıl** kuralı olan "agregat tablo yok" korunuyor: her sayı ham
+  `PomodoroSession` satırlarından türüyor.
+- **Ekran 02 ile aynı `allSessionsProvider` akışı tüketiliyor** — Faz 4'te kurulan "tüm seansları tek
+  akıştan oku, istemcide türet" kalıbı (kişisel cihaz verisi küçük). İkinci bir sorgu akışı açmak,
+  iki ekranın kümülatif/seri sayılarının birbirinden sapabileceği bir kapı olurdu.
+- **`42 SAAT` başlığı bir saatin altında dakikaya düşüyor (`35 DAKİKA`)** — prototipin biçimi yalnız
+  saati tanıyor; ilk gününü yaşayan kullanıcı `0 SAAT` görürdü. Büyük sayı + birim kalıbı aynı
+  kalıyor, yalnız birim değişiyor.
+- **Tamamlanma oranı hiç odak seansı yokken `—`, `%0` değil** — `%0` "denedin, bitiremedin" demek;
+  hiç başlamamış kullanıcı için yanlış. Payda başlatılan (tamamlanan + iptal edilen) odak seansları;
+  mola seansları hiçbir hesaba girmiyor.
+- **"En verimli aralık" iki saatlik kovalar, en az 3 seans eşiğiyle** — prototipin metni `20:00–22:00`
+  olduğu için kova genişliği 2 saat; kovalar `startedAt`in İstanbul duvar saatine göre ayrılıyor.
+  Eşiksiz bırakılsaydı tek bir tamamlanmış seans `%100` ile "en verimli aralığın" ilan edilirdi;
+  eşiği geçen kova yoksa satır **hiç çizilmiyor** (uydurma bir aralık göstermek yerine). Eşitlikte
+  daha çok tamamlanmış seansı olan, o da eşitse günün erken kovası kazanıyor — sonuç kayıt
+  sırasından bağımsız olsun diye. Günün son kovası `22:00–00:00` yazıyor (`24:00` değil).
+- **Sütun yükseklikleri haftanın kendi en yüksek gününe göre ölçekleniyor** — prototip sabit bir
+  tavana (165 dk) bölüyor; az çalışılan bir haftada bu, tüm sütunları okunmaz biçimde kısaltırdı.
+  Veri olmayan gün prototipteki gibi 5px'lik soluk kütük + `—` etiketi olarak kalıyor.
+- **Chart tek bir `CustomPainter`; sütun/gün/değer etiketleri de canvas'ta** — etiketleri widget'a
+  çıkarmak 21 widget'lık bir ağaç demekti, painter `TextPainter` ile aynı görüntüyü tek boyamada
+  veriyor (Faz 4/5/7 halka painter'larıyla aynı gerekçe). Gün adları `intl` yerine sabit liste:
+  chart'ın `initializeDateFormatting` çağrılmadan da doğru çizilmesi gerekiyor (Faz 13'te ARB'ye).
+- **Alt gezinme çubuğu 5 yuvalık listeye dönüştü, aktif "hap" aktif sekmenin yuvasında çiziliyor** —
+  Faz 4'te hap sabit biçimde ilk yuvaydı (`SAYAÇ`); prototip v2'nin Ekran 06'sında hap 4. yuvada ve
+  `VERİLER` yazıyor. Aynı düzenlemede yuva oranları prototipin `flex:1.6 / 1` değerine çekildi
+  (önceki `16 : 1` hapa çubuğun %80'ini veriyordu). Hap içeriği `FittedBox(scaleDown)` ile sarıldı:
+  `VERİLER` etiketi dar ekranlarda payına sığmayıp taşıyordu, kırpmak yerine küçültmek prototipe
+  daha yakın.
+- **Banner yeri prototipteki `BANNER 320×50` yer tutucusu olarak duruyor** — SPEC §7.1 banner'ın iki
+  hedefinden biri bu ekran; gerçek `AnchoredAdaptiveBannerAdSize` ve `canRequestAds` kapısı Faz 11'in
+  kapsamı (ROADMAP madde 6).

@@ -1,8 +1,8 @@
 # FocusSayaç — Kalan İş Sırası
 
-Durum: **Faz 0-7 + 10 + 12 bitti** (geri sayım, sınav seçimi, odak/mola durum
-makinesi, bildirimler, rozetler, onboarding + izinler + UMP, ayarlar).
-`flutter analyze` 0/0, 53 test geçiyor.
+Durum: **Faz 0-7 + 9 + 10 + 12 bitti** (geri sayım, sınav seçimi, odak/mola
+durum makinesi, bildirimler, rozetler, istatistik, onboarding + izinler + UMP,
+ayarlar). `flutter analyze` 0/0, 66 test geçiyor.
 Kaynak plan: `SPEC.md` §8. Kararlar: `DECISIONS.md`.
 
 Aşağıdaki maddeler **teste/yayına çıkma önceliğine** göre sıralı. Her madde tek
@@ -45,19 +45,22 @@ gizlilik metninin reklamlara/UMP'ye göre güncellenmesi **madde 6/9**'da.
 
 ---
 
-## 3. Ekran 06 — İstatistik (SPEC Faz 9) 🟠
+## 3. Ekran 06 — İstatistik (SPEC Faz 9) ✅ bitti
 
-Alt çubukta sekmesi var, tıklayınca hiçbir şey olmuyor. Reklam bannerının iki
-hedefinden biri (SPEC §7.1) — madde 6'dan önce bitmeli.
+`lib/features/stats/stats_screen.dart`, rota `app_router.dart`e eklendi, alt
+çubuğun grafik sekmesi bağlandı (hap artık aktif sekmenin yuvasında —
+Ekran 06'da `VERİLER`). Agregat tablo yok: kümülatif odak, son 7 gün günlük
+ortalama, en uzun seri, tamamlanma oranı ve "en verimli aralık" saf
+`domain/stats/focus_stats.dart` içinde ham `PomodoroSession` kayıtlarından
+türüyor (SQL yerine Dart — 04:00 gün sınırını ikinci kez yazmamak için;
+gerekçe `DECISIONS.md` "Faz 9"). 7 günlük bar chart `CustomPainter`
+(`weekly_focus_bar_painter.dart`), `sky` gradyanı, bugün `ember`. Boş veri /
+tek gün / hafta sınırı / 04:00 kesimi testleri `test/domain/stats/`de.
+Prototipin demo sayıları (42 SAAT, %86, 11 GÜN) kodda yok — regresyon testi
+`test/features/stats/stats_screen_test.dart`.
 
-- **Agregat tablo yok** — hepsi `PomodoroSession` üzerinde SQL.
-- Kümülatif odak, son 7 gün günlük ortalama, en uzun seri
-  (`streak_calculator.dart:44` bunun için hazır), tamamlanma oranı.
-- 7 günlük bar chart → `CustomPainter`, `sky` rengi.
-- "En verimli aralığın 20:00-22:00" → saat kovalarına göre hesaplanır.
-- Boş veri / tek gün / hafta sınırı testleri (SPEC §9).
-
-**DoD:** Prototipteki demo sayıları (42 SAAT, %86, 11 GÜN) kodda yok.
+Kalan bağlı iş: banner hâlâ `BANNER 320×50` yer tutucusu — gerçek reklam
+**madde 6**'da.
 
 ---
 
@@ -95,7 +98,8 @@ Tek oturumda toplu yapılabilir, hepsi küçük:
 
 ## 6. Reklamlar + satın alma (SPEC Faz 11) 🟠 yayın zorunlu
 
-**Bağımlılık:** madde 3 (Ekran 06 banner hedefi). UMP consent (madde 2) bitti —
+**Bağımlılık:** madde 3 (Ekran 06 banner hedefi) bitti — banner yeri hazır,
+`BANNER 320×50` yer tutucusu gerçeğiyle değiştirilecek. UMP consent (madde 2) bitti —
 `ConsentService` var; bu maddede `canRequestAds()` eklenip her reklam isteğinin
 önüne konulmalı.
 
