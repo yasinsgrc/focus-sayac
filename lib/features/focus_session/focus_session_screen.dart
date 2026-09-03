@@ -64,11 +64,21 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
     // doğruluğu garanti. Faz *tamamlanması* ise tike bağlı olduğundan
     // `_startTicker()` öne gelir gelmez bir yakalama tiki atıyor; arka planda
     // dolan odak/mola orada gerçek bitiş anlarıyla kapanıyor.
-    if (state == AppLifecycleState.resumed) {
-      setState(() => _nowUtc = DateTime.now().toUtc());
-      _startTicker();
-    } else if (state == AppLifecycleState.paused) {
-      _ticker?.cancel();
+    //
+    // `resumed` dışındaki her durumda tikleyici duruyor: iOS `paused`e geçmeden
+    // önce (uygulama değiştirici, gelen arama, denetim merkezi) `inactive`te
+    // uzun süre kalabiliyor, `hidden` ise pencere gizlendiğinde geliyor. Tek
+    // koşulu `paused`e bağlamak bu durumlarda tikleyicinin boşuna çalışmasına
+    // yol açıyordu.
+    switch (state) {
+      case AppLifecycleState.resumed:
+        setState(() => _nowUtc = DateTime.now().toUtc());
+        _startTicker();
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        _ticker?.cancel();
     }
   }
 
