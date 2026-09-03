@@ -24,4 +24,9 @@ class UserBadgeDao extends DatabaseAccessor<AppDatabase> with _$UserBadgeDaoMixi
       mode: InsertMode.insertOrIgnore,
     );
   }
+
+  /// SPEC.md Ekran 07 "Verileri sıfırla" — açılmış rozetlerin tamamını siler
+  /// (bkz. `AppDataResetService`). Rozet kataloğu kodda olduğu için burada
+  /// yalnızca "açıldı" kayıtları temizlenir, rozetler yeniden açılabilir.
+  Future<int> deleteAllBadges() => delete(userBadges).go();
 }

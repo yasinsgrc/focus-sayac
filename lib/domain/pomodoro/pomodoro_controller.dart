@@ -11,6 +11,7 @@ import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
 import '../badges/badge_providers.dart';
 import '../exams/exam_providers.dart';
+import '../review/app_review_service.dart';
 import 'pomodoro_math.dart';
 import 'pomodoro_phase.dart';
 import 'pomodoro_stats_providers.dart';
@@ -370,6 +371,10 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     // Mola zaten dolduğu için bildirim ya atıldı ya da bu tik ona yetişti;
     // her iki durumda da bekleyen/duran kaydı temizle.
     await _notifications.cancelBreakEnd();
+    // SPEC.md Ekran 07: değerlendirme istemi 3. tamamlanan seanstan sonra bir
+    // kez. Tetikleme noktası burası — döngü kapandı, ekranda süren bir sayaç
+    // yok; eşiği ve "bir kez" bayrağını servis kendi kontrol ediyor.
+    await ref.read(appReviewServiceProvider).requestIfEligible();
     await _haptic();
   }
 }

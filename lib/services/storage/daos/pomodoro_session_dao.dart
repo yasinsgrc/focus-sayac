@@ -73,4 +73,8 @@ class PomodoroSessionDao extends DatabaseAccessor<AppDatabase> with _$PomodoroSe
               s.completed.equals(true) & s.type.equals(SessionType.focus.name)))
         .get();
   }
+
+  /// SPEC.md Ekran 07 "Verileri sıfırla" — odak geçmişinin tamamını siler.
+  /// Sınavlar ve ayarlar bu işlemden etkilenmez (bkz. `AppDataResetService`).
+  Future<int> deleteAllSessions() => delete(pomodoroSessions).go();
 }

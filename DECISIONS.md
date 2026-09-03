@@ -441,3 +441,54 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
 - **`selectedTemplateIndex` hâlâ okunmuyor ve bu doğru** — o kolon bir bildirim ayarı değil, SPEC
   Ekran 05'in başarı kartı şablon seçimi (`GECE MEŞALESİ` / `MİNİMAL SAYAÇ` / 3. şablon). Ekran 05
   Faz 8'in kapsamı; onu tüketecek ekran yazılana kadar bağlanacağı bir yer yok.
+
+## Faz 12 — Ekran 07 (ayarlar) + `in_app_review` + veri sıfırlama
+
+- **Ekran 07 `ConsumerStatefulWidget`, süre slider'ları sürükleme boyunca yerel durumda tutuluyor** —
+  `appSettingsProvider` (drift `watchSingle`) her yazımda yeniden yayınladığı için `onChanged`'de
+  DB'ye yazmak saniyede onlarca yazım demekti; parmak kalkınca (`onChangeEnd`) bir kez yazılıyor,
+  o ana kadar gösterilen değer yerel. Yerel değer bilinçli olarak **temizlenmiyor**: ekran açıkken
+  o kolonun tek yazarı bu ekran, ekran kapanınca durum da gidiyor ve değer yine ayardan okunuyor.
+- **Anahtar satırlarında (`Bildirimler`, `Sesli uyarı`, `Titreşim`, `Seri hatırlatması`) prototipin
+  sağ ok işareti yok** — prototip her satırın sonuna `ph-caret-right` koyuyor ama bu dört satır
+  başka bir ekrana götürmüyor, yerinde değişiyor; ok olmayan bir hedef vaat ederdi. Satırın
+  "Açık/Kapalı" değeri (mint/nötr) hem durumu hem dokunmanın sonucunu gösteriyor. Gezinen satırlarda
+  (sınav seçimi, değerlendir, hakkında, gizlilik, sıfırla) ok korundu.
+- **Prototipin "Dil · Türkçe" satırı yerine "Sınav seçimi" satırı var** — SPEC Ekran 07 listesi dili
+  saymıyor, sınav seçimini sayıyor; uygulama tek dilli (ARB geçişi Faz 13 ama dil seçici yok), var
+  olmayan bir ayarı göstermek "prototipte olmayan özellik" kadar yanlış olurdu. Satır Ekran 02'nin
+  mevcut `showExamPickerSheet`ini açıyor, ikinci bir seçici yazılmadı.
+- **"Seri hatırlatması" satırı prototipte yok ama eklendi** — `streakReminderEnabled` kolonu Faz 3'te
+  açılmış, Faz 6'da `NotificationService` içinde uygulanmış ama kullanıcının erişebileceği hiçbir yer
+  yoktu; SPEC Ekran 12 bu bildirimi ayrı bir tip olarak sayıyor ve ana "Bildirimler" anahtarı onu
+  kapatmanın tek yolu olsaydı, diğer üç tip de kapanmak zorunda kalırdı.
+- **"Reklamları kaldır · yakında" satırının kesikli (dashed) kenarlığı düz kenarlığa indirgendi** —
+  Flutter'ın `BoxDecoration`'ında kesikli kenarlık yok, bunun için bir `CustomPainter` gerekiyordu;
+  Faz 7'nin dönen halka kararıyla aynı gerekçe (SPEC §6 "aynı görünen ama daha ucuz"). Satır SPEC
+  §7.3 gereği **pasif**: `onTap` yok, satın alma akışı Faz 11'in kapsamı.
+- **"Verileri sıfırla" yalnızca ilerlemeyi siler (odak geçmişi + rozetler + kurtarma kaydı),
+  sınavları ve ayarları değil** — sınav tablosunda 4 preset de duruyor, silinseydi Ekran 02 sınavsız
+  kalırdı (kullanıcının verisi değil uygulamanın kataloğu); süreler/anahtarlar ise tercih, "veri"
+  değil. Onay dialogunun metni kapsamı birebir söylüyor. `SharedPreferences`taki aktif faz kaydı da
+  siliniyor ve `pomodoroControllerProvider` invalidate ediliyor: kalsaydı bir sonraki açılışta artık
+  var olmayan bir `sessionId` ile odak fazı geri yüklenir, faz kapanışındaki `finishSession` sessizce
+  hiçbir satırı güncellemezdi.
+- **Değerlendirme isteminin iki ayrı girişi var** — ayarlardaki satır `openStoreListing()` çağırıyor
+  (kullanıcının açık isteği; `requestReview` Play'in kotasına tabi olduğu için dokunmanın çoğu zaman
+  hiçbir şey yapmaması demekti), kendiliğinden gösterilen istem ise `requestReview()`. Tetikleme
+  noktası `PomodoroController._completeBreak`: döngü kapanıp `idle`'a dönüldüğü an — odak/mola
+  sürerken göstermek SPEC §7.2'nin interstitial kuralıyla aynı gerekçeyle (ekrandaki işin üstüne
+  binmemek) elenmişti. "Bir kez" bayrağı istemden **önce** yazılıyor: Play istemi gösterip
+  göstermediğini bildirmiyor, tekrar denemek yalnızca aynı sessiz sonucu üretirdi. Bayrak
+  "Verileri sıfırla" ile silinmiyor — sıfırlama ilerlemeyi siler, kullanıcıyı ikinci kez davet etme
+  hakkını değil.
+- **`in_app_review` çağrıları `PlatformException`/`MissingPluginException` için sarmalanıyor** —
+  eklenti kanalı olmayan koşumlarda (widget testleri) `isAvailable()` fırlatıyor; değerlendirme
+  istemi uygulamanın işleyişi için kritik olmadığı için sessizce atlanıyor. Ayarlardaki **açık**
+  dokunuş bunun istisnası: `openStoreListing()` `false` dönerse ekran SnackBar gösteriyor, dokunuş
+  sessizce yutulmuyor.
+- **"Hakkında" ve "Gizlilik politikası" uygulama içi dialog, dış bağlantı değil** — `url_launcher`
+  doğrudan bağımlılık değil (yalnızca geçişli) ve yayımlanmış bir politika URL'si henüz yok (madde 9);
+  metin cihazda saklanan veriyi olduğu gibi anlatıyor. **Faz 11 (reklamlar) bu metni geçersiz
+  kılacak**: AdMob/UMP geldiğinde gizlilik metni ve Play listesindeki politika bağlantısı birlikte
+  güncellenmeli.

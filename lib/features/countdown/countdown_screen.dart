@@ -141,9 +141,10 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
               active: AppNavTab.countdown,
               // Prototipin alt çubuğunda "flame" (seri) için ayrı bir ekran
               // yok — ikisi de rozetler ekranına gider (Faz 4 DECISIONS.md).
-              // İstatistik/ayarlar sekmeleri Faz 9/12'de gelene kadar no-op.
+              // İstatistik sekmesi Ekran 06 (Faz 9) gelene kadar no-op.
               onSelect: (AppNavTab tab) {
                 if (tab == AppNavTab.badges) context.push(RoutePaths.badges);
+                if (tab == AppNavTab.settings) context.push(RoutePaths.settings);
               },
             ),
           ),
