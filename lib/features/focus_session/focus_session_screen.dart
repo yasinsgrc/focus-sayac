@@ -108,34 +108,83 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
       }
     });
 
-    return Scaffold(
-      backgroundColor: colors.bg,
-      body: switch (phase) {
-        PomodoroIdle _ => const SizedBox.shrink(),
-        final PomodoroFocusRunning r => _FocusBody(
-            phase: r,
-            remaining: phaseRemaining(startedAtUtc: r.startedAtUtc, plannedDurationSec: r.plannedDurationSec, nowUtc: _nowUtc),
-            progress: phaseProgress(startedAtUtc: r.startedAtUtc, plannedDurationSec: r.plannedDurationSec, nowUtc: _nowUtc),
-            running: true,
-          ),
-        final PomodoroFocusPaused p => _FocusBody(
-            phase: p,
-            remaining: p.remainingAtPause,
-            progress: phaseProgress(
-              startedAtUtc: p.startedAtUtc,
-              plannedDurationSec: p.plannedDurationSec,
-              nowUtc: p.startedAtUtc.add(Duration(seconds: p.plannedDurationSec) - p.remainingAtPause),
-            ),
-            running: false,
-          ),
-        final PomodoroBreakRunning b => _BreakBody(
-            phase: b,
-            remaining: phaseRemaining(startedAtUtc: b.startedAtUtc, plannedDurationSec: b.plannedDurationSec, nowUtc: _nowUtc),
-            progress: phaseProgress(startedAtUtc: b.startedAtUtc, plannedDurationSec: b.plannedDurationSec, nowUtc: _nowUtc),
-          ),
+    return PopScope<Object?>(
+      // Seans sürerken sistem geri tuşu bu ekranı kapatmıyor: kapandığında
+      // Ekran 02'nin aktif seans kurtarma yönlendirmesi yalnızca `initState`te
+      // çalıştığı için (Faz 5 kararı) süren seansa dönüş yolu kalmıyordu.
+      // Odak fazında geri, "X" ile aynı iptal onayını (Ekran 10) açar; molada
+      // Ekran 09'un kendi "ODAĞA DÖN" çıkışı olduğu için geri bir şey yapmaz.
+      canPop: phase is PomodoroIdle,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (didPop) return;
+        if (phase is PomodoroFocusRunning || phase is PomodoroFocusPaused) {
+          _confirmCancel(context, ref, phase);
+        }
       },
+      child: Scaffold(
+        backgroundColor: colors.bg,
+        body: switch (phase) {
+          PomodoroIdle _ => const SizedBox.shrink(),
+          final PomodoroFocusRunning r => _FocusBody(
+              phase: r,
+              remaining: phaseRemaining(startedAtUtc: r.startedAtUtc, plannedDurationSec: r.plannedDurationSec, nowUtc: _nowUtc),
+              progress: phaseProgress(startedAtUtc: r.startedAtUtc, plannedDurationSec: r.plannedDurationSec, nowUtc: _nowUtc),
+              running: true,
+            ),
+          final PomodoroFocusPaused p => _FocusBody(
+              phase: p,
+              remaining: p.remainingAtPause,
+              progress: phaseProgress(
+                startedAtUtc: p.startedAtUtc,
+                plannedDurationSec: p.plannedDurationSec,
+                nowUtc: p.startedAtUtc.add(Duration(seconds: p.plannedDurationSec) - p.remainingAtPause),
+              ),
+              running: false,
+            ),
+          final PomodoroBreakRunning b => _BreakBody(
+              phase: b,
+              remaining: phaseRemaining(startedAtUtc: b.startedAtUtc, plannedDurationSec: b.plannedDurationSec, nowUtc: _nowUtc),
+              progress: phaseProgress(startedAtUtc: b.startedAtUtc, plannedDurationSec: b.plannedDurationSec, nowUtc: _nowUtc),
+            ),
+        },
+      ),
     );
   }
+}
+
+/// Ekran 10 (iptal onayı) — hem Ekran 03'ün "X" düğmesinden hem de sistem
+/// geri tuşundan açıldığı için gövde dışında, dosya düzeyinde duruyor.
+void _confirmCancel(BuildContext context, WidgetRef ref, PomodoroPhase phase) {
+  final (DateTime startedAtUtc, int plannedDurationSec, Duration currentRemaining) = switch (phase) {
+    final PomodoroFocusRunning r => (
+        r.startedAtUtc,
+        r.plannedDurationSec,
+        phaseRemaining(startedAtUtc: r.startedAtUtc, plannedDurationSec: r.plannedDurationSec, nowUtc: DateTime.now().toUtc()),
+      ),
+    final PomodoroFocusPaused p => (p.startedAtUtc, p.plannedDurationSec, p.remainingAtPause),
+    _ => (DateTime.now().toUtc(), 0, Duration.zero),
+  };
+  final Duration elapsed = Duration(seconds: plannedDurationSec) - currentRemaining;
+  final TodayFocusStats stats = ref.read(todayFocusStatsProvider);
+  final int streak = ref.read(streakProvider);
+  final bool showStreakRisk = stats.completedCount == 0 && streak >= 1;
+
+  showDialog<void>(
+    context: context,
+    barrierColor: const Color(0xA8040509),
+    builder: (BuildContext dialogContext) {
+      return _CancelConfirmDialog(
+        elapsed: elapsed,
+        remaining: currentRemaining,
+        streak: streak,
+        showStreakRisk: showStreakRisk,
+        onConfirmCancel: () {
+          Navigator.of(dialogContext).pop();
+          unawaited(ref.read(pomodoroControllerProvider.notifier).cancelFocusSession());
+        },
+      );
+    },
+  );
 }
 
 /// Ekran 03 — prototip satır 137-180.
@@ -247,8 +296,11 @@ class _FocusBody extends ConsumerWidget {
                   colors: colors,
                   onTap: () => ref.read(pomodoroControllerProvider.notifier).togglePause(),
                 ),
-                const SizedBox(width: 22),
-                _RingIconButton(icon: PhosphorIconsRegular.skipForward, color: colors.neutral500, onTap: null),
+                // Prototipin üçüncü düğmesi ("skip-forward") kaldırıldı; yeri
+                // aynı genişlikte boş bırakılıyor ki oynat/duraklat düğmesi
+                // halkanın merkezinde kalsın (ROADMAP madde 5 kararı,
+                // gerekçesi `DECISIONS.md`).
+                const SizedBox(width: 22 + 58),
               ],
             ),
             const Spacer(),
@@ -274,38 +326,6 @@ class _FocusBody extends ConsumerWidget {
     );
   }
 
-  void _confirmCancel(BuildContext context, WidgetRef ref, PomodoroPhase phase) {
-    final (DateTime startedAtUtc, int plannedDurationSec, Duration currentRemaining) = switch (phase) {
-      final PomodoroFocusRunning r => (
-          r.startedAtUtc,
-          r.plannedDurationSec,
-          phaseRemaining(startedAtUtc: r.startedAtUtc, plannedDurationSec: r.plannedDurationSec, nowUtc: DateTime.now().toUtc()),
-        ),
-      final PomodoroFocusPaused p => (p.startedAtUtc, p.plannedDurationSec, p.remainingAtPause),
-      _ => (DateTime.now().toUtc(), 0, Duration.zero),
-    };
-    final Duration elapsed = Duration(seconds: plannedDurationSec) - currentRemaining;
-    final TodayFocusStats stats = ref.read(todayFocusStatsProvider);
-    final int streak = ref.read(streakProvider);
-    final bool showStreakRisk = stats.completedCount == 0 && streak >= 1;
-
-    showDialog<void>(
-      context: context,
-      barrierColor: const Color(0xA8040509),
-      builder: (BuildContext dialogContext) {
-        return _CancelConfirmDialog(
-          elapsed: elapsed,
-          remaining: currentRemaining,
-          streak: streak,
-          showStreakRisk: showStreakRisk,
-          onConfirmCancel: () {
-            Navigator.of(dialogContext).pop();
-            unawaited(ref.read(pomodoroControllerProvider.notifier).cancelFocusSession());
-          },
-        );
-      },
-    );
-  }
 }
 
 class _RingIconButton extends StatelessWidget {
@@ -313,7 +333,7 @@ class _RingIconButton extends StatelessWidget {
 
   final IconData icon;
   final Color color;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -413,13 +433,22 @@ class _BreakBody extends ConsumerWidget {
                     ],
                   ),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Icon(PhosphorIconsRegular.checkCircle, size: 14, color: colors.mint),
-                    const SizedBox(width: 6),
-                    Text('${phase.cyclePosition}. pomodoro bitti', style: AppTypography.body(fontSize: 11.5, color: colors.neutral500)),
-                  ],
+                // Etiket + rozet satırı 390pt genişlikte taşıyordu; kırpmak
+                // yerine küçültülüyor (alt gezinme çubuğunun `VERİLER` hapıyla
+                // aynı çözüm, Faz 9 kararı).
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(PhosphorIconsRegular.checkCircle, size: 14, color: colors.mint),
+                        const SizedBox(width: 6),
+                        Text('${phase.cyclePosition}. pomodoro bitti', style: AppTypography.body(fontSize: 11.5, color: colors.neutral500)),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),

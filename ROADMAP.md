@@ -2,7 +2,7 @@
 
 Durum: **Faz 0-10 + 12 bitti** (geri sayım, sınav seçimi, odak/mola durum
 makinesi, bildirimler, rozetler, başarı kartı + export, istatistik,
-onboarding + izinler + UMP, ayarlar). `flutter analyze` 0/0, 86 test geçiyor.
+onboarding + izinler + UMP, ayarlar). `flutter analyze` 0/0, 95 test geçiyor.
 Kaynak plan: `SPEC.md` §8. Kararlar: `DECISIONS.md`.
 
 Aşağıdaki maddeler **teste/yayına çıkma önceliğine** göre sıralı. Her madde tek
@@ -84,21 +84,25 @@ Türkçe yönelme eki `domain/text/turkish_suffix.dart` ile okunuştan türüyor
 
 ---
 
-## 5. Küçük düzeltmeler + test boşlukları 🟡
+## 5. Küçük düzeltmeler + test boşlukları ✅ bitti
 
-Tek oturumda toplu yapılabilir, hepsi küçük:
-
-- `focus_session_screen.dart:251` — **skipForward butonu `onTap: null`**, görünür
-  ama ölü. Ya işlevini bağla (fazı atla) ya da prototipten çıkar. Karar
-  `DECISIONS.md`'ye yazılsın.
-- Odak seansı sürerken Android geri tuşuyla countdown'a dönülürse odak ekranına
-  dönüş yolu yok — `PopScope` ile engelle ya da countdown'a "seansa dön" çıkışı ekle.
-- **Test boşlukları** (11 hata düzeltmesinden 3'ünün regresyon testi yok):
-  - Bildirim ayarı kapalıyken `NotificationService` hiçbir şey göndermiyor,
-    iptaller yine çalışıyor (`notification_service.dart` kapısı).
-  - `SessionRingPainter` gerçek `progress` alıyor (halkanın dolması).
-  - `didChangeAppLifecycleState` — `inactive`/`hidden`de ticker duruyor,
-    `resumed`de yakalama tiki atılıyor.
+- **skipForward butonu kaldırıldı** (yeri aynı genişlikte boş bırakıldı ki
+  oynat/duraklat halkanın merkezinde kalsın). Bağlanmadı: "fazı atla" SPEC'te
+  tanımsız ve rozet/seri/istatistik semantiği icat etmek gerekirdi; görünür ama
+  ölü bir düğme de eksik olandan kötü. Gerekçe `DECISIONS.md` "ROADMAP madde 5".
+- **Geri tuşu `PopScope` ile engellendi**: odak fazında "X" ile aynı iptal
+  onayını (Ekran 10) açıyor, molada hiçbir şey yapmıyor (Ekran 09'un kendi
+  "ODAĞA DÖN" çıkışı var). İptal onayı iki yerden açıldığı için `_confirmCancel`
+  dosya düzeyine taşındı.
+- **Ekran 09'un başlık satırındaki 22px taşma** düzeltildi (`Flexible` +
+  `FittedBox(scaleDown)`) — mola gövdesini ilk kez bu maddenin testi çizdiği
+  için görüldü.
+- **Üç test boşluğu kapandı** (`test/features/focus_session/`,
+  `test/services/notifications/`): bildirim kapısı (kapalıyken hiçbir gönderim,
+  iptaller yine çalışıyor + açık hâlde karşı kontrol), `SessionRingPainter`
+  gerçek `progress` alıyor (odak ve duraklatılmış hâl), `didChangeAppLifecycleState`
+  `inactive`/`hidden`/`paused`te tikleyiciyi durduruyor ve `resumed`de yakalama
+  tiki atıyor. Geri tuşu davranışının regresyon testi de aynı dosyada.
 
 ---
 

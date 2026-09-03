@@ -262,7 +262,8 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   "her molada rastgele 2 tanesi" diyor ama prototip yalnızca 2 tane somut metin veriyor; ekstra ipucu
   icat etmek "yeni metin yazma yasak" kuralını ihlal ederdi. Katalog büyüdükçe (gelecek faz/ürün kararı)
   rastgele seçim otomatik anlamlı hale gelecek.
-- **Ekran 03'ün "skip-forward" ikonu görsel olarak duruyor ama dokunmaya bağlı değil** — SPEC.md'nin
+- **Ekran 03'ün "skip-forward" ikonu görsel olarak duruyor ama dokunmaya bağlı değil** *(ROADMAP madde
+  5'te geri alındı — düğme tamamen kaldırıldı, gerekçesi en alttaki bölümde)* — SPEC.md'nin
   Ekran 03 binding tablosunda bu buton için hiçbir davranış tanımlı değil (yalnızca X/oynat-duraklat
   bağlanmış); var olan bir prototip elemanını görsel olarak silmek "birebir taşı" kuralını, ona
   tanımsız bir davranış icat etmek de "özellik ekleme yasağı"nı ihlal ederdi — Faz 4'ün alt gezinme
@@ -627,3 +628,45 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
 - **Banner yeri prototipteki `BANNER 320×50` yer tutucusu olarak duruyor** — SPEC §7.1 banner'ın iki
   hedefinden biri bu ekran; gerçek `AnchoredAdaptiveBannerAdSize` ve `canRequestAds` kapısı Faz 11'in
   kapsamı (ROADMAP madde 6).
+
+## ROADMAP madde 5 — küçük düzeltmeler + test boşlukları
+
+- **Ekran 03'ün "skip-forward" düğmesi kaldırıldı** (Faz 5'in "görsel var, `onTap` yok" kararı geri
+  alındı). ROADMAP madde 5 iki seçenek bırakıyordu: işlevi bağla ya da prototipten çıkar. Bağlamak
+  SPEC'te hiç tanımlanmamış bir semantik icat etmek olurdu — "fazı atla" atlanan pomodoroyu
+  `completed` sayar mı, rozet/seri/istatistik ona göre değişir mi soruları SPEC'te cevapsız; hepsi
+  yeni ürün kararı demek. Görünen ama hiçbir şey yapmayan bir düğme ise eksik olandan daha kötü:
+  kullanıcı dokunuyor, uygulama sessiz kalıyor. Düğmenin **yeri** aynı genişlikte boş bir
+  `SizedBox` olarak duruyor ki oynat/duraklat düğmesi prototipteki gibi halkanın merkezinde kalsın
+  (yalnızca silinseydi büyük düğme sağa kayardı).
+- **Odak/mola sürerken sistem geri tuşu ekranı kapatmıyor** (`PopScope`). Ekran 02'nin aktif seans
+  kurtarma yönlendirmesi bilinçli olarak yalnızca `initState`te çalışıyor (Faz 5 kararı: `build()`
+  içinde izlemek yığına iki `FocusSessionScreen` ekliyordu), bu yüzden geri tuşuyla çıkan kullanıcı
+  süren seansa dönemiyordu. Odak fazında geri, "X" ile **aynı** iptal onayını (Ekran 10) açıyor —
+  seansı sessizce iptal etmek ya da hiçbir şey yapmamak yerine, kullanıcının zaten bildiği çıkış
+  yolunu gösteriyor. Molada geri hiçbir şey yapmıyor: Ekran 09'un kendi "ODAĞA DÖN" çıkışı var ve
+  mola için "seriyi kırıyorsun" onayı anlamsız olurdu. Onay dialog'u artık iki yerden açıldığı için
+  `_confirmCancel` gövdeden çıkıp dosya düzeyine taşındı.
+- **Ekran 09'un başlık satırı 390pt genişlikte taşıyordu** ("KISA MOLA" hapı + "n. pomodoro bitti");
+  ilk kez bu maddenin widget testi mola gövdesini çizdiği için görüldü. Sağdaki grup `Flexible` +
+  `FittedBox(scaleDown)` ile küçültülüyor — Faz 9'un alt gezinme çubuğundaki `VERİLER` hapıyla aynı
+  çözüm (kırpmak yerine küçültmek prototipe daha yakın).
+- **Odak ekranı testleri sahte bir `PomodoroController` alt sınıfıyla koşuyor** (`build()` sabit faz
+  döndürüyor, `tick()` yalnızca sayıyor). İki nedeni var: gerçek controller'da tik yan etkisiz
+  kaldığı için "tikleyici durdu mu" dışarıdan gözlemlenemiyor; ve gerçek `tick()` testin ortasında
+  fazı `idle`'a düşürüp ekranı kapatabiliyor. Ekranlar yine gerçek router'la, Ekran 02'nin kurtarma
+  yönlendirmesi üzerinden açılıyor — kurulum gerçek yolun aynısı.
+- **Sistem geri tuşu testte `flutter/navigation` kanalının `popRoute` bildirimiyle simüle ediliyor**,
+  `tester.binding.handlePopRoute()` ile değil: ikincisi `@protected` ve `go_router`ın
+  `BackButtonDispatcher`ını atlayan bir kısayol olurdu; kanal bildirimi cihazdaki yolun birebir aynısı
+  (`WidgetsBinding.handlePopRoute` → `GoRouterDelegate.popRoute` → `NavigatorState.maybePop`, ki
+  `PopScope`u o zincir uyguluyor).
+- **Bildirim kapısı testi gerçek eklenti nesnesiyle, sahte `MethodChannel` işleyicisiyle koşuyor** —
+  `NotificationService.disabled()` bu iş için uygun değil: kapıya hiç gelmeden her şeyi no-op yapıyor,
+  yani "gönderilmedi" sonucu kapıyı değil `_plugin == null` kısa devresini doğrulardı. Kanal
+  (`dexterous.com/flutter/local_notifications`) dinlenip hangi metodun çağrıldığı kaydediliyor;
+  eklenti platform uygulamasını `defaultTargetPlatform`a göre seçtiği için test hedefi Android'e
+  sabitliyor ve `AndroidFlutterLocalNotificationsPlugin.registerWith()`i kendisi çağırıyor (normalde
+  üretilen kayıt defterinin işi). Anahtar açık hâldeki karşı kontrolde **seri riski (1003)
+  beklenmiyor**: o bildirim yalnızca günün 21:00'i henüz gelmediyse kuruluyor, testi çalıştırma
+  saatine bağlamamak için kapsam dışı bırakıldı.
