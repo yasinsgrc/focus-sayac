@@ -123,11 +123,14 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
           SafeArea(
             child: activeExamAsync.when(
               data: (Exam? exam) {
-                if (exam == null) return const SizedBox.shrink();
+                if (exam == null) return const _NoExamBody();
                 return _CountdownBody(exam: exam, nowUtc: _nowUtc, dashController: _dashController);
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (Object error, StackTrace stackTrace) => const SizedBox.shrink(),
+              error: (Object error, StackTrace stackTrace) => const _NoExamBody(
+                title: 'SINAV YÜKLENEMEDİ',
+                message: 'Kayıtlı sınavlar okunamadı. Listeden yeniden seçmeyi deneyebilirsin.',
+              ),
             ),
           ),
           Positioned(
@@ -145,6 +148,77 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Aktif sınav yokken (ilk kurulumda seçim yapılmadan, ya da aktif sınav
+/// silindiğinde) gösterilir. Daha önce burada `SizedBox.shrink()` vardı:
+/// ekranda yalnızca alt gezinme çubuğu kalıyordu ve gezinme çubuğunun hiçbir
+/// sekmesi sınav seçimine gitmediği için kullanıcı geri sayıma dönemiyordu.
+/// Aynı çıkışsızlık `activeExamProvider` hata yayınladığında da oluşuyordu,
+/// o dal da buraya bağlandı — sadece başlık/metin değişir, "SINAV SEÇ"
+/// düğmesi (ve içindeki "Kendi sınavımı ekle") her iki durumda da çalışır.
+class _NoExamBody extends StatelessWidget {
+  const _NoExamBody({
+    this.title = 'HEDEF SEÇİLMEDİ',
+    this.message = 'Geri sayımın başlaması için bir sınav seç ya da kendi hedefini ekle.',
+  });
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppColors colors = Theme.of(context).extension<AppColors>()!;
+
+    return Padding(
+      // Alt boşluk gezinme çubuğunu (64px + 18px kenar boşluğu) açıkta bırakır.
+      padding: const EdgeInsets.fromLTRB(34, 0, 34, 100),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0x24FFFFFF)),
+              ),
+              child: Icon(PhosphorIconsDuotone.calendarBlank, size: 46, color: colors.neutral600),
+            ),
+            const SizedBox(height: 26),
+            Text(title, style: AppTypography.display(fontSize: 26, weight: FontWeight.w700, color: colors.text)),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: 262,
+              child: Text(
+                message,
+                textAlign: TextAlign.center,
+                style: AppTypography.body(fontSize: 14, color: colors.neutral500),
+              ),
+            ),
+            const SizedBox(height: 30),
+            SizedBox(
+              height: 54,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  side: BorderSide(color: colors.ember),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  backgroundColor: colors.emberDeep,
+                ),
+                onPressed: () => showExamPickerSheet(context),
+                child: Text(
+                  'SINAV SEÇ',
+                  style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w600, color: colors.ember),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
