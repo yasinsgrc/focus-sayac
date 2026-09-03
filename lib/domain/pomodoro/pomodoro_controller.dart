@@ -208,21 +208,33 @@ class PomodoroController extends Notifier<PomodoroPhase> {
         );
     state = const PomodoroPhase.idle();
     await _clearPersisted();
+    await _notifications.cancelBreakEnd();
     await _haptic();
   }
 
   /// Ekran 09'un "5 dk ekle" düğmesi — molada en fazla [kMaxBreakExtensions]
-  /// kez kullanılabilir (SPEC.md Ekran 09).
+  /// kez kullanılabilir (SPEC.md Ekran 09). Mola bitiş bildirimi de yeni
+  /// bitiş anına taşınır; aksi hâlde uzatılan mola eski (artık yanlış) anda
+  /// haber verirdi.
   Future<void> extendBreak() async {
     final PomodoroPhase current = state;
     if (current is! PomodoroBreakRunning) return;
     if (current.extensionsUsed >= kMaxBreakExtensions) return;
     await ref.read(pomodoroSessionDaoProvider).incrementBreakExtension(current.sessionId);
-    state = current.copyWith(
+    final PomodoroBreakRunning extended = current.copyWith(
       plannedDurationSec: current.plannedDurationSec + (5 * 60),
       extensionsUsed: current.extensionsUsed + 1,
     );
+    state = extended;
     await _persist();
+    await _scheduleBreakEndFor(extended);
+  }
+
+  Future<void> _scheduleBreakEndFor(PomodoroBreakRunning b) async {
+    await _notifications.scheduleBreakEnd(
+      endAtUtc: b.startedAtUtc.add(Duration(seconds: b.plannedDurationSec)),
+      breakMinutes: b.plannedDurationSec ~/ 60,
+    );
   }
 
   /// Ekranın yerel saniye tikleyicisinin her çağırdığı kontrol noktası:
@@ -294,6 +306,8 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     if (current is PomodoroFocusRunning) {
       await _notifications.cancelFocusSessionEnd();
       await _notifications.cancelOngoingFocus();
+    } else if (current is PomodoroBreakRunning) {
+      await _notifications.cancelBreakEnd();
     }
     state = const PomodoroPhase.idle();
     await _clearPersisted();
@@ -319,7 +333,7 @@ class PomodoroController extends Notifier<PomodoroPhase> {
           startedAt: endedAtUtc,
           plannedDurationSec: breakSec,
         );
-    state = PomodoroPhase.breakRunning(
+    final PomodoroBreakRunning breakPhase = PomodoroBreakRunning(
       sessionId: breakSessionId,
       examId: r.examId,
       isLong: isLong,
@@ -328,7 +342,13 @@ class PomodoroController extends Notifier<PomodoroPhase> {
       cyclePosition: r.cyclePosition,
       extensionsUsed: 0,
     );
+    state = breakPhase;
     await _persist();
+    // Molanın bitişi de zamanlanır: ekranın tikleyicisi arka planda durduğu
+    // için (Ekran 03) molada telefonu bırakan kullanıcıyı uyandıracak tek
+    // şey bu. Faz kapanışı yine dönüşteki yakalama tikinde, planlanan bitiş
+    // anıyla yapılıyor (bkz. [tick]).
+    await _scheduleBreakEndFor(breakPhase);
     await _notifications.rescheduleStreakRiskReminder(completedToday: true, streak: ref.read(streakProvider));
     await ref.read(badgeUnlockServiceProvider).evaluateAfterFocusCompletion();
     await _haptic();
@@ -343,6 +363,9 @@ class PomodoroController extends Notifier<PomodoroPhase> {
         );
     state = const PomodoroPhase.idle();
     await _clearPersisted();
+    // Mola zaten dolduğu için bildirim ya atıldı ya da bu tik ona yetişti;
+    // her iki durumda da bekleyen/duran kaydı temizle.
+    await _notifications.cancelBreakEnd();
     await _haptic();
   }
 }

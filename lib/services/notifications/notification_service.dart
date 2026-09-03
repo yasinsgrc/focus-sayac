@@ -27,6 +27,7 @@ class NotificationService {
   static const int _sessionEndNotificationId = 1001;
   static const int _ongoingFocusNotificationId = 1002;
   static const int _streakRiskNotificationId = 1003;
+  static const int _breakEndNotificationId = 1004;
 
   static const AndroidNotificationDetails _sessionEndAndroidDetails = AndroidNotificationDetails(
     'session_end',
@@ -105,6 +106,32 @@ class NotificationService {
 
   Future<void> cancelFocusSessionEnd() async {
     await _plugin?.cancel(id: _sessionEndNotificationId);
+  }
+
+  /// SPEC.md Ekran 12 "Seans bitişi" tipinin mola karşılığı — mola da bir
+  /// `PomodoroSession` olduğu için ayrı bir beşinci tip değil, aynı kanaldan
+  /// (yalnızca farklı `id`, ki odak bitişi bildirimi ile birbirlerini
+  /// ezmesinler) gönderilir. Mola başında kurulur ve her "5 dk ekle"de yeni
+  /// bitiş anına taşınır; uygulama arka plandayken molanın bittiğini haber
+  /// veren tek mekanizma budur (ekranın tikleyicisi arka planda duruyor).
+  Future<void> scheduleBreakEnd({
+    required DateTime endAtUtc,
+    required int breakMinutes,
+  }) async {
+    final FlutterLocalNotificationsPlugin? plugin = _plugin;
+    if (plugin == null) return;
+    await plugin.zonedSchedule(
+      id: _breakEndNotificationId,
+      title: 'Mola bitti',
+      body: '$breakMinutes dakika mola bitti. Meşaleyi yeniden yakmaya hazır mısın?',
+      scheduledDate: tz.TZDateTime.from(endAtUtc, _location),
+      notificationDetails: const NotificationDetails(android: _sessionEndAndroidDetails),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
+  }
+
+  Future<void> cancelBreakEnd() async {
+    await _plugin?.cancel(id: _breakEndNotificationId);
   }
 
   /// SPEC.md Ekran 12 "Kalıcı" — `ongoing:true, autoCancel:false`. Canlı

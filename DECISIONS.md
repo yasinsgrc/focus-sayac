@@ -409,3 +409,12 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   kapsamı; Faz 5'in mola ekranındaki "5 dk ekle" (`canExtend=false` iken `onPressed: null`) ve Faz
   4'ün `BottomNavBar` no-op sekmeleriyle aynı emsel: görsel birebir, var olmayan bir rotaya gitmeye
   çalışıp çökmek yerine dokunma hedefsiz bırakılıyor.
+- **Mola bitişi bildirimi, SPEC Ekran 12'nin "Seans bitişi" tipiyle aynı kanaldan gönderiliyor
+  (beşinci bir tip açılmadı)** — mola da bir `PomodoroSession` olduğu için ayrı bir kanal/tip yerine
+  yalnızca ayrı bir bildirim `id`'si (1004) kullanıldı; iki bildirim birbirini ezmesin diye id ayrı,
+  kullanıcının bildirim ayarlarında dört tip görünmeye devam etsin diye kanal ortak. Bildirim mola
+  başlarken kurulur, "5 dk ekle"de yeni bitiş anına taşınır, mola herhangi bir yolla kapandığında
+  (erken bitirme, tikle tamamlanma, cihaz saati geri alma) iptal edilir. Fazın **kapanışı** yine
+  bildirime değil, öne dönüşteki yakalama tikine bağlı (planlanan bitiş anıyla kapanıyor — Faz 5
+  kararı): yerel bildirimler kod çalıştırmadığı ve SPEC §1 arka plan servisini yasakladığı için
+  bildirim yalnızca "haber verme" görevini üstleniyor.
