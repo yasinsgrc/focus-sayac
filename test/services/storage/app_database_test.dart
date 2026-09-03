@@ -79,11 +79,20 @@ void main() {
       expect(settings.activeExamId, target.id);
     });
 
-    test('upsertPresetExam updates an existing preset by name instead of duplicating it', () async {
+    test('seeded presets carry the stable key from assets/data/exam_dates.json', () async {
+      final List<Exam> presets = await db.examDao.getPresetExams();
+      expect(
+        presets.map((Exam e) => e.presetKey),
+        containsAll(<String>['yks', 'lgs', 'kpss_lisans', 'ales']),
+      );
+    });
+
+    test('upsertPresetExam updates an existing preset by key instead of duplicating it', () async {
       final List<Exam> before = await db.examDao.getPresetExams();
       final Exam target = before.first;
 
       await db.examDao.upsertPresetExam(
+        key: target.presetKey!,
         name: target.name,
         subtitle: 'Güncellenmiş alt başlık',
         dateUtc: DateTime.utc(2028, 3, 3),
@@ -94,9 +103,73 @@ void main() {
 
       final List<Exam> after = await db.examDao.getPresetExams();
       expect(after, hasLength(before.length));
-      final Exam updated = after.firstWhere((Exam e) => e.name == target.name);
+      final Exam updated = after.firstWhere((Exam e) => e.id == target.id);
       expect(updated.subtitle, 'Güncellenmiş alt başlık');
       expect(updated.source, ExamSourceType.remote);
+    });
+
+    test('upsertPresetExam renames the matched preset instead of adding a second row', () async {
+      final List<Exam> before = await db.examDao.getPresetExams();
+      final Exam target = before.firstWhere((Exam e) => e.presetKey == 'yks');
+
+      await db.examDao.upsertPresetExam(
+        key: 'yks',
+        name: 'YKS 2028',
+        subtitle: target.subtitle,
+        dateUtc: DateTime.utc(2028, 6, 18, 7, 15),
+        timeOfDay: '10:15',
+        accentRole: target.accentRole,
+        verifiedAt: DateTime.utc(2027, 8, 1),
+      );
+
+      final List<Exam> after = await db.examDao.getPresetExams();
+      expect(after, hasLength(before.length));
+      final Exam renamed = after.firstWhere((Exam e) => e.presetKey == 'yks');
+      expect(renamed.id, target.id);
+      expect(renamed.name, 'YKS 2028');
+      expect(after.where((Exam e) => e.name == target.name), isEmpty);
+    });
+
+    test('backfillPresetKeys fills v1 rows so the first remote sync updates them', () async {
+      // Şema v1'den yükselen kurulumun durumu: preset satırları var, anahtar yok.
+      await db.customStatement('UPDATE exams SET preset_key = NULL');
+      await db.examDao.backfillPresetKeys(<String, String>{'YKS': 'yks', 'LGS': 'lgs'});
+
+      final List<Exam> presets = await db.examDao.getPresetExams();
+      expect(presets.firstWhere((Exam e) => e.name == 'YKS').presetKey, 'yks');
+      expect(presets.firstWhere((Exam e) => e.name == 'LGS').presetKey, 'lgs');
+
+      final int before = presets.length;
+      await db.examDao.upsertPresetExam(
+        key: 'yks',
+        name: 'YKS',
+        subtitle: 'TYT + AYT',
+        dateUtc: DateTime.utc(2028, 6, 18, 7, 15),
+        timeOfDay: '10:15',
+        accentRole: ExamAccentRole.ember,
+        verifiedAt: DateTime.utc(2027, 8, 1),
+      );
+      expect(await db.examDao.getPresetExams(), hasLength(before));
+    });
+
+    test('upsertPresetExam inserts a preset when the key is unknown', () async {
+      final List<Exam> before = await db.examDao.getPresetExams();
+
+      await db.examDao.upsertPresetExam(
+        key: 'dgs',
+        name: 'DGS',
+        subtitle: 'Dikey Geçiş',
+        dateUtc: DateTime.utc(2028, 7, 2, 7, 15),
+        timeOfDay: '10:15',
+        accentRole: ExamAccentRole.mint,
+        verifiedAt: DateTime.utc(2027, 8, 1),
+      );
+
+      final List<Exam> after = await db.examDao.getPresetExams();
+      expect(after, hasLength(before.length + 1));
+      final Exam inserted = after.firstWhere((Exam e) => e.presetKey == 'dgs');
+      expect(inserted.source, ExamSourceType.remote);
+      expect(inserted.isPreset, isTrue);
     });
   });
 

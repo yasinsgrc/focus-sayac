@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -42,7 +42,25 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
           await _seedInitialData(this);
         },
+        onUpgrade: (Migrator m, int from, int to) async {
+          if (from < 2) {
+            await m.addColumn(exams, exams.presetKey);
+            await _backfillPresetKeys(this);
+          }
+        },
       );
+}
+
+/// v1'de yazılmış preset satırlarının `presetKey`'i boştur; anahtar
+/// doldurulmazsa ilk uzak override her sınav için ikinci bir satır açar.
+/// Seed dosyasındaki ad → anahtar eşlemesiyle bir kez doldurulur.
+Future<void> _backfillPresetKeys(AppDatabase db) async {
+  final String raw = await rootBundle.loadString(kExamSeedAssetPath);
+  final Map<String, Object?> payload = jsonDecode(raw) as Map<String, Object?>;
+  final Map<String, String> keysByName = <String, String>{
+    for (final ExamJsonEntry entry in parseExamJsonPayload(payload)) entry.name: entry.key,
+  };
+  await db.examDao.backfillPresetKeys(keysByName);
 }
 
 /// İlk kurulumda 4 preset sınav + varsayılan `AppSettings` satırını yazar
@@ -64,6 +82,7 @@ Future<void> _seedInitialData(AppDatabase db) async {
             timeOfDay: entry.timeOfDay,
             accentRole: entry.accentRole,
             isPreset: const Value<bool>(true),
+            presetKey: Value<String?>(entry.key),
             isActive: Value<bool>(insertedIds.isEmpty),
             source: ExamSourceType.seed,
             verifiedAt: Value<DateTime?>(entry.verifiedAt),

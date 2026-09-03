@@ -60,6 +60,7 @@ class ExamSourceService {
       final List<ExamJsonEntry> entries = parseExamJsonPayload(payload);
       for (final ExamJsonEntry entry in entries) {
         await _database.examDao.upsertPresetExam(
+          key: entry.key,
           name: entry.name,
           subtitle: entry.subtitle,
           dateUtc: entry.dateUtc,

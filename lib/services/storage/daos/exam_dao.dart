@@ -38,10 +38,22 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
     return (select(exams)..where((Exams e) => e.isPreset.equals(true))).get();
   }
 
-  Future<Exam?> getPresetExamByName(String name) {
+  Future<Exam?> getPresetExamByKey(String key) {
     return (select(exams)
-          ..where((Exams e) => e.isPreset.equals(true) & e.name.equals(name)))
+          ..where((Exams e) => e.isPreset.equals(true) & e.presetKey.equals(key)))
         .getSingleOrNull();
+  }
+
+  /// Şema v1'den gelen preset satırlarına anahtarlarını yazar (`AppDatabase`
+  /// migration'ı seed dosyasından okuduğu ad → anahtar eşlemesini geçirir).
+  /// Anahtarı zaten dolu satırlara dokunulmaz.
+  Future<void> backfillPresetKeys(Map<String, String> keysByName) async {
+    for (final MapEntry<String, String> entry in keysByName.entries) {
+      await (update(exams)
+            ..where((Exams e) =>
+                e.isPreset.equals(true) & e.name.equals(entry.key) & e.presetKey.isNull()))
+          .write(ExamsCompanion(presetKey: Value<String?>(entry.value)));
+    }
   }
 
   Future<int> insertUserExam({
@@ -67,7 +79,10 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
 
   /// Uzak override'ın bir preset satırını güncellemesi ya da yeni bir preset
   /// eklemesi için tek giriş noktası — `ExamSourceService` bunu çağırır.
+  /// Eşleme `key` üzerinden yapılır: uzak JSON sınavın adını değiştirdiğinde
+  /// ikinci bir satır açılmaz, mevcut satırın adı güncellenir.
   Future<void> upsertPresetExam({
+    required String key,
     required String name,
     required String? subtitle,
     required DateTime dateUtc,
@@ -75,7 +90,7 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
     required ExamAccentRole accentRole,
     required DateTime verifiedAt,
   }) async {
-    final Exam? existing = await getPresetExamByName(name);
+    final Exam? existing = await getPresetExamByKey(key);
     if (existing == null) {
       await into(exams).insert(
         ExamsCompanion.insert(
@@ -85,6 +100,7 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
           timeOfDay: timeOfDay,
           accentRole: accentRole,
           isPreset: const Value<bool>(true),
+          presetKey: Value<String?>(key),
           source: ExamSourceType.remote,
           verifiedAt: Value<DateTime?>(verifiedAt),
         ),
@@ -93,6 +109,7 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
     }
     await (update(exams)..where((Exams e) => e.id.equals(existing.id))).write(
       ExamsCompanion(
+        name: Value<String>(name),
         subtitle: Value<String?>(subtitle),
         dateUtc: Value<DateTime>(dateUtc),
         timeOfDay: Value<String>(timeOfDay),

@@ -14,6 +14,11 @@ class Exams extends Table {
   TextColumn get timeOfDay => text()();
   TextColumn get accentRole => textEnum<ExamAccentRole>()();
   BoolColumn get isPreset => boolean().withDefault(const Constant(false))();
+
+  /// Yerel seed ve uzak override JSON'undaki kararlı anahtar (ör. `yks`).
+  /// Uzak override preset'leri bu anahtarla eşler — sınavın adı değişse bile
+  /// aynı satır güncellenir. Kullanıcı sınavlarında `null`.
+  TextColumn get presetKey => text().nullable()();
   BoolColumn get isActive => boolean().withDefault(const Constant(false))();
   TextColumn get source => textEnum<ExamSourceType>()();
   DateTimeColumn get verifiedAt => dateTime().nullable()();
