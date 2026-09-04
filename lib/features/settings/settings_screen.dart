@@ -5,6 +5,8 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/app_back_button.dart';
+import '../../core/widgets/bottom_nav_bar.dart';
 import '../../domain/exams/exam_providers.dart';
 import '../../domain/review/app_review_service.dart';
 import '../../domain/settings/app_data_reset_service.dart';
@@ -21,9 +23,10 @@ const int kFocusMinutesMax = 90;
 const int kBreakMinutesMin = 1;
 const int kBreakMinutesMax = 30;
 
-/// Ekran 07 — ayarlar. Prototip v2 satır 287-315 birebir. Bu ekranda alt
-/// gezinme çubuğu yok (prototipte de yok — Ekran 04 ile aynı durum, Faz 7
-/// kararı); geri dönüş sistem geri tuşu/kaydırmasıyla olur.
+/// Ekran 07 — ayarlar. Prototip v2 satır 287-315 birebir. Prototipte alt
+/// gezinme çubuğu yoktu (Ekran 04 ile aynı durum, Faz 7 kararı); artık hem
+/// çubuk hem Ekran 05'teki geri ok var, yani sistem geri hareketi tek çıkış
+/// yolu değil.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -52,20 +55,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(26, 6, 26, 0),
-          child: settingsAsync.when(
-            data: _buildContent,
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (Object error, StackTrace stackTrace) => Center(
-              child: Text(
-                AppLocalizations.of(context).settingsLoadError,
-                style: AppTypography.body(fontSize: 14, color: colors.neutral500),
+      body: Stack(
+        children: <Widget>[
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(26, 6, 26, 0),
+              child: settingsAsync.when(
+                data: _buildContent,
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (Object error, StackTrace stackTrace) => Center(
+                  child: Text(
+                    AppLocalizations.of(context).settingsLoadError,
+                    style: AppTypography.body(fontSize: 14, color: colors.neutral500),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 18,
+            child: BottomNavBar(
+              active: AppNavTab.settings,
+              onSelect: (AppNavTab tab) => navigateToNavTab(context, tab, current: AppNavTab.settings),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -83,7 +99,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           const SizedBox(height: 8),
-          Text(l10n.settingsTitle, style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text)),
+          const Align(alignment: Alignment.centerLeft, child: AppBackButton()),
+          const SizedBox(height: 10),
+          Text(
+            l10n.settingsTitle,
+            style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text),
+          ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(18),
@@ -95,7 +116,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Text(l10n.settingsDurationsSection, style: AppTypography.kicker(fontSize: 8, color: colors.neutral600, letterSpacingEm: 0.24)),
+                Text(
+                  l10n.settingsDurationsSection,
+                  style: AppTypography.kicker(fontSize: 8, color: colors.neutral600, letterSpacingEm: 0.24),
+                ),
                 const SizedBox(height: 14),
                 _DurationSlider(
                   label: l10n.settingsFocusDuration,
@@ -154,9 +178,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     label: l10n.settingsSound,
                     value: _onOff(l10n, settings.soundEnabled),
                     valueColor: _onOffColor(settings.soundEnabled, colors),
-                    onTap: () => _write(
-                      AppSettingsTableCompanion(soundEnabled: Value<bool>(!settings.soundEnabled)),
-                    ),
+                    onTap: () => _write(AppSettingsTableCompanion(soundEnabled: Value<bool>(!settings.soundEnabled))),
                   ),
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.vibrate,
@@ -164,9 +186,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     label: l10n.settingsHaptics,
                     value: _onOff(l10n, settings.hapticEnabled),
                     valueColor: _onOffColor(settings.hapticEnabled, colors),
-                    onTap: () => _write(
-                      AppSettingsTableCompanion(hapticEnabled: Value<bool>(!settings.hapticEnabled)),
-                    ),
+                    onTap: () => _write(AppSettingsTableCompanion(hapticEnabled: Value<bool>(!settings.hapticEnabled))),
                   ),
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.flame,
@@ -213,10 +233,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     value: '',
                     valueColor: colors.neutral500,
                     showCaret: true,
-                    onTap: () => _showInfoDialog(
-                      title: l10n.settingsAboutTitle,
-                      body: l10n.settingsAboutBody,
-                    ),
+                    onTap: () => _showInfoDialog(title: l10n.settingsAboutTitle, body: l10n.settingsAboutBody),
                   ),
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.shieldCheck,
@@ -225,10 +242,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     value: '',
                     valueColor: colors.neutral500,
                     showCaret: true,
-                    onTap: () => _showInfoDialog(
-                      title: l10n.settingsPrivacyTitle,
-                      body: l10n.settingsPrivacyBody,
-                    ),
+                    onTap: () => _showInfoDialog(title: l10n.settingsPrivacyTitle, body: l10n.settingsPrivacyBody),
                   ),
                   _SettingsRow(
                     icon: PhosphorIconsDuotone.trash,
@@ -247,7 +261,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _RemoveAdsRow(colors: colors),
           const SizedBox(height: 12),
           Padding(
-            padding: const EdgeInsets.only(bottom: 14),
+            // Alt boşluk yüzen çubuğun kapladığı alan kadar: sorumluluk
+            // metni çubuğun altında kalmadan sonuna kadar kaydırılabilmeli.
+            padding: const EdgeInsets.only(bottom: kBottomNavReservedSpace),
             child: Text(
               l10n.settingsDisclaimer,
               style: AppTypography.body(fontSize: 11.5, color: colors.neutral600, height: 1.5),
@@ -267,9 +283,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (opened || !mounted) return;
     // Açık bir dokunuş sessizce yutulmamalı (mağaza uygulaması yoksa ya da
     // kanal yanıt vermezse `openStoreListing` false döner).
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context).settingsStoreOpenFailed)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).settingsStoreOpenFailed)));
   }
 
   Future<void> _showInfoDialog({required String title, required String body}) {
@@ -289,9 +305,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (confirmed != true) return;
     await ref.read(appDataResetServiceProvider).resetProgress();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context).settingsResetDone)),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).settingsResetDone)));
   }
 }
 
@@ -335,8 +349,11 @@ class _DurationSlider extends StatelessWidget {
             Text(label, style: AppTypography.body(fontSize: 13.5, color: colors.text)),
             Text(
               AppLocalizations.of(context).settingsMinutesValue(minutes),
-              style: AppTypography.display(fontSize: 16, weight: FontWeight.w700, color: tint)
-                  .copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]),
+              style: AppTypography.display(
+                fontSize: 16,
+                weight: FontWeight.w700,
+                color: tint,
+              ).copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]),
             ),
           ],
         ),
@@ -412,8 +429,7 @@ class _SettingsRow extends StatelessWidget {
               Expanded(
                 child: Text(label, style: AppTypography.body(fontSize: 13.5, color: colors.text)),
               ),
-              if (value.isNotEmpty)
-                Text(value, style: AppTypography.body(fontSize: 12.5, color: valueColor)),
+              if (value.isNotEmpty) Text(value, style: AppTypography.body(fontSize: 12.5, color: valueColor)),
               if (showCaret) ...<Widget>[
                 const SizedBox(width: 10),
                 Icon(PhosphorIconsRegular.caretRight, size: 13, color: colors.neutral700),
@@ -446,14 +462,14 @@ class _RemoveAdsRow extends StatelessWidget {
           Icon(PhosphorIconsDuotone.sealCheck, size: 21, color: colors.ember.withValues(alpha: 0.75)),
           const SizedBox(width: 13),
           Expanded(
-            child: Text(AppLocalizations.of(context).settingsRemoveAds, style: AppTypography.body(fontSize: 13.5, color: colors.neutral400)),
+            child: Text(
+              AppLocalizations.of(context).settingsRemoveAds,
+              style: AppTypography.body(fontSize: 13.5, color: colors.neutral400),
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0x0FFFFFFF),
-              borderRadius: BorderRadius.circular(999),
-            ),
+            decoration: BoxDecoration(color: const Color(0x0FFFFFFF), borderRadius: BorderRadius.circular(999)),
             child: Text(
               AppLocalizations.of(context).settingsComingSoon,
               style: AppTypography.kicker(fontSize: 8, color: colors.neutral500, letterSpacingEm: 0.16),
@@ -487,7 +503,10 @@ class _InfoDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text(title, style: AppTypography.display(fontSize: 20, weight: FontWeight.w700, color: colors.text)),
+            Text(
+              title,
+              style: AppTypography.display(fontSize: 20, weight: FontWeight.w700, color: colors.text),
+            ),
             const SizedBox(height: 12),
             // Gizlilik metni reklam/UMP bölümüyle birlikte kısa ekranlara
             // sığmıyor (Faz 15). `Flexible` + kaydırma olmadan `Column`
@@ -538,7 +557,10 @@ class _ResetConfirmDialog extends StatelessWidget {
           children: <Widget>[
             Icon(PhosphorIconsDuotone.trash, size: 46, color: colors.rose),
             const SizedBox(height: 18),
-            Text(l10n.settingsResetDialogTitle, style: AppTypography.display(fontSize: 23, weight: FontWeight.w700, color: colors.text)),
+            Text(
+              l10n.settingsResetDialogTitle,
+              style: AppTypography.display(fontSize: 23, weight: FontWeight.w700, color: colors.text),
+            ),
             const SizedBox(height: 10),
             Text(
               l10n.settingsResetDialogBody,

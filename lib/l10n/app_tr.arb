@@ -4,9 +4,11 @@
   "appTitle": "FocusSayaç",
   "commonClose": "Kapat",
   "commonEmptyValue": "—",
+  "commonBack": "Geri",
 
   "navCountdown": "SAYAÇ",
   "navStats": "VERİLER",
+  "navStoryCard": "BAŞARI",
 
   "onboardingKicker": "Y2K · ODAK PROTOKOLÜ",
   "onboardingTitle": "MEŞALE\nSENDE",

@@ -9,8 +9,14 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
+import 'package:focussayac/core/widgets/bottom_nav_bar.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_controller.dart';
+import 'package:focussayac/features/badges/badges_screen.dart';
+import 'package:focussayac/features/countdown/countdown_screen.dart';
 import 'package:focussayac/features/focus_session/focus_session_screen.dart';
+import 'package:focussayac/features/settings/settings_screen.dart';
+import 'package:focussayac/features/stats/stats_screen.dart';
+import 'package:focussayac/features/story_card/story_card_screen.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
@@ -120,5 +126,118 @@ void main() {
     expect(find.byType(FocusSessionScreen, skipOffstage: false), findsOneWidget);
 
     await _disposeTree(tester);
+  });
+
+  // Regresyon: "alev" ve "madalya" yuvalarının ikisi de `AppNavTab.badges`e
+  // bağlıydı — beş ikonun dördü dolu, biri aynı ekranın kopyasıydı. Yuvaların
+  // ekran okuyucu adları aynı zamanda hedeflerinin tek ayırt edicisi olduğu
+  // için test hem yönlendirmeyi hem etiketleri birlikte doğruluyor.
+  testWidgets('alt çubuktaki "alev" yuvası başarı kartını, "madalya" rozetleri açar', (WidgetTester tester) async {
+    // `addTearDown` kullanılmıyor: tutamağın bırakılıp bırakılmadığı test
+    // gövdesi biter bitmez, teardown'lardan **önce** denetleniyor.
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await _pumpApp(tester);
+
+    await tester.tap(find.bySemanticsLabel('BAŞARI KARTI'));
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.byType(StoryCardScreen, skipOffstage: false), findsOneWidget);
+    expect(find.byType(BadgesScreen, skipOffstage: false), findsNothing);
+
+    await _disposeTree(tester);
+    handle.dispose();
+  });
+
+  testWidgets('alt çubuk ikonlarının dokunma hedefi 48px yüksekliğinde', (WidgetTester tester) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await _pumpApp(tester);
+
+    // Regresyon: `InkWell` `Row`un gevşek dikey sınırı altında 21px'lik ikonun
+    // boyuna küçülüyordu; 64px'lik çubukta dokunulabilir şerit ikonun kendisi
+    // kadardı. Materyal'in en küçük dokunma hedefi 48px.
+    for (final String label in <String>['BAŞARI KARTI', 'ROZETLER', 'AYARLAR']) {
+      expect(tester.getSize(find.bySemanticsLabel(label)).height, 48, reason: label);
+    }
+
+    await _disposeTree(tester);
+    handle.dispose();
+  });
+
+  // Çubuk uzun süre yalnızca Ekran 02 ve 06'daydı: diğer üç sekme oraya
+  // götürüyor ama geri getirmiyordu, yani gezinme tek yönlüydü.
+  testWidgets('alt çubuk beş sekmenin hepsinde görünüyor', (WidgetTester tester) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await _pumpApp(tester);
+    expect(find.byType(BottomNavBar), findsOneWidget);
+
+    // Yığında kalan Ekran 02 kendi çubuğunu çizmeye devam ettiği için hem
+    // dokunuş hem doğrulama **o anki üst ekranın içinde** yapılıyor; aksi
+    // hâlde iki "ROZETLER" yuvası bulunup dokunuş hangisine gideceğini
+    // bilemiyor.
+    Type current = CountdownScreen;
+    for (final (String, Type) tab in <(String, Type)>[
+      ('BAŞARI KARTI', StoryCardScreen),
+      ('ROZETLER', BadgesScreen),
+      ('VERİLER', StatsScreen),
+      ('AYARLAR', SettingsScreen),
+    ]) {
+      await tester.tap(
+        find.descendant(of: find.byType(current), matching: find.bySemanticsLabel(tab.$1)),
+      );
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(find.byType(tab.$2), findsOneWidget, reason: tab.$1);
+      expect(
+        find.descendant(of: find.byType(tab.$2), matching: find.byType(BottomNavBar)),
+        findsOneWidget,
+        reason: tab.$1,
+      );
+      current = tab.$2;
+    }
+
+    await _disposeTree(tester);
+    handle.dispose();
+  });
+
+  // Sekmeler `push` edilseydi her geçiş yığına bir kat eklerdi: dört sekme
+  // arasında birkaç tur dolaşan kullanıcı Ekran 02'ye dönmek için sistem geri
+  // tuşuna onlarca kez basmak zorunda kalırdı.
+  testWidgets('sekmeler arasında dolaşmak gezinme yığınını büyütmüyor', (WidgetTester tester) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await _pumpApp(tester);
+
+    Type current = CountdownScreen;
+    for (final (String, Type) tab in <(String, Type)>[
+      ('ROZETLER', BadgesScreen),
+      ('AYARLAR', SettingsScreen),
+      ('VERİLER', StatsScreen),
+      ('BAŞARI KARTI', StoryCardScreen),
+    ]) {
+      await tester.tap(
+        find.descendant(of: find.byType(current), matching: find.bySemanticsLabel(tab.$1)),
+      );
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      current = tab.$2;
+    }
+
+    // Yerini bırakan rotaların çıkış animasyonu bitene kadar `skipOffstage:
+    // false` onları hâlâ ağaçta görüyor; sayım ancak geçiş tamamlandıktan
+    // sonra yığını yansıtıyor.
+    for (int i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    // Kökün üstünde tek bir kat kaldı: gezilen ara ekranlar yığında değil.
+    expect(find.byType(StoryCardScreen, skipOffstage: false), findsOneWidget);
+    for (final Type screen in <Type>[BadgesScreen, SettingsScreen, StatsScreen]) {
+      expect(find.byType(screen, skipOffstage: false), findsNothing, reason: '$screen');
+    }
+
+    await _disposeTree(tester);
+    handle.dispose();
   });
 }

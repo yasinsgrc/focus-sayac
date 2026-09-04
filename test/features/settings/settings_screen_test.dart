@@ -222,7 +222,10 @@ void main() {
     // akışının ilk yayını için birkaç tur pompalanıyor.
     await _settle(tester, rounds: 8);
 
-    expect(find.text('AYARLAR'), findsOneWidget);
+    // Başlık metnine bakılamıyor: alt çubuk beş ekranda birden göründüğünden
+    // beri aktif sekmenin hapı da "AYARLAR" yazıyor, yani metin ekranda iki
+    // kez var. Aranan olgu zaten ekranın açılmış olması.
+    expect(find.byType(SettingsScreen), findsOneWidget);
 
     await _disposeTree(tester);
   });
@@ -271,6 +274,10 @@ void main() {
     // `docs/privacy-policy.md` aynı olguları anlatmak zorunda.
     await _pumpSettings(tester);
 
+    // Satır listenin dibinde ve yüzen alt çubuk onun üstünü örtebiliyor;
+    // `ensureVisible` olmadan dokunuş çubuğa düşüp dialog hiç açılmıyordu.
+    await tester.ensureVisible(find.text('Gizlilik politikası'));
+    await _settle(tester);
     await tester.tap(find.text('Gizlilik politikası'));
     await _settle(tester);
 

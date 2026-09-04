@@ -27,6 +27,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // `flutter_local_notifications` (Ekran 12'nin zamanlanmış bildirimleri)
+        // java.time API'lerini kullanıyor ve AAR meta verisinde desugaring
+        // şart koşuyor; kapalıyken `:app:checkProfileAarMetadata` düşüyor.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -35,7 +39,7 @@ android {
 
     defaultConfig {
         applicationId = "com.focussayac.focussayac"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -61,4 +65,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

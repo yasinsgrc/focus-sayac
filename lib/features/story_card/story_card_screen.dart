@@ -10,6 +10,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/time/app_day.dart';
+import '../../core/widgets/bottom_nav_bar.dart';
 import '../../domain/countdown/countdown_math.dart';
 import '../../domain/exams/exam_providers.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
@@ -21,9 +22,9 @@ import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_providers.dart';
 import 'widgets/story_card_view.dart';
 
-/// Ekran 05 — başarı kartı. Prototip v2 satır 214-245 birebir. Bu ekranda alt
-/// gezinme çubuğu yok (prototipte de yok); Ekran 04'ün rozet dialogundaki
-/// "BAŞARI KARTINI OLUŞTUR" düğmesinden açılıyor.
+/// Ekran 05 — başarı kartı. Prototip v2 satır 214-245 birebir. Ekran 04'ün
+/// rozet dialogundaki "BAŞARI KARTINI OLUŞTUR" düğmesinden ve alt gezinme
+/// çubuğunun "alev" yuvasından açılıyor.
 class StoryCardScreen extends ConsumerStatefulWidget {
   const StoryCardScreen({super.key});
 
@@ -40,10 +41,7 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
   /// yeniden çiziyor).
   bool _busy = false;
 
-  Future<void> _run(
-    Future<StoryCardExportResult> Function(GlobalKey key) action,
-    _Messages messages,
-  ) async {
+  Future<void> _run(Future<StoryCardExportResult> Function(GlobalKey key) action, _Messages messages) async {
     if (_busy) return;
     setState(() => _busy = true);
     final StoryCardExportResult result = await action(_cardKey);
@@ -56,9 +54,9 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
       StoryCardExportResult.failed => messages.failed,
     };
     if (message == null) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message, style: AppTypography.body(fontSize: 13))),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message, style: AppTypography.body(fontSize: 13))));
   }
 
   @override
@@ -68,8 +66,7 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
     final StoryCardExporter exporter = ref.watch(storyCardExporterProvider);
 
     final AppSettingsTableData? settings = ref.watch(appSettingsProvider).value;
-    final StoryCardTemplate template =
-        StoryCardTemplate.fromIndex(settings?.selectedTemplateIndex ?? 0);
+    final StoryCardTemplate template = StoryCardTemplate.fromIndex(settings?.selectedTemplateIndex ?? 0);
 
     final Exam? exam = ref.watch(activeExamProvider).value;
     final DateTime nowUtc = DateTime.now().toUtc();
@@ -79,121 +76,135 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
       todayFocusSeconds: ref.watch(todayFocusStatsProvider).totalSeconds,
       streak: ref.watch(streakProvider),
       examName: exam?.name,
-      examDateText: exam == null
-          ? null
-          : DateFormat('d MMMM y', 'tr').format(toIstanbulWallClock(exam.dateUtc)),
+      examDateText: exam == null ? null : DateFormat('d MMMM y', 'tr').format(toIstanbulWallClock(exam.dateUtc)),
       daysRemaining: exam == null ? null : daysTo(exam.dateUtc, nowUtc),
     );
 
     return Scaffold(
       backgroundColor: colors.bg,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(26, 6, 26, 26),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Row(
+      body: Stack(
+        children: <Widget>[
+          SafeArea(
+            child: Padding(
+              // Alt boşluk yüzen çubuğun kapladığı alan kadar: "1080×1920"
+              // bilgisi çubuğun altında kalmamalı.
+              padding: const EdgeInsets.fromLTRB(26, 6, 26, kBottomNavReservedSpace),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  InkWell(
-                    onTap: () => context.pop(),
-                    borderRadius: BorderRadius.circular(999),
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0x1FFFFFFF)),
+                  Row(
+                    children: <Widget>[
+                      // `AppBackButton` yerine satır içi: bu ekranda ok her zaman
+                      // başlıkla aynı satırda durmalı, o widget ise yığın boşsa
+                      // kendini gizleyip başlığı sola kaydırırdı.
+                      Semantics(
+                        button: true,
+                        label: l10n.commonBack,
+                        child: InkWell(
+                          onTap: () => context.pop(),
+                          borderRadius: BorderRadius.circular(999),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0x1FFFFFFF)),
+                            ),
+                            child: Icon(PhosphorIconsRegular.arrowLeft, size: 17, color: colors.neutral400),
+                          ),
+                        ),
                       ),
-                      child: Icon(PhosphorIconsRegular.arrowLeft, size: 17, color: colors.neutral400),
+                      const SizedBox(width: 14),
+                      Text(
+                        l10n.storyCardTitle,
+                        style: AppTypography.display(fontSize: 19, weight: FontWeight.w600, color: colors.text),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Center(
+                    child: SizedBox(
+                      width: kStoryCardPreviewWidth,
+                      height: kStoryCardPreviewWidth * kStoryCardHeight / kStoryCardWidth,
+                      // Kart her zaman 270×480 mantıksal boyutta çiziliyor;
+                      // önizleme onu prototipin 248px'ine küçültüyor. Dışa aktarım
+                      // `RepaintBoundary`nin kendi katmanından alındığı için bu
+                      // ölçekten etkilenmiyor — PNG yine tam 1080×1920.
+                      child: FittedBox(
+                        child: StoryCardView(template: template, text: text, boundaryKey: _cardKey),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(height: 18),
+                  _TemplatePicker(
+                    selected: template,
+                    onSelect: (StoryCardTemplate value) {
+                      unawaited(
+                        ref
+                            .read(appSettingsDaoProvider)
+                            .updateSettings(AppSettingsTableCompanion(selectedTemplateIndex: Value<int>(value.index))),
+                      );
+                    },
+                  ),
+                  const Spacer(),
+                  _ShareButton(
+                    enabled: !_busy,
+                    onPressed: () => _run(exporter.share, _Messages(failed: l10n.storyCardShareFailed)),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: _SecondaryButton(
+                          icon: PhosphorIconsRegular.downloadSimple,
+                          label: l10n.storyCardSave,
+                          roleColor: colors.mint,
+                          enabled: !_busy,
+                          onPressed: () => _run(
+                            exporter.saveToGallery,
+                            _Messages(
+                              success: l10n.storyCardSaved,
+                              permissionDenied: l10n.storyCardSavePermissionDenied,
+                              failed: l10n.storyCardSaveFailed,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _SecondaryButton(
+                          icon: PhosphorIconsRegular.copy,
+                          label: l10n.storyCardCopy,
+                          roleColor: colors.sky,
+                          enabled: !_busy,
+                          onPressed: () => _run(
+                            exporter.copyToClipboard,
+                            _Messages(success: l10n.storyCardCopied, failed: l10n.storyCardCopyFailed),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   Text(
-                    l10n.storyCardTitle,
-                    style: AppTypography.display(fontSize: 19, weight: FontWeight.w600, color: colors.text),
+                    l10n.storyCardExportSize,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.kicker(fontSize: 8.5, color: colors.neutral700, letterSpacingEm: 0.2),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              Center(
-                child: SizedBox(
-                  width: kStoryCardPreviewWidth,
-                  height: kStoryCardPreviewWidth * kStoryCardHeight / kStoryCardWidth,
-                  // Kart her zaman 270×480 mantıksal boyutta çiziliyor;
-                  // önizleme onu prototipin 248px'ine küçültüyor. Dışa aktarım
-                  // `RepaintBoundary`nin kendi katmanından alındığı için bu
-                  // ölçekten etkilenmiyor — PNG yine tam 1080×1920.
-                  child: FittedBox(
-                    child: StoryCardView(template: template, text: text, boundaryKey: _cardKey),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              _TemplatePicker(
-                selected: template,
-                onSelect: (StoryCardTemplate value) {
-                  unawaited(
-                    ref.read(appSettingsDaoProvider).updateSettings(
-                          AppSettingsTableCompanion(selectedTemplateIndex: Value<int>(value.index)),
-                        ),
-                  );
-                },
-              ),
-              const Spacer(),
-              _ShareButton(
-                enabled: !_busy,
-                onPressed: () => _run(
-                  exporter.share,
-                  _Messages(failed: l10n.storyCardShareFailed),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _SecondaryButton(
-                      icon: PhosphorIconsRegular.downloadSimple,
-                      label: l10n.storyCardSave,
-                      roleColor: colors.mint,
-                      enabled: !_busy,
-                      onPressed: () => _run(
-                        exporter.saveToGallery,
-                        _Messages(
-                          success: l10n.storyCardSaved,
-                          permissionDenied: l10n.storyCardSavePermissionDenied,
-                          failed: l10n.storyCardSaveFailed,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _SecondaryButton(
-                      icon: PhosphorIconsRegular.copy,
-                      label: l10n.storyCardCopy,
-                      roleColor: colors.sky,
-                      enabled: !_busy,
-                      onPressed: () => _run(
-                        exporter.copyToClipboard,
-                        _Messages(
-                          success: l10n.storyCardCopied,
-                          failed: l10n.storyCardCopyFailed,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                l10n.storyCardExportSize,
-                textAlign: TextAlign.center,
-                style: AppTypography.kicker(fontSize: 8.5, color: colors.neutral700, letterSpacingEm: 0.2),
-              ),
-            ],
+            ),
           ),
-        ),
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 18,
+            child: BottomNavBar(
+              active: AppNavTab.storyCard,
+              onSelect: (AppNavTab tab) => navigateToNavTab(context, tab, current: AppNavTab.storyCard),
+            ),
+          ),
+        ],
       ),
     );
   }

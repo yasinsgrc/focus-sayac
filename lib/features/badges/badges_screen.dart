@@ -7,16 +7,19 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/app_back_button.dart';
 import '../../core/widgets/app_pill_button.dart';
+import '../../core/widgets/bottom_nav_bar.dart';
 import '../../domain/badges/badge_definition.dart';
 import '../../domain/badges/badge_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/storage/app_database.dart';
 
-/// Ekran 04 — rozetler. Prototip satır 181-212 birebir. Bu ekranda alt
-/// gezinme çubuğu yok (prototipte de yok, yalnızca Ekran 02/06'da var —
-/// Faz 4 kararı); geri dönüş sistem geri tuşu/kaydırmasıyla olur, prototip
-/// burada da ayrı bir geri butonu göstermiyor.
+/// Ekran 04 — rozetler. Prototip satır 181-212 birebir. Prototipte bu ekranda
+/// alt gezinme çubuğu yoktu (yalnızca Ekran 02/06'da vardı — Faz 4 kararı) ama
+/// o zaman ekran çıkmaza giriyordu: jest navigasyonu kapalı cihazlarda geri
+/// dönmenin yolu kalmıyordu. Artık hem Ekran 05'teki geri oku hem de diğer
+/// dört sekmeye açılan çubuk burada.
 class BadgesScreen extends ConsumerWidget {
   const BadgesScreen({super.key});
 
@@ -24,8 +27,9 @@ class BadgesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     final AsyncValue<List<UserBadge>> unlockedAsync = ref.watch(unlockedBadgesProvider);
-    final Set<String> unlockedKeys =
-        (unlockedAsync.value ?? const <UserBadge>[]).map((UserBadge b) => b.badgeKey).toSet();
+    final Set<String> unlockedKeys = (unlockedAsync.value ?? const <UserBadge>[])
+        .map((UserBadge b) => b.badgeKey)
+        .toSet();
     final int unlockedCount = unlockedKeys.length;
 
     return Scaffold(
@@ -56,7 +60,12 @@ class BadgesScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   const SizedBox(height: 8),
-                  Text(AppLocalizations.of(context).badgesTitle, style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text)),
+                  const Align(alignment: Alignment.centerLeft, child: AppBackButton()),
+                  const SizedBox(height: 10),
+                  Text(
+                    AppLocalizations.of(context).badgesTitle,
+                    style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text),
+                  ),
                   const SizedBox(height: 14),
                   Row(
                     children: <Widget>[
@@ -84,8 +93,11 @@ class BadgesScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Text(
                         '$unlockedCount/${kBadgeCatalog.length}',
-                        style: AppTypography.display(fontSize: 12, weight: FontWeight.w600, color: colors.neutral400)
-                            .copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]),
+                        style: AppTypography.display(
+                          fontSize: 12,
+                          weight: FontWeight.w600,
+                          color: colors.neutral400,
+                        ).copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]),
                       ),
                     ],
                   ),
@@ -118,9 +130,20 @@ class BadgesScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  // Yüzen çubuğun altında kalmasın diye son kartın altındaki
+                  // boşluk çubuğun kapladığı alan kadar.
+                  const SizedBox(height: kBottomNavReservedSpace),
                 ],
               ),
+            ),
+          ),
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 18,
+            child: BottomNavBar(
+              active: AppNavTab.badges,
+              onSelect: (AppNavTab tab) => navigateToNavTab(context, tab, current: AppNavTab.badges),
             ),
           ),
         ],
@@ -168,15 +191,23 @@ class _BadgeCard extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: <Widget>[
-                    DecoratedBox(decoration: BoxDecoration(shape: BoxShape.circle, color: iconBg)),
+                    DecoratedBox(
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: iconBg),
+                    ),
                     Icon(definition.icon, size: 24, color: iconColor),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
-              Text(definition.name(l10n), style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w600, color: titleColor)),
+              Text(
+                definition.name(l10n),
+                style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w600, color: titleColor),
+              ),
               const SizedBox(height: 12),
-              Text(definition.rule(l10n), style: AppTypography.body(fontSize: 11.5, color: colors.neutral600, height: 1.45)),
+              Text(
+                definition.rule(l10n),
+                style: AppTypography.body(fontSize: 11.5, color: colors.neutral600, height: 1.45),
+              ),
             ],
           ),
         ),
@@ -212,8 +243,9 @@ class _BadgeUnlockDialog extends StatelessWidget {
     final Color tint = definition.tint.resolve(colors);
     final Color unlockColor = unlocked ? tint : colors.neutral500;
     final Color glow = unlocked ? tint.withValues(alpha: 0.34) : colors.neutral500.withValues(alpha: 0.24);
-    final String ruleText =
-        unlocked ? l10n.badgeUnlockedRule(definition.rule(l10n)) : l10n.badgeLockedRule(definition.rule(l10n));
+    final String ruleText = unlocked
+        ? l10n.badgeUnlockedRule(definition.rule(l10n))
+        : l10n.badgeLockedRule(definition.rule(l10n));
 
     return Dialog(
       insetPadding: const EdgeInsets.all(30),
@@ -245,7 +277,10 @@ class _BadgeUnlockDialog extends StatelessWidget {
                     ),
                   ),
                   DecoratedBox(
-                    decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: unlockColor)),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: unlockColor),
+                    ),
                     child: const SizedBox(width: 112, height: 112),
                   ),
                   Icon(definition.icon, size: 52, color: unlockColor),
@@ -281,7 +316,10 @@ class _BadgeUnlockDialog extends StatelessWidget {
               height: 44,
               child: TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text(l10n.commonClose, style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral500)),
+                child: Text(
+                  l10n.commonClose,
+                  style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral500),
+                ),
               ),
             ),
           ],

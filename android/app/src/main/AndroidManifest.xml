@@ -46,7 +46,8 @@
         <!-- Google'ın resmî test App ID'si. Gerçek AdMob App ID yayından önce
              buraya girilir; AdMob hesabı açılana kadar test kimliği kalıyor
              ("kendi reklamına tıklama" trafiği üretmemek için). Reklam
-             BİRİMİ kimlikleri koda gömülü değil, `--dart-define` ile geliyor
+             BİRİMİ kimlikleri koda gömülü değil, `dart-define` bayrağıyla
+             geliyor
              (`lib/services/ads/ad_unit_ids.dart`); App ID manifest'te olmak
              zorunda olduğu için tek elle değişen değer bu satır.
              Yayın adımları: docs/play/RELEASE.md -->

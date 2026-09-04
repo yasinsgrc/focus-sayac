@@ -5,13 +5,15 @@ kapanışı bitti** (geri sayım, sınav seçimi, odak/mola durum makinesi,
 bildirimler, rozetler, başarı kartı + export, istatistik, onboarding + izinler +
 UMP, reklamlar + satın alma, ayarlar, ARB yerelleştirme, performans geçişi,
 testler + yayın paketi, demo sayı/palet taramaları).
-`flutter analyze` 0/0, 167 test geçiyor. Kaynak plan: `SPEC.md` §8.
+`flutter analyze` 0/0, 171 test geçiyor. Kaynak plan: `SPEC.md` §8.
 Kararlar: `DECISIONS.md`. Yayın adımları: `docs/play/RELEASE.md`.
 
-Depoda yapılabilecek iş bitti; kalan dört kutu dış kaynak bekliyor: **cihazda**
-`--profile` 60 fps ölçümü (madde 8), **cihazda** store ekran görüntüleri ve
-**AdMob hesabı** gerektiren gerçek reklam kimlikleri (madde 9), **cihazda**
-prototiple yan yana görsel karşılaştırma (madde 10).
+Madde 11'de emülatör açıldı ve **ilk Android derlemesi yapıldı**: iki blocker
+çıktı (desugaring kapalı, geçersiz manifest XML), ikisi de düzeltildi.
+`--profile` 60 fps ölçümü emülatörde alındı. Kalan iş dış kaynak bekliyor:
+**AdMob hesabı** (gerçek reklam kimlikleri), **imzalama anahtarı**
+(`key.properties`), **görseller** (launcher simgesi + store görselleri) ve
+gerçek bir ARM cihazda doğrulama.
 
 Aşağıdaki maddeler **teste/yayına çıkma önceliğine** göre sıralı. Her madde tek
 oturumda (`/clear` sonrası) yapılabilecek şekilde bağımsız yazıldı: sırayla git,
@@ -297,11 +299,60 @@ görüntüleriyle aynı engel). Bu makinede Android cihaz/emülatör yok.
 
 ---
 
+## 12. Alt gezinme çubuğu — çift hedef + dokunma/erişilebilirlik ✅ bitti
+
+169 test geçiyor (+2). Kararlar: `DECISIONS.md` "ROADMAP madde 12".
+
+- **Çift hedef giderildi:** `flame` ve `medal` yuvalarının ikisi de rozetler
+  ekranını açıyordu. `flame` artık Ekran 05'e (başarı kartı) gidiyor — alev =
+  seri, başarı kartı serinin paylaşılabilir yüzü ve o ekranın tek girişi rozet
+  dialogundaki düğmeydi. Prototipin beş ikonu ve dizilimi olduğu gibi duruyor.
+- **`onSelect` `switch`e çevrildi** (Ekran 02 ve 06). Yeni bir `AppNavTab`
+  eklendiğinde derleyici her çağıranda dalı zorluyor; çift hedefin fark
+  edilmeden yaşamasının sebebi sessizce düşen `if` zinciriydi.
+- **Dokunma hedefi 21px → 48px.** `InkWell`, `Row`un gevşek dikey sınırı altında
+  ikonun boyuna küçülüyordu. İkon boyutu (21px) değişmedi, yalnızca görünmeyen
+  vuruş alanı büyüdü.
+- **Dalga görünür oldu:** çubuğun `Row`u saydam bir `Material`e sarıldı; dalga
+  daha önce Scaffold'un materyaline düşüp çubuğun opak zemininin altında
+  kalıyordu.
+- **Ekran okuyucu adları eklendi:** beş yuva + `AppBackButton` + Ekran 05'in
+  satır içi geri oku. Etiketler gidilen ekranın mevcut ARB başlığından geliyor;
+  tek yeni dize `commonBack` ("Geri").
+- **Regresyon testleri:** "alev" yuvası Ekran 05'i açıyor ve rozetler ekranı
+  açılmıyor; üç ikon yuvasının dokunma hedefi 48px (ikisi de semantics açık,
+  yani etiketleri de doğruluyor).
+
+**Kapsam dışı:** ayarlardaki "Gün 04:00'te başlar" satırının boş değer alanı hata
+değil (değer etiketin kendi metninde); "Reklamları kaldır / YAKINDA" satırı SPEC
+§7.3 gereği bilinçli pasif.
+
+---
+
+## 13. Alt gezinme çubuğu beş ekranda ✅ bitti
+
+171 test geçiyor (+2). Kararlar: `DECISIONS.md` "ROADMAP madde 13".
+
+- **Çubuk artık beş sekmenin hepsinde.** Ekran 04/05/07 çubuğu göstermediği için
+  gezinme tek yönlüydü: oraya gidiliyor ama oradan başka bir sekmeye
+  geçilemiyordu.
+- **Her yuvanın aktif "hap"ı var.** Ekran 05 kısa `navStoryCard` ("BAŞARI"),
+  Ekran 04 ve 07 kendi başlıklarını kullanıyor; `_NavSlot.pill` opsiyonel değil.
+- **Yönlendirme tek yerde:** `navigateToNavTab`. Ekran 02 kök, diğer sekmeler
+  onun üstünde tek kat (`pushReplacement`) — beş kopya `switch` de gitti.
+- **Regresyon testleri:** çubuk beş sekmede de görünüyor; dört sekme arasında
+  dolaşmak gezinme yığınını büyütmüyor.
+- **Emülatörde doğrulandı** (`Medium_Phone_API_36.1`, yazılım render): beş
+  sekmenin ekran görüntüsü alındı, rozet kataloğu 0/7 ve yedi kart tekil.
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı
 - [ ] Her ekran prototiple ayırt edilemiyor *(madde 10 — metin/palet/tipografi
-      doğrulandı, yan yana görsel karşılaştırma cihaz gerektiriyor)*
+      doğrulandı; madde 11'de emülatörde 7 ekran çizdirildi, gerçek cihazda
+      yan yana karşılaştırma kaldı)*
 - [x] Demo sayılarının hiçbiri kodda yok (132, 42, %86, 6, 3/7, 11)
 - [x] 10 dk arka plandan dönüşte sayaç doğru
 - [x] Uygulama öldürülüp açıldığında aktif seans kurtarılıyor
@@ -311,10 +362,17 @@ görüntüleriyle aynı engel). Bu makinede Android cihaz/emülatör yok.
 - [x] Ekran 03'te hiçbir reklam isteği atılmıyor
 - [x] `isPremium` iken hiçbir reklam isteği atılmıyor
 - [x] Kart export'u tam 1080×1920
-- [ ] Odak ekranı `--profile` modda sürekli 60 fps *(madde 8 — cihaz gerekiyor)*
+- [x] Odak ekranı `--profile` modda sürekli 60 fps *(madde 11 — emülatörde
+      375 kare, ort. 60.0 fps, 33 ms üstü kare yok; gerçek ARM cihaz teyidi
+      hâlâ önerilir)*
+- [x] Android `--profile` / `--release` derlemesi geçiyor *(madde 11 — iki
+      blocker düzeltildi)*
+- [ ] Launcher simgesi üretildi *(madde 11 — hâlâ Flutter varsayılanı)*
+- [ ] Yayın çıktısı gerçek anahtarla imzalı *(`key.properties` yok, AAB şu an
+      `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(167 test, `flutter test`)*
+- [x] Testler geçiyor *(171 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

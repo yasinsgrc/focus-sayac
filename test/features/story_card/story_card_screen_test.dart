@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/domain/story_card/story_card_text.dart';
+import 'package:focussayac/features/badges/badges_screen.dart';
 import 'package:focussayac/features/story_card/story_card_screen.dart';
 import 'package:focussayac/features/story_card/widgets/story_card_view.dart';
 import 'package:focussayac/main.dart';
@@ -221,7 +222,9 @@ void main() {
 
     await tester.tap(find.byIcon(PhosphorIconsRegular.medal));
     await _settle(tester, rounds: 8);
-    expect(find.text('ROZETLER'), findsOneWidget);
+    // Başlık metni aranmıyor: alt çubuk artık rozetler ekranında da görünüyor
+    // ve aktif sekmenin hapı da "ROZETLER" yazıyor.
+    expect(find.byType(BadgesScreen), findsOneWidget);
 
     await tester.tap(find.text('İlk Kıvılcım'));
     await _settle(tester, rounds: 6);

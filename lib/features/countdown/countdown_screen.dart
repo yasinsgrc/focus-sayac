@@ -168,15 +168,11 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
             left: 20,
             right: 20,
             bottom: 18,
+            // Yönlendirme kuralı `navigateToNavTab`de: beş ekran da aynı
+            // çubuğu gösterdiği için beş kopya `switch` yerine tek yer.
             child: BottomNavBar(
               active: AppNavTab.countdown,
-              // Prototipin alt çubuğunda "flame" (seri) için ayrı bir ekran
-              // yok — ikisi de rozetler ekranına gider (Faz 4 DECISIONS.md).
-              onSelect: (AppNavTab tab) {
-                if (tab == AppNavTab.badges) context.push(RoutePaths.badges);
-                if (tab == AppNavTab.stats) context.push(RoutePaths.stats);
-                if (tab == AppNavTab.settings) context.push(RoutePaths.settings);
-              },
+              onSelect: (AppNavTab tab) => navigateToNavTab(context, tab, current: AppNavTab.countdown),
             ),
           ),
         ],

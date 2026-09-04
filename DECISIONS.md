@@ -386,7 +386,8 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   ekranların (02/06) aksine floating nav bar içermiyor; bu yüzden `BadgesScreen` `BottomNavBar`
   render etmiyor, geri dönüş sistem geri tuşu/kaydırmasıyla (`context.push` kullanıldığı için doğal
   olarak çalışıyor). "Prototipte olmayan öğe ekleme" kuralı burada da geçerli.
-- **`BottomNavBar`'ın hem `flame` hem `medal` ikonu rozetler ekranına gidiyor** — prototipin alt
+- **`BottomNavBar`'ın hem `flame` hem `medal` ikonu rozetler ekranına gidiyor** *(ROADMAP madde 12'de
+  geri alındı — `flame` artık Ekran 05'e gidiyor, gerekçesi en alttaki bölümde)* — prototipin alt
   çubuğunda 5 ikon var (timer/flame/medal/chart/gear) ama uygulamada "seri" için ayrı bir ekran yok;
   Faz 4'ün bıraktığı `onSelect` parametresi şimdi yalnızca `AppNavTab.badges` için `context.push`
   çağırıyor, istatistik/ayarlar Faz 9/12'ye kadar no-op kalıyor (aynı dosyanın önceki kararı).
@@ -922,3 +923,160 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   görüntüleriyle aynı engel. Mekanik kısmı "doğrulandı" diye işaretleyip görsel kısmı
   sessizce atlamak, kutuyu yanlış kapatmak olurdu.
 
+
+---
+
+## ROADMAP madde 11 — İlk Android derlemesi: iki blocker + emülatörde ölçüm
+
+ROADMAP madde 8/9/10'un "cihaz yok" notu yanlıştı: makinede iki AVD kurulu
+(`Medium_Phone_API_36.1`, `Resizable_Experimental`). Emülatör açılınca Faz 0-15
+boyunca hiç çalıştırılmamış olan **Android derlemesinin kırık olduğu** ortaya
+çıktı. `flutter analyze` ve 167 test bunu göremezdi: üçü de host tarafında,
+Gradle'a hiç uğramadan koşuyor.
+
+**Blocker 1 — core library desugaring kapalıydı.**
+`:app:checkProfileAarMetadata`, `flutter_local_notifications`ın AAR meta
+verisindeki desugaring şartı yüzünden düşüyordu. `android/app/build.gradle.kts`e
+`isCoreLibraryDesugaringEnabled = true` + `desugar_jdk_libs:2.1.4` eklendi.
+Faz 5'te bildirim eklendiğinde gerekiyordu, ama o fazda hiç `flutter build`
+çalıştırılmadığı için sessiz kaldı.
+
+**Blocker 2 — `AndroidManifest.xml` geçersiz XML'di.**
+`:app:processProfileMainManifest` "Error parsing" ile düşüyordu. Sebep Faz 11'de
+yazılan yorum satırındaki `--dart-define`: XML yorumlarının içinde `--` dizisi
+yasak (XML 1.0 §2.5). Yorum `dart-define bayrağıyla` diye yeniden yazıldı;
+`APPLICATION_ID` ve izinler dâhil hiçbir bildirim değeri değişmedi.
+
+Bu ikisinden sonra `flutter build apk --profile` (87.1 MB) ve Play'e yüklenecek
+`flutter build appbundle --release` (51.4 MB) geçiyor. AAB `keytool -printcert`
+ile denetlendi: `CN=Android Debug` — Faz 15'te belgelenen geri düşüş doğru
+çalışıyor, `key.properties` girilene kadar çıktı Play'e yüklenemez.
+
+**60 fps ölçümü emülatörde yapıldı (madde 8'in kalan kutusu, kısmen).**
+`dumpsys gfxinfo` Flutter için 0 kare veriyor — Flutter kendi `SurfaceView`ine
+çiziyor, HWUI sayaçlarına uğramıyor. Ölçüm bu yüzden
+`dumpsys SurfaceFlinger --latency <BLAST layer>` ile alındı, 12 sn boyunca 6
+örnek, 375 kare: **ortalama 60.0 fps**, medyan 16.70 ms, p99 18.48 ms, en kötü
+kare 18.95 ms, 33 ms üstü kare **yok**. Odak ekranı (meşale + halka + 72px
+sayaç) bu pencerede kare düşürmüyor.
+
+Kutu yine de **tam kapatılmadı**: x86_64 emülatör host GPU'suyla çiziyor, gerçek
+bir ARM cihazın termal ve GPU davranışını temsil etmiyor. Emülatör sonucu
+"regresyon yok" için güçlü bir sinyal, "gerçek cihazda 60 fps" için kanıt değil.
+
+**Cihaz üstü akış doğrulaması:** Ekran 01 → izinler (POST_NOTIFICATIONS,
+SCHEDULE_EXACT_ALARM) → Ekran 02 (289 gün geri sayım, banner yükleniyor) →
+Ekran 03 (banner yerine "reklam gizli", wakelock satırı) → Ekran 10 (iptal
+onayı, geçen süre doğru) → Ekran 04 / 06 / 07. `logcat`te tek bir
+`E/flutter` ya da `FATAL` yok. Ekran 03'te hiçbir reklam isteği atılmadığı
+böylece testin yanında canlı olarak da görüldü.
+
+**Yeni bulunan eksik:** launcher simgesi hâlâ Flutter'ın varsayılan logosu
+(`mipmap-*/ic_launcher.png`). Faz 15 yalnızca 512×512 *mağaza* simgesini eksik
+sayıyordu; cihazdaki simge de üretilmemiş — sistem ayar sayfasında Flutter
+logosu görünüyor.
+
+## ROADMAP madde 12 — Alt gezinme çubuğu: çift hedef + dokunma/erişilebilirlik
+
+**`flame` yuvası artık Ekran 05'e (başarı kartı) gidiyor.** Faz 4'ten beri hem
+`flame` hem `medal` `AppNavTab.badges`e bağlıydı: beş ikonun ikisi aynı ekranı
+açıyordu ve kullanıcı çubukta dört değil üç ayrı hedef buluyordu. Prototipin
+ikon dizilimi (timer/flame/medal/chart/gear) korunuyor — "birebir taşı" kuralı
+**görsele** ait, hedefe değil; yuvanın kendisi silinmedi, boş da bırakılmadı.
+Ekran 05 seçildi çünkü alev = seri ve başarı kartı serinin paylaşılabilir yüzü;
+üstelik o ekranın tek girişi rozet dialogundaki düğmeydi, yani mevcut bir ekran
+gömülü kalıyordu. Yeni ekran, yeni metin ve yeni rota üretilmedi.
+
+**`onSelect` `if` zinciri yerine `switch`.** Çift hedefin sessizce yaşamasının
+sebebi, eşleşmeyen sekmenin hiçbir dala düşmeden kaybolmasıydı. `AppNavTab`'e
+`storyCard` eklenince derleyici iki çağıranda da (Ekran 02/06) dalın yazılmasını
+zorladı; sonraki bir sekme de aynı şekilde derlemeyi durdurur.
+
+**`_NavIcon`in dokunma hedefi 21px'ten 48px'e çıktı.** `Row` çapraz eksende
+gevşek sınır verdiği için `InkWell` ikonun boyuna küçülüyordu: 64px yüksekliğinde
+bir çubuğun ortasında yalnızca 21px'lik bir şerit dokunuyordu. Yalnızca yükseklik
+açıkça veriliyor (genişlik `Expanded`ten sıkı geliyor); **ikon boyutu 21px olarak
+kaldı**, büyüyen tek şey görünmeyen vuruş alanı — prototip görüntüsü değişmiyor.
+
+**Dalga çubuğun kendi zemininde çiziliyor.** `InkWell` en yakın `Material`i
+Scaffold'unkinde buluyordu; dalga çubuğun opak arka planının (`0xC7181A28`)
+altında kalıp hiç görünmüyordu. Çubuğun `Row`u saydam bir `Material`e sarıldı —
+`_SettingsRow` ve Ekran 05'in düğmeleriyle aynı kalıp.
+
+**Erişilebilirlik adları mevcut ARB anahtarlarından geliyor.** Yuvalar prototipte
+etiketsiz (yalnızca ikon) olduğu için ekran okuyucu hiçbir şey okumuyordu.
+Etiketler gidilen ekranın kendi başlığından alındı (`navCountdown`, `navStats`,
+`storyCardTitle`, `badgesTitle`, `settingsTitle`) — "yeni metin yazma yasak"
+kuralı gereği tek yeni dize `commonBack` ("Geri"), çünkü geri okunun karşılığı
+katalogda yoktu. Aynı etiket `AppBackButton`a ve Ekran 05'in satır içi geri
+okuna da verildi; `Icon.semanticLabel` `InkWell`in düğme rolüyle birleşmediği
+için sarmalayıcı `Semantics` kullanıldı.
+
+**Test:** `countdown_navigation_test.dart`e iki test eklendi — "alev" yuvası
+Ekran 05'i açıyor ve rozetler ekranı **açılmıyor** (çift hedefin regresyonu),
+üç ikon yuvasının dokunma hedefi 48px. İkisi de `tester.ensureSemantics()`
+kullanıyor, yani etiketlerin varlığını da doğruluyor. Tutamak `addTearDown`
+yerine gövde sonunda elle bırakılıyor: bırakılıp bırakılmadığı teardown'lardan
+önce denetleniyor.
+
+**Kapsam dışı bırakılanlar:** ayarlardaki "Gün 04:00'te başlar" satırının boş
+değer alanı **hata değil** — değer etiketin kendi metninde (`settingsDayStartsAt`),
+satır bilgi amaçlı. "Reklamları kaldır / YAKINDA" satırı da SPEC §7.3 gereği
+bilinçli olarak pasif; `PurchaseService` tam kodlu ama çağıranı yok.
+
+---
+
+## ROADMAP madde 13 — Alt gezinme çubuğu beş ekranda
+
+**Çubuk artık Ekran 04/05/07'de de var.** Prototipte yalnızca Ekran 02 ve 06'da
+vardı ve madde 12'ye kadar bu kopyalanmıştı; sonuç tek yönlü bir gezinmeydi:
+çubuk kullanıcıyı rozetlere/başarı kartına/ayarlara götürüyor, ama o ekranlardan
+başka bir sekmeye geçmenin yolu yoktu — tek çıkış sistem geri hareketiydi.
+"Prototipi birebir taşı" kuralı **görsele** ait, gezinme grafiğine değil (madde
+12'de `flame` yuvasının hedefi için verilen kararın aynısı). Yeni ekran, yeni
+rota, yeni bileşen üretilmedi: aynı `BottomNavBar` üç ekrana daha kondu.
+
+**`_NavSlot.pill` opsiyonel olmaktan çıktı.** Alan `null` olabiliyordu çünkü
+"o sekmenin ekranında çubuk zaten görünmüyor" varsayımı vardı; beş ekran da
+çubuğu gösterdiğine göre varsayım düştü ve `if (slot.pill != null && ...)`
+dalı ölü koda dönüştü. Renkler mevcut rol paletinden: Ekran 05 `ember`
+(alev = seri), Ekran 04 `mint` (tamamlanan iş), Ekran 07 nötr `neutral800/900`
+— ayarların bir rol rengi yok, hapı vurgu değil yalnızca "buradasın" işareti.
+
+**Ekran 05'in hapı `navStoryCard` ("BAŞARI"), başlığı değil.** Hap çubuğun
+beşte birinden pay alıyor; `FittedBox` "BAŞARI KARTI"yı ~9px'e indiriyordu.
+Tek yeni ARB dizesi bu — Ekran 04 ve 07 kendi başlıklarını (`badgesTitle`,
+`settingsTitle`) kullanıyor, onlar `navStats` ("VERİLER") uzunluğunda.
+
+**Yönlendirme `navigateToNavTab`de toplandı.** Madde 12'nin `switch`i doğruydu
+ama beş ekrana kopyalanacaktı; kural tek yerde: Ekran 02 yığının kökü (`go`),
+diğer sekmeler onun üstünde **tek** kat (`pushReplacement`). `push` seçilseydi
+sekmeler arasında birkaç tur dolaşan kullanıcı köke dönmek için sistem geri
+tuşuna onlarca kez basardı. Kök dışındaki ekranlarda geri ok (`AppBackButton`)
+duruyor: çubuk tek çıkış yolu değil.
+
+**İçerik çubuğun altında kalmasın diye `kBottomNavReservedSpace` (96px).**
+64px yükseklik + 18px alt konum + nefes payı. Ekran 04'te son kartın altındaki
+`SizedBox`, Ekran 05'te `Padding`in alt değeri, Ekran 07'de sorumluluk metninin
+alt boşluğu bu sabite bağlandı. Ayarların kaydırma listesi böylece sonuna kadar
+çubuğun üstüne çıkabiliyor.
+
+**Test:** `countdown_navigation_test.dart`e iki test — çubuk beş sekmede de
+görünüyor, ve dört sekme arasında dolaşmak yığını büyütmüyor. İkisi de dokunuşu
+ve doğrulamayı **o anki üst ekranın içinde** yapıyor: yığında kalan Ekran 02
+kendi çubuğunu çizmeye devam ettiği için `find.bySemanticsLabel` ağaçta iki
+"ROZETLER" buluyor. Yığın sayımı, yerini bırakan rotaların çıkış animasyonu
+bitene kadar beklemek zorunda; `skipOffstage: false` onları o ana kadar hâlâ
+görüyor.
+
+**İki mevcut test güncellendi.** Ekran 04 ve 07'nin başlıkları artık aktif hapta
+da yazdığı için `find.text('ROZETLER'/'AYARLAR')` iki sonuç veriyor; iddialar
+`find.byType(BadgesScreen/SettingsScreen)`e çevrildi — aranan olgu zaten "ekran
+açıldı mı". Gizlilik testine `ensureVisible` eklendi: satır listenin dibinde ve
+yüzen çubuk üstünü örtebiliyor.
+
+**Emülatörde doğrulandı.** `adb screencap` donanım hızlandırmalı AVD'de bozuk
+kare veriyordu (`MESA: Failed to open rendernode`); emülatör
+`-gpu swiftshader_indirect` ile yeniden açılıp beş sekmenin görüntüsü alındı.
+Kullanıcının gördüğü "iki aynı rozet sayfası" madde 12 öncesi derlemeydi:
+`flame` → Ekran 05, `medal` → Ekran 04, rozet kataloğu 0/7 ve yedi kart tekil.
