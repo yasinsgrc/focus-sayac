@@ -290,7 +290,7 @@
   "settingsAboutBody": "FocusSayaç, sınavına kalan günü ve odak sürelerini tek yerde tutan bağımsız bir çalışma aracıdır. ÖSYM, MEB veya resmî bir kurumla bağlantılı değildir; sınav tarihleri resmî takvimden doğrulanmalıdır.",
   "settingsPrivacy": "Gizlilik politikası",
   "settingsPrivacyTitle": "GİZLİLİK POLİTİKASI",
-  "settingsPrivacyBody": "FocusSayaç hesap açmanı istemez ve kişisel veri toplamaz. Sınavların, odak geçmişin, rozetlerin ve ayarların yalnızca bu cihazda, uygulamanın kendi veritabanında saklanır — hiçbiri sunucuya gönderilmez. Uygulamayı kaldırdığında bu veriler de silinir.",
+  "settingsPrivacyBody": "FocusSayaç hesap açmanı istemez. Sınavların, odak geçmişin, rozetlerin ve ayarların yalnızca bu cihazda, uygulamanın kendi veritabanında saklanır; bunları hiçbir sunucuya göndermiyoruz. Uygulamayı kaldırdığında ya da \"Verileri sıfırla\"ya dokunduğunda silinirler.\n\nÜcretsiz sürümde Google AdMob reklamları gösterilir. AdMob, reklamı sunmak ve ölçmek için cihazının reklam kimliği gibi verileri işler; ilk açılışta sorulan onay ekranında kişiselleştirilmiş reklamı reddedersen yalnızca kişiselleştirilmemiş reklam istenir. Odak geçmişin, rozetlerin ve sınavların reklam ağına hiçbir durumda gönderilmez.\n\nTüm metin: focussayac.app/gizlilik",
   "settingsResetData": "Verileri sıfırla",
   "settingsDisclaimer": "Bağımsız bir çalışma aracıdır; ÖSYM, MEB veya resmî bir kurumla bağlantılı değildir.",
   "settingsOn": "Açık",

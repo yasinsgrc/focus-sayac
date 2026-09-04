@@ -833,3 +833,57 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   testlerindeki `_newDatabase` kalıbı): drift gerçek zamanda, widget ağacı sahte saatte
   ilerliyor. Kalıba uymayan ilk sürüm, bir isolate'in **ikinci** testinde göç tamamlanmadığı
   için Ekran 02'yi aktif sınavsız çiziyordu.
+
+---
+
+## Faz 15 — Testler + Play yayın paketi (ROADMAP madde 9)
+
+- **`badge_rules` testi seansları TSİ duvar saatiyle kuruyor**, UTC'yle değil. Kuralların
+  üçü de duvar saatinde tanımlı (08:00 öncesi, 23:00 sonrası, 04:00 gün kesimi) ama
+  `PomodoroSession.startedAt` UTC; testi UTC yazmak her sınır iddiasının yanına elde üç saat
+  çıkarma koymak olurdu ve "07:59 açar" ile "04:59Z açar" arasındaki mesafe tam da hatanın
+  saklanacağı yer. Çeviri tek yardımcıda (`_at`), iddialar SPEC'in dilinde kalıyor.
+- **Sınırların hepsi karşı kontrolüyle yazıldı** (07:59 açar / 08:00 açmaz, 22:59 açmaz /
+  23:00 açar, 3 seans yetmez / 4 açar, 6 gün yetmez / 7 açar, 99sa59dk kapalı / 100sa açık).
+  Tek yönlü bir iddia, eşiği yanlış tarafa kaydıran bir değişikliği yakalamaz.
+- **"00:30 gece nöbeti değil" testi iki kuralın kesiştiği yeri pinliyor:** o seans *önceki*
+  uygulama gününe ait (gün 04:00'te kapanıyor) ama Gece Nöbeti gün anahtarına değil duvar
+  saatine bakıyor, dolayısıyla açmıyor — üstelik Sabah Yıldızı'nı açıyor. İki farklı zaman
+  kavramının aynı satırda kullanıldığı tek yer burası.
+- **`duration_formatter` testi yuvarlamama davranışını da pinliyor** (59 sn → 0 dk,
+  3599 sn → 0 sa 59 dk). Yukarı yuvarlayan bir "iyileştirme" hiç odaklanmamış kullanıcıya
+  "1 DK" gösterirdi. Negatif giriş de test ediliyor: cihaz saati geriye alındığında negatif
+  fark hesaplanabiliyor (§5.1) ve ekranda "-1 SA" çıkmamalı.
+- **Kart export taşma testi zaten Faz 8'de yazılmıştı** (`story_card_screen_test.dart`,
+  "üç haneli gün ve uzun sınav adı taşmıyor"), bu maddede yeniden yazılmadı — SPEC §9'un
+  widget listesindeki o satır o zaman kapanmıştı.
+- **Yayın imzası `android/key.properties`ten okunuyor, dosya yoksa debug'a düşüyor.**
+  Anahtar deposu ve parolalar depoya giremez, ama yapılandırmanın yokluğunda `release`
+  hedefini tamamen kırmak geliştirme koşumlarını da kırardı. Debug imzalı bir AAB'yi Play
+  zaten reddediyor, yani sessiz bir yanlış yayın riski yok — riskli olan tersi olurdu.
+  Her iki dal da `:app:signingReport` ile doğrulandı (dosya yokken `Config: debug`,
+  geçici bir anahtar deposuyla `Config: release`).
+- **PKCS12, JKS değil.** `keytool` JKS için "proprietary format" uyarısı basıyor. Format
+  değişince `.gitignore`daki `*.jks` kalıbı yetmez oldu; `*.p12` (ve kökte `*.keystore`)
+  eklendi, `git check-ignore` ile doğrulandı — `key.properties.example`ın **izlenmeye devam
+  ettiği** de aynı kontrolde teyit edildi.
+- **Gizlilik metni reklamlara göre düzeltildi** (ROADMAP madde 1/2/6'nın bıraktığı iş).
+  Eski metin "kişisel veri toplamaz … hiçbiri sunucuya gönderilmez" diyordu; Faz 11'den beri
+  AdMob cihazın reklam kimliğini işliyor, yani metin yanlıştı ve Play'in veri güvenliği
+  beyanıyla çelişecekti. Yeni metin ikisini ayırıyor: uygulamanın kendi verisi (sınav, seans,
+  rozet) cihazda kalıyor, reklam ağına giden şey ayrıca ve açıkça anlatılıyor. Regresyon
+  testi eski iddianın geri gelmemesini de kontrol ediyor.
+- **Uzun metin `_InfoDialog`u taşırmasın diye gövde `Flexible` + `SingleChildScrollView`.**
+  Dialog `mainAxisSize.min` bir `Column`du; üç paragraflık politika küçük ekranda ya da büyük
+  yazı tipi ölçeğinde `RenderFlex` taşması verirdi. Kısa metinlerde ("Hakkında") görünüm
+  değişmiyor.
+- **Mağaza metinleri `docs/`e kopyalanmadı.** Tek kaynak `design/FocusSayac ASO Paketi.dc.html`;
+  `docs/play/RELEASE.md` yalnızca hangi metnin hangi Console alanına gireceğini ve seçilen
+  varyantı kaydediyor. Kopyalasaydık iki metin ilk düzenlemede ayrışırdı.
+- **Launcher etiketi `focussayac` → `FocusSayaç`.** Paket adından türeyen varsayılan, simgenin
+  altında görünüyordu. Mağaza adı (ASO §1, 26 karakter) ayrı ve daha uzun — simge altına
+  sığmayacağı için ikisi bilerek farklı.
+- **Gerçek AdMob kimlikleri ve store görselleri bu maddede üretilemedi.** Birim kimlikleri bir
+  AdMob hesabı gerektiriyor (kod tarafı hazır: `--dart-define`, kod değişikliği yok); ekran
+  görüntüleri bağlı bir Android cihaz gerektiriyor — madde 8'in `--profile` ölçümüyle aynı
+  engel. İkisi de `docs/play/RELEASE.md`in kontrol listesinde açık kutu olarak duruyor.

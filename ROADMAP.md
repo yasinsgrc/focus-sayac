@@ -1,10 +1,15 @@
 # FocusSayaç — Kalan İş Sırası
 
-Durum: **Faz 0-13 bitti**, **Faz 14'ün kod tarafı bitti** (geri sayım, sınav
-seçimi, odak/mola durum makinesi, bildirimler, rozetler, başarı kartı + export,
-istatistik, onboarding + izinler + UMP, reklamlar + satın alma, ayarlar, ARB
-yerelleştirme, performans geçişi). `flutter analyze` 0/0, 131 test geçiyor.
-Kaynak plan: `SPEC.md` §8. Kararlar: `DECISIONS.md`.
+Durum: **Faz 0-13 bitti**, **Faz 14 ve 15'in kod tarafı bitti** (geri sayım,
+sınav seçimi, odak/mola durum makinesi, bildirimler, rozetler, başarı kartı +
+export, istatistik, onboarding + izinler + UMP, reklamlar + satın alma,
+ayarlar, ARB yerelleştirme, performans geçişi, testler + yayın paketi).
+`flutter analyze` 0/0, 159 test geçiyor. Kaynak plan: `SPEC.md` §8.
+Kararlar: `DECISIONS.md`. Yayın adımları: `docs/play/RELEASE.md`.
+
+Depoda yapılabilecek iş bitti; kalan üç kutu dış kaynak bekliyor: **cihazda**
+`--profile` 60 fps ölçümü (madde 8), **cihazda** store ekran görüntüleri ve
+**AdMob hesabı** gerektiren gerçek reklam kimlikleri (madde 9).
 
 Aşağıdaki maddeler **teste/yayına çıkma önceliğine** göre sıralı. Her madde tek
 oturumda (`/clear` sonrası) yapılabilecek şekilde bağımsız yazıldı: sırayla git,
@@ -23,7 +28,7 @@ ayarlar korunuyor); `in_app_review` 3. tamamlanan seanstan sonra bir kez
 kaldır · yakında" satırı pasif. Kararlar: `DECISIONS.md` "Faz 12".
 
 Kalan bağlı iş: bildirim kapısının regresyon testi **madde 5**'te bitti,
-gizlilik metninin reklamlara göre güncellenmesi **madde 9**'da.
+gizlilik metninin reklamlara göre güncellenmesi **madde 9**'da bitti.
 
 ---
 
@@ -42,7 +47,7 @@ override eder) üzerinden Ekran 01 ya da Ekran 02. Sahte `9:41` durum çubuğu
 çizilmiyor. Kararlar: `DECISIONS.md` "Faz 10".
 
 Kalan bağlı iş: `canRequestAds` kapısı **madde 6**'da eklendi; gizlilik
-metninin reklamlara/UMP'ye göre güncellenmesi **madde 9**'da.
+metninin reklamlara/UMP'ye göre güncellenmesi **madde 9**'da bitti.
 
 ---
 
@@ -137,9 +142,10 @@ iken hiçbir istek atılmıyor — istekleri sayan `RecordingAdService`
 `test/features/focus_session/focus_session_screen_test.dart`,
 `test/services/ads/` altında doğrulandı (+26 test).
 
-Kalan bağlı iş: gerçek AdMob birim/uygulama kimlikleri ve gizlilik politikası
-metni **madde 9**'da (şu an Google'ın resmî test kimlikleri, `--dart-define`
-ile değiştirilebilir).
+Kalan bağlı iş: gizlilik politikası metni **madde 9**'da yazıldı
+(`docs/privacy-policy.md`). Gerçek AdMob birim/uygulama kimlikleri hâlâ
+girilmedi — bir AdMob hesabı gerekiyor; şu an Google'ın resmî test kimlikleri,
+`--dart-define` ile değiştirilebilir (`docs/play/RELEASE.md` §3).
 
 ---
 
@@ -209,18 +215,52 @@ yapılamadı.
 
 ---
 
-## 9. Testler + Play yayın paketi (SPEC Faz 15) 🟡
+## 9. Testler + Play yayın paketi (SPEC Faz 15) 🟡 kod tarafı bitti, mağaza işi cihaz/hesap bekliyor
 
-- SPEC §9'un kalan unit testleri: `badge_rules` (7 rozet + 07:59/08:00 ve
-  22:59/23:00 sınırları), `duration_formatter` (0, 1 dk, 99+ sa).
-- Widget: kart export taşma testi.
-- Play imzalama, sürüm notu, gizlilik politikası bağlantısı, store görselleri.
+SPEC §9'un kalan testleri yazıldı, yayın paketinin depodan yapılabilen kısmı
+(imzalama, gizlilik politikası, Console eşlemesi) kuruldu. 159 test geçiyor.
+
+- **`badge_rules` testi** (`test/domain/badges/`, +15): yedi rozetin her biri,
+  07:59/08:00 ve 22:59/23:00 sınırları — hepsi karşı kontrolüyle (3 seans
+  yetmez/4 açar, 6 gün yetmez/7 açar, 99sa59dk kapalı/100sa açık). Seanslar
+  TSİ duvar saatiyle kuruluyor, çeviri tek yardımcıda: kurallar duvar saatinde
+  tanımlı, depolama UTC. "00:30 gece nöbeti değil" testi iki zaman kavramının
+  kesiştiği tek yeri pinliyor (gün anahtarı ≠ duvar saati).
+- **`duration_formatter` testi** (`test/domain/time/`, +12): 0 / 1 dk / 99+ sa,
+  yuvarlamama (59 sn → 0 dk) ve negatif girişin 0'a kırpılması.
+- **Kart export taşma testi zaten vardı** (madde 4, `story_card_screen_test.dart`)
+  — SPEC §9'un o satırı Faz 8'de kapanmıştı, yeniden yazılmadı.
+- **Play imzalama:** `android/key.properties` (`.gitignore`da, şablonu
+  `key.properties.example`) varsa `release` ondan imzalanıyor, yoksa debug'a
+  düşüyor — geliştirme koşumları kırılmasın diye; debug imzalı AAB'yi Console
+  zaten reddediyor. Her iki dal `:app:signingReport` ile doğrulandı. Belgelenen
+  format PKCS12 (JKS için `keytool` uyarı basıyor); `*.p12`/`*.keystore`
+  yoksayma kalıpları `git check-ignore` ile teyit edildi.
+- **Gizlilik politikası:** `docs/privacy-policy.md` (Console'un URL alanına
+  girecek `focussayac.app/gizlilik` sayfasının kaynağı) + uygulama içi özet
+  reklam/UMP gerçeğine göre düzeltildi. Eski metin "kişisel veri toplamaz"
+  diyordu — Faz 11'den beri yanlıştı; madde 1/2/6'nın bıraktığı iş buydu.
+  Regresyon testi (`settings_screen_test.dart`) eski iddianın dönmesini
+  engelliyor; uzun metin için dialog gövdesi kaydırılabilir yapıldı.
+- **`docs/play/RELEASE.md`:** sürüm numarası, imzalama, `--dart-define`
+  tablosu, ASO paketi → Console alanı eşlemesi (seçilen ad/açıklama
+  varyantlarıyla), veri güvenliği formu cevapları, sürüm notu 1.0.0 ve yayın
+  öncesi kontrol listesi. Mağaza metinleri kopyalanmadı; tek kaynak
+  `design/FocusSayac ASO Paketi.dc.html`.
+- Launcher etiketi `focussayac` → `FocusSayaç`, `pubspec` açıklaması gerçek
+  açıklamayla değişti.
+
+**Kalan (ikisi de dış kaynak bekliyor, `docs/play/RELEASE.md`de açık kutu):**
+gerçek AdMob birim/App ID'leri bir AdMob hesabı gerektiriyor (kod tarafı hazır,
+`--dart-define`, kod değişikliği yok); simge/feature graphic/ekran görüntüleri
+bağlı bir Android cihaz gerektiriyor — madde 8'in `--profile` ölçümüyle aynı
+engel.
 
 ---
 
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
-- [ ] `flutter analyze` 0 hata / 0 uyarı
+- [x] `flutter analyze` 0 hata / 0 uyarı
 - [ ] Her ekran prototiple ayırt edilemiyor
 - [ ] Demo sayılarının hiçbiri kodda yok (132, 42, %86, 6, 3/7, 11)
 - [x] 10 dk arka plandan dönüşte sayaç doğru
@@ -234,5 +274,7 @@ yapılamadı.
 - [ ] Odak ekranı `--profile` modda sürekli 60 fps *(madde 8 — cihaz gerekiyor)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [ ] Testler geçiyor
-- [ ] `DECISIONS.md` her kararı gerekçesiyle içeriyor
+- [x] Testler geçiyor *(159 test, `flutter test`)*
+- [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
+
+Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

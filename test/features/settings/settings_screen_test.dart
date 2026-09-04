@@ -264,4 +264,29 @@ void main() {
 
     await _disposeTree(tester);
   });
+
+  testWidgets('gizlilik metni reklamları anlatıyor ve taşmıyor', (WidgetTester tester) async {
+    // Faz 11 reklamları eklendiğinde metin hâlâ "kişisel veri toplamaz"
+    // diyordu. Uygulama içi özet, Play'in veri güvenliği beyanı ve
+    // `docs/privacy-policy.md` aynı olguları anlatmak zorunda.
+    await _pumpSettings(tester);
+
+    await tester.tap(find.text('Gizlilik politikası'));
+    await _settle(tester);
+
+    expect(find.text('GİZLİLİK POLİTİKASI'), findsOneWidget);
+    final String body = tester
+        .widget<Text>(find.byWidgetPredicate(
+          (Widget w) => w is Text && (w.data?.contains('AdMob') ?? false),
+        ))
+        .data!;
+    expect(body, contains('kişiselleştirilmemiş'));
+    expect(body, contains('focussayac.app/gizlilik'));
+    // Reklamlar geldiğinden beri yanlış olan iddia geri gelmesin.
+    expect(body, isNot(contains('kişisel veri toplamaz')));
+    // Uzun metin `_InfoDialog`u taşırmıyor (kaydırılabilir gövde).
+    expect(tester.takeException(), isNull);
+
+    await _disposeTree(tester);
+  });
 }

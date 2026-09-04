@@ -489,7 +489,14 @@ class _InfoDialog extends StatelessWidget {
           children: <Widget>[
             Text(title, style: AppTypography.display(fontSize: 20, weight: FontWeight.w700, color: colors.text)),
             const SizedBox(height: 12),
-            Text(body, style: AppTypography.body(fontSize: 13, color: colors.neutral400)),
+            // Gizlilik metni reklam/UMP bölümüyle birlikte kısa ekranlara
+            // sığmıyor (Faz 15). `Flexible` + kaydırma olmadan `Column`
+            // taşardı; kısa metinlerde ("Hakkında") davranış değişmiyor.
+            Flexible(
+              child: SingleChildScrollView(
+                child: Text(body, style: AppTypography.body(fontSize: 13, color: colors.neutral400)),
+              ),
+            ),
             const SizedBox(height: 12),
             SizedBox(
               height: 44,

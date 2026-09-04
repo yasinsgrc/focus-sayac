@@ -1,0 +1,15 @@
+# Yayın imzası şablonu — `android/key.properties` olarak kopyala ve doldur.
+# Gerçek dosya `.gitignore`da (hem kök hem `android/.gitignore`), asla
+# commit'lenmez. Anahtar deposunun kendisi de (`*.jks`) depoya girmez.
+#
+# Anahtar deposu üretme (bir kez, kaybolursa uygulama güncellenemez):
+#   keytool -genkey -v -keystore focussayac-release.p12 -storetype PKCS12 \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias focussayac
+#
+# `storeFile` `android/` klasörüne göreli çözülür (rootProject).
+# Adımların tamamı: docs/play/RELEASE.md
+
+storeFile=focussayac-release.p12
+storePassword=
+keyAlias=focussayac
+keyPassword=

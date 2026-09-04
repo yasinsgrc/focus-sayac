@@ -1,8 +1,22 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Yayın imzası `android/key.properties`ten okunur; dosya `.gitignore`da
+// (anahtar deposu ve parolalar depoya girmez — bkz. `docs/play/RELEASE.md`).
+// Dosya yoksa `release` yine debug anahtarıyla imzalanır: geliştirici
+// makinesinde `flutter build apk --release` çalışmaya devam etsin diye.
+// Böyle bir çıktı Play'e yüklenemez, Console debug imzasını reddeder.
+val keystoreProperties = Properties().apply {
+    val keystoreFile = rootProject.file("key.properties")
+    if (keystoreFile.exists()) {
+        keystoreFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -27,10 +41,20 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (keystoreProperties.isNotEmpty()) {
+            create("release") {
+                storeFile = keystoreProperties.getProperty("storeFile")?.let { rootProject.file(it) }
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Faz 15'te release imzalama yapılandırılana kadar debug anahtarlarıyla imzalanır.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 }

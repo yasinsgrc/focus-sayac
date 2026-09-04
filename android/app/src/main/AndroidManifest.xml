@@ -13,7 +13,7 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29"/>
     <application
-        android:label="focussayac"
+        android:label="FocusSayaç"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -43,7 +43,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- Google resmi test App ID'si; gerçek AdMob App ID Play yayınından önce buraya girilecek (Faz 11). -->
+        <!-- Google'ın resmî test App ID'si. Gerçek AdMob App ID yayından önce
+             buraya girilir; AdMob hesabı açılana kadar test kimliği kalıyor
+             ("kendi reklamına tıklama" trafiği üretmemek için). Reklam
+             BİRİMİ kimlikleri koda gömülü değil, `--dart-define` ile geliyor
+             (`lib/services/ads/ad_unit_ids.dart`); App ID manifest'te olmak
+             zorunda olduğu için tek elle değişen değer bu satır.
+             Yayın adımları: docs/play/RELEASE.md -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-3940256099942544~3347511713" />
