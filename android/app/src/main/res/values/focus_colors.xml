@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  `lib/core/theme/app_colors.dart` icindeki `AppColors.dark()` tokenlarinin
+  Android aynasi. Ana ekran widget'lari Flutter tema agacina erisemedigi icin
+  palet burada bir kez daha tanimlaniyor.
+
+  Bu dosya paletin Android tarafindaki TEK kaynagidir - `FocusPalette.kt`
+  degerleri buradan `context.getColor(...)` ile okur, kendi kopyasini tutmaz.
+
+  Sapmayi `test/android/focus_palette_sync_test.dart` yakalar: test bu dosyayi
+  parse edip her hex'i `AppColors.dark()` ile karsilastirir.
+-->
+<resources>
+    <color name="focus_bg">#FF0B0C14</color>
+    <color name="focus_text">#FFF6F7FF</color>
+
+    <color name="focus_ember">#FFFFB03A</color>
+    <color name="focus_ember_dim">#FF8A4F14</color>
+    <color name="focus_ember_deep">#FF33200C</color>
+
+    <color name="focus_mint">#FF4FE0B4</color>
+    <color name="focus_mint_deep">#FF0D3A31</color>
+
+    <color name="focus_rose">#FFFF6A86</color>
+    <color name="focus_rose_deep">#FF3D1420</color>
+
+    <color name="focus_sky">#FF63B4FF</color>
+    <color name="focus_sky_deep">#FF10283F</color>
+
+    <color name="focus_neutral_300">#FFCFD3E5</color>
+    <color name="focus_neutral_400">#FFB2B6CA</color>
+    <color name="focus_neutral_500">#FF9397AB</color>
+    <color name="focus_neutral_600">#FF75798C</color>
+    <color name="focus_neutral_700">#FF595D6C</color>
+    <color name="focus_neutral_800">#FF3F424D</color>
+    <color name="focus_neutral_900">#FF292B31</color>
+
+    <color name="focus_accent_200">#FFE7E5FE</color>
+    <color name="focus_accent_300">#FFD2CEFD</color>
+    <color name="focus_accent_400">#FFB5ABFC</color>
+    <color name="focus_accent_900">#FF2B2741</color>
+
+    <color name="focus_surface_card">#D11E2030</color>
+    <color name="focus_divider">#14FFFFFF</color>
+</resources>

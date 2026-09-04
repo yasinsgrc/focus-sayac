@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  updatePeriodMillis 0: sistemin garantisiz 30 dakikalik dongusu yerine
+  RefreshScheduler saat basina hizalanmis kendi alarmini kuruyor.
+  previewLayout (API 31+) gercek yerlesimi onizleme olarak gosteriyor,
+  ayri bir statik PNG bakimi gerekmiyor.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_ring_description"
+    android:initialLayout="@layout/widget_ring"
+    android:minHeight="110dp"
+    android:minWidth="110dp"
+    android:previewLayout="@layout/widget_ring"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="2"
+    android:targetCellWidth="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

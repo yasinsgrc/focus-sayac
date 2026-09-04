@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Serit widgetinin doluluk cubugu taslagi. Calisma aninda StripRenderer
+  bitmap ile degistiriliyor.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#12FFFFFF" />
+            <corners android:radius="999dp" />
+        </shape>
+    </item>
+    <item android:end="120dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/focus_accent_400" />
+            <corners android:radius="999dp" />
+        </shape>
+    </item>
+</layer-list>

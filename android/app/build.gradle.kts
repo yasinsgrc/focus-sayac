@@ -69,4 +69,9 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Ana ekran widgetlarinin bitmap metinleri res/font altindaki yazi
+    // tiplerini ResourcesCompat ile yukluyor (widget/WidgetTypography.kt).
+    // Flutter gomulusu androidx.core getiriyor ama gecisli bagimlilik
+    // sessizce degisebilir; dogrudan bildiriliyor.
+    implementation("androidx.core:core-ktx:1.13.1")
 }

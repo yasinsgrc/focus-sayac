@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Halka widget (2x2). Govde tek bir bitmap: halka, ilerleme yayi ve ortadaki
+  buyuk rakam RingRenderer tarafindan tek gecISte ciziliyor. Altta sinav adi.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_ring_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_surface"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <ImageView
+        android:id="@+id/widget_ring_image"
+        android:src="@drawable/widget_preview_ring"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/widget_ring_label"
+        android:scaleType="fitCenter" />
+
+    <TextView
+        android:id="@+id/widget_ring_exam"
+        android:text="@string/widget_pick_exam"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:fontFamily="@font/inter_600"
+        android:gravity="center"
+        android:maxLines="1"
+        android:textColor="@color/focus_neutral_300"
+        android:textSize="11sp" />
+</LinearLayout>

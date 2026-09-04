@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Haftalik sutunlarin taslagi. Calisma aninda SparkRenderer bitmap ile
+  degistiriliyor.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="84dp"
+    android:height="26dp"
+    android:viewportWidth="84"
+    android:viewportHeight="26">
+    <path android:fillColor="#4DFFB03A" android:pathData="M0,20h9v6h-9z" />
+    <path android:fillColor="#4DFFB03A" android:pathData="M12.5,13h9v13h-9z" />
+    <path android:fillColor="#4DFFB03A" android:pathData="M25,6h9v20h-9z" />
+    <path android:fillColor="#4DFFB03A" android:pathData="M37.5,17h9v9h-9z" />
+    <path android:fillColor="#4DFFB03A" android:pathData="M50,2h9v24h-9z" />
+    <path android:fillColor="#4DFFB03A" android:pathData="M62.5,10h9v16h-9z" />
+    <path android:fillColor="#FFFFB03A" android:pathData="M75,0h9v26h-9z" />
+</vector>

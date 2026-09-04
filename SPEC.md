@@ -370,3 +370,46 @@ iptal onayında seri metninin doğru koşulda görünmesi.
 - [ ] Kodda hard-coded Türkçe metin yok
 - [ ] Testler geçiyor
 - [ ] `DECISIONS.md` her kararı gerekçesiyle içeriyor
+
+---
+
+## 11. ANA EKRAN WIDGET'LARI (Faz 16)
+
+Tasarım dokümanı: `docs/superpowers/specs/2026-09-04-home-widgets-design.md`.
+
+Beş Android ana ekran widget'ı. Hepsi aktif sınavı (`Exam.isActive`) gösterir.
+
+| Widget | Boyut | Gösterdiği | Dokunma |
+|---|---|---|---|
+| Halka | 2×2 | Gün + ilerleme halkası | `/countdown` |
+| Şerit | 4×1 | Gün + saat + doluluk çubuğu | `/countdown` |
+| Seri | 2×2 | Seri + bugünkü odak + 7 günlük spark | `/stats` |
+| Hızlı Odak | 4×2 | Sınav özeti + tek eylem butonu | `/focus?autostart=1` |
+| Panorama | 4×2 | Halka + tarih + seri + spark | `/countdown` |
+
+**Mimari kuralı:** Dart kalan günü YAZMAZ, hedef zaman damgasını yazar.
+Gün/saat/oran her çizimde Kotlin tarafında yeniden hesaplanır
+(`FocusWidgetSnapshot.kt`). Uygulama haftalarca açılmasa bile widget doğru
+sayıyı gösterir. `progressRatio` formülü `countdown_math.dart` ile birebir
+aynıdır.
+
+### §0 kurallarından iki bilinçli sapma
+
+1. **§0.3 "prototipte olmayan özellik ekleme"** — widget'lar tanım gereği
+   prototipte olmayan yeni bir yüzey. Kullanıcı isteğiyle eklendi.
+2. **§0.7 "kullanıcı metinleri yalnızca ARB'den"** — `RemoteViews` launcher
+   sürecinde şişirildiği için ARB'ye erişemez; widget metinleri
+   `res/values/focus_widget_strings.xml` içinde. Azaltma: metinlerin tamamına
+   yakını ARB'de zaten vardı ve birebir kopyalandı, her satırda kaynak ARB
+   anahtarı yorumla belirtildi. Yalnızca widget seçicideki ad/açıklamalar yeni
+   (bunlar uygulama içinde değil, sistem arayüzünde görünüyor).
+
+### Faz 16 DoD
+
+- [x] `flutter analyze` 0 hata / 0 uyarı
+- [x] Beş widget da `flutter build apk --release` ile derleniyor
+- [x] Palet Dart ↔ Android senkron (`focus_palette_sync_test.dart`)
+- [x] Sınav seçilmemiş / bugün / geçmiş durumları ayrı ayrı çiziliyor
+- [x] Sayaç negatife düşmüyor (`coerceAtLeast(0)`)
+- [x] Widget'tan gelen odak isteği süren seansı sıfırlamıyor
+- [ ] Emülatörde beş widget görsel doğrulaması

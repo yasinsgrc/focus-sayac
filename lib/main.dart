@@ -19,6 +19,8 @@ import 'services/storage/app_database.dart';
 import 'services/storage/exam_source_service.dart';
 import 'services/storage/storage_enums.dart';
 import 'services/storage/storage_providers.dart';
+import 'services/widgets/home_widget_sync.dart';
+import 'services/widgets/widget_launch_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,7 +74,16 @@ Future<void> main() async {
         adServiceProvider.overrideWithValue(adService),
         onboardingCompletedAtLaunchProvider.overrideWithValue(launchSettings.onboardingCompleted),
       ],
-      child: const FocusSayacApp(),
+      // Ana ekran widgetlari iki gorunmez kabuk kullaniyor (Faz 16):
+      // `HomeWidgetSyncScope` anlik goruntuyu paylasilan depoya yazar,
+      // `WidgetLaunchScope` widget dokunuslarini rotalara cevirir. Ikisi de
+      // `ProviderScope` altinda, `MaterialApp`in ustunde duruyor: yonlendirici
+      // saglayicisina erisip hicbir sey cizmiyorlar.
+      child: const HomeWidgetSyncScope(
+        child: WidgetLaunchScope(
+          child: FocusSayacApp(),
+        ),
+      ),
     ),
   );
 }

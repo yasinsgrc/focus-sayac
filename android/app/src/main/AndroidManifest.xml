@@ -66,6 +66,83 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
+
+        <!-- Ana ekran widgetlari (Faz 16). Bes saglayici da
+             BaseFocusWidgetProvider uzerinden ayni anlik goruntuyu okur;
+             cizim ve zaman hesabi Kotlin tarafinda yapilir.
+             Bkz. docs/superpowers/specs/2026-09-04-home-widgets-design.md -->
+        <receiver
+            android:name=".widget.RingWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_ring_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_ring_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.StripWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_strip_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_strip_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.StreakWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_streak_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_streak_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.QuickFocusWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_quick_focus_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_focus_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.PanoramaWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_panorama_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_panorama_info" />
+        </receiver>
+
+        <!-- Widget tazeleme: saat basi alarm + sistemin zaman/saat dilimi
+             olaylari. Zaman elle degistiginde ya da yurt disina gecildiginde
+             kalan gun aninda degisir; bir sonraki saati beklemek gorunur bir
+             yanlislik olurdu. -->
+        <receiver
+            android:name=".widget.FocusWidgetRefreshReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.focussayac.focussayac.widget.ACTION_REFRESH" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Panorama widget (4x2). Solda halka, sagda sinav adi, tarih, seri ve
+  haftalik sutunlar. Tek kartta butun hikaye.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_panorama_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_surface"
+    android:baselineAligned="false"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="14dp">
+
+    <ImageView
+        android:id="@+id/widget_panorama_ring"
+        android:src="@drawable/widget_preview_ring"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="34"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/widget_panorama_label"
+        android:scaleType="fitCenter" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_weight="66"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_panorama_name"
+            android:text="@string/widget_pick_exam"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/inter_600"
+            android:maxLines="1"
+            android:textColor="@color/focus_text"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/widget_panorama_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/inter_500"
+            android:maxLines="1"
+            android:textColor="@color/focus_neutral_400"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/widget_panorama_streak"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/inter_500"
+            android:maxLines="1"
+            android:textColor="@color/focus_ember"
+            android:textSize="11sp" />
+
+        <ImageView
+            android:id="@+id/widget_panorama_spark"
+            android:src="@drawable/widget_preview_spark"
+            android:layout_width="match_parent"
+            android:layout_height="22dp"
+            android:layout_marginTop="8dp"
+            android:contentDescription="@string/widget_streak_label"
+            android:scaleType="fitXY" />
+    </LinearLayout>
+</LinearLayout>

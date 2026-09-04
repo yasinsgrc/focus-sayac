@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Hizli Odak widget'inin hap butonu - uygulamanin `AppPillButton`'iyla ayni
+  dil: tam yuvarlak uc, ember dolgu, koyu metin.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/focus_ember" />
+    <corners android:radius="999dp" />
+</shape>

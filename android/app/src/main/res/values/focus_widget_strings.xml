@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ana ekran widget'larinin metinleri.
+
+  Android widget'lari uygulamanin ARB katmanina erisemez (`RemoteViews` baska
+  bir surecte, launcher icinde sisirilir), bu yuzden SPEC.md 0.7 "kullanici
+  metinleri yalnizca ARB'den" kurali burada zorunlu olarak kiriliyor.
+
+  Azaltma: asagidaki metinlerin neredeyse tamami `lib/l10n/app_tr.arb`'de
+  zaten var ve BIREBIR ayni kelimelerle kopyalandi - her satirda kaynak ARB
+  anahtari belirtiliyor. Yalnizca widget secicide gorunen ad/aciklamalar
+  gercekten yeni; onlarin ARB'de bir karsiligi olamaz.
+-->
+<resources>
+    <!-- ARB: countdownDaysLeft -->
+    <string name="widget_days_left">GÜN KALDI</string>
+    <!-- ARB: countdownToday -->
+    <string name="widget_today">BUGÜN</string>
+    <!-- ARB: countdownTarget -->
+    <string name="widget_target">HEDEF</string>
+    <!-- ARB: countdownFocusButton -->
+    <string name="widget_focus_button">ODAKLAN</string>
+    <!-- ARB: breakReturnToFocus -->
+    <string name="widget_resume_button">ODAĞA DÖN</string>
+    <!-- ARB: countdownNoExamTitle -->
+    <string name="widget_no_exam_title">HEDEF SEÇİLMEDİ</string>
+    <!-- ARB: settingsExamSelection -->
+    <string name="widget_pick_exam">Sınav seçimi</string>
+    <!-- ARB: examExpiredTitle -->
+    <string name="widget_expired_title">SINAVIN GEÇTİ</string>
+    <!-- ARB: examExpiredPickNew -->
+    <string name="widget_expired_action">YENİ SINAV SEÇ</string>
+    <!-- ARB: storyCardStreakTag -->
+    <string name="widget_streak_tag">SERİ</string>
+    <!-- ARB: countdownStreakBadge -->
+    <string name="widget_streak_days">%1$d gün seri</string>
+    <!-- ARB: statsAverageMinutes -->
+    <string name="widget_minutes">%1$d dk</string>
+
+    <!-- Widget secicide gorunen ad ve aciklamalar. ARB karsiligi yok:
+         bu metinler uygulamanin icinde degil, sistem arayuzunde gosteriliyor. -->
+    <string name="widget_ring_label">Geri Sayım Halkası</string>
+    <string name="widget_ring_description">Sınavına kalan günü halkalı sayaçla gösterir.</string>
+    <string name="widget_strip_label">Geri Sayım Şeridi</string>
+    <string name="widget_strip_description">Kalan gün ve saati ince bir şeritte gösterir.</string>
+    <string name="widget_streak_label">Odak Serisi</string>
+    <string name="widget_streak_description">Serini, bugünkü odak süreni ve son 7 gününü gösterir.</string>
+    <string name="widget_quick_focus_label">Hızlı Odak</string>
+    <string name="widget_quick_focus_description">Tek dokunuşla odak seansı başlatır.</string>
+    <string name="widget_panorama_label">Panorama</string>
+    <string name="widget_panorama_description">Geri sayım, sınav tarihi, seri ve haftalık odak tek kartta.</string>
+</resources>

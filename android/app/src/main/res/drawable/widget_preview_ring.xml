@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Widget secicideki onizleme icin halka taslagi. Gercek halka calisma
+  aninda RingRenderer bitmap ile degistiriliyor; bu vektor yalnizca
+  ImageView henuz baglanmamisken (secici onizlemesi) gorunur.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="104dp"
+    android:height="104dp"
+    android:viewportWidth="316"
+    android:viewportHeight="316">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M158,28 A130,130 0 1,1 157.9,28"
+        android:strokeColor="#1FFFFFFF"
+        android:strokeWidth="9" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M158,28 A130,130 0 0,1 288,158"
+        android:strokeColor="#FFB5ABFC"
+        android:strokeLineCap="round"
+        android:strokeWidth="9" />
+</vector>

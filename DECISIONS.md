@@ -1080,3 +1080,73 @@ kare veriyordu (`MESA: Failed to open rendernode`); emülatör
 `-gpu swiftshader_indirect` ile yeniden açılıp beş sekmenin görüntüsü alındı.
 Kullanıcının gördüğü "iki aynı rozet sayfası" madde 12 öncesi derlemeydi:
 `flame` → Ekran 05, `medal` → Ekran 04, rozet kataloğu 0/7 ve yedi kart tekil.
+
+---
+
+## Madde 15: Ana ekran widget'ları (Faz 16)
+
+**Beş widget, tek veri sözleşmesi.** Halka (2×2), Şerit (4×1), Seri (2×2),
+Hızlı Odak (4×2), Panorama (4×2). Hepsi `HomeWidgetSnapshot`un yazdığı aynı
+anahtarları okur; ayrı veri yolları açmak aynı sayının iki widget'ta farklı
+çıkmasına kapı aralardı.
+
+**Dart kalan günü yazmıyor, hedef zaman damgasını yazıyor.** İlk tasarımda
+`daysLeft` de payload'a konacaktı. Vazgeçildi: uygulama birkaç gün açılmazsa
+widget bayat bir sayı gösterirdi ve bu, ürünün tek işini yanlış yapması
+demekti. Gün/saat/oran artık `FocusWidgetSnapshot.kt` içinde her çizimde
+`targetUtcMillis`ten yeniden hesaplanıyor. Bedeli: `progressRatio` formülü iki
+dilde duruyor. Formül tek satır ve sapması görsel olarak anında fark edilir,
+bu yüzden ayrı bir doğrulama mekanizması kurulmadı.
+
+**Native Kotlin + Canvas, Flutter bitmap render değil.** `home_widget`
+`renderFlutterWidget` ile uygulamayla piksel-piksel aynı görüntü üretilebilirdi
+ama her tazelemede headless bir Flutter engine açılırdı. Saat başı yenilenen
+bir sayaç için bu pil maliyeti kabul edilemezdi. Halka, spark ve şerit Kotlin
+`Canvas` ile çiziliyor; `RingRenderer` prototipin `viewBox 316` geometrisini
+(r=142/130/112, stroke 9) birebir taşıyor.
+
+**Halkanın gradyanı sınav rengi değil, uygulamanın kendi sweep gradyanı.**
+Kullanıcıya "accent renkli halka" denmişti; uygulamada Ekran 02 sabit bir
+sky→accent→ember süpürmesi kullanıyor. Widget'ın Ekran 02 ile aynı şey olarak
+tanınması daha değerli bulundu. Sınavın `accentRole` rengi kayboluyor değil:
+kesikli iç çemberi, kicker etiketini, şeridin dolgusunu ve Şerit widget'ının
+sayısını o renk boyuyor.
+
+**Palet `focus_colors.xml`de tek kaynak, `FocusPalette.kt` onu okuyor.**
+Değerleri Kotlin sabiti olarak da tutmak üçüncü bir kopya olurdu.
+`focus_palette_sync_test.dart` XML'i parse edip `AppColors.dark()` ile
+karşılaştırıyor ve iki yönlü kontrol yapıyor (eksik token da fazlalık token da
+düşürüyor). Test mutasyonla doğrulandı: `focus_ember` bozulduğunda kırmızı
+veriyor.
+
+**`updatePeriodMillis="0"` + kendi saat başı alarmımız.** Sistemin widget
+güncelleme döngüsü en iyi ihtimalle 30 dakikada bir ve garantisiz. Alarm kesin
+değil (`AlarmManager.set`, `setExact` değil): birkaç dakikalık sapma bir gün
+sayacı için önemsiz, kesin alarm ise Android 12+ üzerinde
+`SCHEDULE_EXACT_ALARM` gerektirip pil kısıtlarına takılırdı. Alarmın yanı sıra
+`TIME_SET`/`TIMEZONE_CHANGED`/`DATE_CHANGED` de dinleniyor — kullanıcı saati
+elle değiştirdiğinde kalan gün anında değişir, bir sonraki saati beklemek
+görünür bir yanlışlık olurdu.
+
+**Hızlı Odak süren seansı sıfırlamıyor.** Buton, `sessionActive` iken
+"ODAĞA BAŞLA" yerine "ODAĞA DÖN" oluyor ve `/focus`u açıyor, `startFocus()`
+çağırmıyor. Aksi hâlde widget kullanıcının biriken odağını sessizce silerdi.
+Hap da o durumda ember dolgudan accent hairline'a düşüyor: dolu hap bir eylem
+çağrısı, devam eden seans için yanlış vurgu.
+
+**Widget seçici önizlemesi için taslak drawable'lar.** `previewLayout` gerçek
+yerleşimi çiziyor ama `ImageView`lar bind edilmeden boş kalıyordu; seçicide üç
+widget boş kutu görünüyordu. `widget_preview_ring/bar/spark` vektörleri
+`android:src` olarak duruyor, çalışma anında bitmap üzerine yazılıyor.
+
+**Derlemede iki tökezleme.** (1) XML yorumları `--` dizisi içeremiyor;
+prototipin CSS değişken adlarını (`--surface-card`) yoruma yazmak
+`parseReleaseLocalResources`ı düşürdü. (2) Kotlin `internal` taban sınıfı
+`public` alt sınıflarca genişletilemiyor; manifest'in örnekleyebilmesi için
+widget sınıflarının hepsi public yapıldı — uygulama modülünde görünürlük zaten
+gerçek bir iş yapmıyordu.
+
+**Kotlin tarafında birim testi yok.** Projede JVM test altyapısı kurulu değil
+ve bu iş için kurmak kapsamı ciddi büyütürdü. Dart tarafı (sözleşme, servis,
+palet) test edilmiş durumda; Kotlin çizim katmanının doğrulaması emülatörde
+görsel olarak yapılacak — Faz 16 DoD'sinde açık madde olarak duruyor.
