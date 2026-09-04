@@ -12,6 +12,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/time/app_day.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
+import '../../core/widgets/rise_in.dart';
 import '../../domain/countdown/countdown_math.dart';
 import '../../domain/exams/exam_providers.dart';
 import '../../domain/pomodoro/pomodoro_controller.dart';
@@ -294,233 +295,244 @@ class _CountdownBody extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              GestureDetector(
-                onTap: () => showExamPickerSheet(context),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(l10n.countdownTarget, style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          exam.name,
-                          style: AppTypography.display(fontSize: 22, weight: FontWeight.w600, color: colors.text),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(PhosphorIconsRegular.caretDown, size: 14, color: colors.ember),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              InkWell(
-                onTap: () => context.push(RoutePaths.addExam),
-                borderRadius: BorderRadius.circular(999),
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0x1FFFFFFF)),
-                  ),
-                  child: Icon(PhosphorIconsRegular.plus, size: 18, color: colors.neutral400),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Center(
-            child: SizedBox(
-              width: 316,
-              height: 316,
-              child: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  RepaintBoundary(
-                    child: AnimatedBuilder(
-                      animation: dashController,
-                      builder: (BuildContext context, Widget? child) {
-                        return CustomPaint(
-                          size: const Size(316, 316),
-                          painter: CountdownRingPainter(
-                            progressRatio: ratio,
-                            dashRotation: dashController.value * 2 * math.pi,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
+          RiseIn(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                GestureDetector(
+                  onTap: () => showExamPickerSheet(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      ShaderMask(
-                        shaderCallback: (Rect bounds) => const LinearGradient(
-                          colors: AppColors.chromeGradient,
-                          stops: AppColors.chromeGradientStops,
-                        ).createShader(bounds),
-                        child: Text(
-                          '$days',
-                          style: AppTypography.counter(fontSize: 100, weight: FontWeight.w700, color: Colors.white, height: 1),
-                        ),
-                      ),
-                      Text(l10n.countdownDaysLeft, style: AppTypography.kicker(fontSize: 9.5, color: colors.neutral500)),
-                      const SizedBox(height: 16),
+                      Text(l10n.countdownTarget, style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
+                      const SizedBox(height: 4),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
                           Text(
-                            '$hh:$mm:$ss',
-                            style: AppTypography.body(fontSize: 12.5, weight: FontWeight.w500, color: colors.neutral400).copyWith(
-                              fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
-                            ),
+                            exam.name,
+                            style: AppTypography.display(fontSize: 22, weight: FontWeight.w600, color: colors.text),
                           ),
-                          const SizedBox(width: 9),
-                          Container(width: 3, height: 3, decoration: BoxDecoration(color: colors.ember, shape: BoxShape.circle)),
-                          const SizedBox(width: 9),
-                          Text(examDateText, style: AppTypography.body(fontSize: 12.5, weight: FontWeight.w500, color: colors.neutral400)),
+                          const SizedBox(width: 8),
+                          Icon(PhosphorIconsRegular.caretDown, size: 14, color: colors.ember),
                         ],
                       ),
                     ],
                   ),
-                ],
+                ),
+                InkWell(
+                  onTap: () => context.push(RoutePaths.addExam),
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0x1FFFFFFF)),
+                    ),
+                    child: Icon(PhosphorIconsRegular.plus, size: 18, color: colors.neutral400),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          RiseIn(
+            delay: RiseIn.step,
+            child: Center(
+              child: SizedBox(
+                width: 316,
+                height: 316,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    RepaintBoundary(
+                      child: AnimatedBuilder(
+                        animation: dashController,
+                        builder: (BuildContext context, Widget? child) {
+                          return CustomPaint(
+                            size: const Size(316, 316),
+                            painter: CountdownRingPainter(
+                              progressRatio: ratio,
+                              dashRotation: dashController.value * 2 * math.pi,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        ShaderMask(
+                          shaderCallback: (Rect bounds) => const LinearGradient(
+                            colors: AppColors.chromeGradient,
+                            stops: AppColors.chromeGradientStops,
+                          ).createShader(bounds),
+                          child: Text(
+                            '$days',
+                            style: AppTypography.counter(fontSize: 100, weight: FontWeight.w700, color: Colors.white, height: 1),
+                          ),
+                        ),
+                        Text(l10n.countdownDaysLeft, style: AppTypography.kicker(fontSize: 9.5, color: colors.neutral500)),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Text(
+                              '$hh:$mm:$ss',
+                              style: AppTypography.body(fontSize: 12.5, weight: FontWeight.w500, color: colors.neutral400).copyWith(
+                                fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+                              ),
+                            ),
+                            const SizedBox(width: 9),
+                            Container(width: 3, height: 3, decoration: BoxDecoration(color: colors.ember, shape: BoxShape.circle)),
+                            const SizedBox(width: 9),
+                            Text(examDateText, style: AppTypography.body(fontSize: 12.5, weight: FontWeight.w500, color: colors.neutral400)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
           const SizedBox(height: 22),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xB81E2030),
-              borderRadius: BorderRadius.circular(24),
-              border: const Border.fromBorderSide(BorderSide(color: Color(0x12FFFFFF))),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Text(l10n.countdownToday, style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
-                    if (streak > 0)
-                      Container(
-                        height: 25,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(color: colors.emberDeep, borderRadius: BorderRadius.circular(999)),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Icon(PhosphorIconsFill.flame, size: 13, color: colors.ember),
-                            const SizedBox(width: 5),
-                            Text(l10n.countdownStreakBadge(streak), style: AppTypography.body(fontSize: 11.5, weight: FontWeight.w500, color: colors.ember)),
+          RiseIn(
+            delay: RiseIn.step * 2,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xB81E2030),
+                borderRadius: BorderRadius.circular(24),
+                border: const Border.fromBorderSide(BorderSide(color: Color(0x12FFFFFF))),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      Text(l10n.countdownToday, style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
+                      if (streak > 0)
+                        Container(
+                          height: 25,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(color: colors.emberDeep, borderRadius: BorderRadius.circular(999)),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Icon(PhosphorIconsFill.flame, size: 13, color: colors.ember),
+                              const SizedBox(width: 5),
+                              Text(l10n.countdownStreakBadge(streak), style: AppTypography.body(fontSize: 11.5, weight: FontWeight.w500, color: colors.ember)),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: <Widget>[
+                      RichText(
+                        text: TextSpan(
+                          children: <InlineSpan>[
+                            TextSpan(
+                              text: '${todayParts.hours}',
+                              style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
+                            ),
+                            TextSpan(text: l10n.countdownHoursUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
+                            TextSpan(
+                              text: '${todayParts.minutes}',
+                              style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
+                            ),
+                            TextSpan(text: l10n.countdownMinutesUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
                           ],
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: <Widget>[
-                    RichText(
-                      text: TextSpan(
+                      const Spacer(),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 7),
+                        child: Row(
+                          children: List<Widget>.generate(4, (int i) {
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 5),
+                              child: Container(
+                                width: 9,
+                                height: 9,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: i < cycleDots ? colors.mint : const Color(0x1FFFFFFF),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: SizedBox(
+                      height: 4,
+                      child: LinearProgressIndicator(
+                        value: cycleDots / 4,
+                        backgroundColor: const Color(0x17FFFFFF),
+                        valueColor: AlwaysStoppedAnimation<Color>(colors.mint),
+                      ),
+                    ),
+                  ),
+                  if (todayStats.completedCount == 0) ...<Widget>[
+                    const SizedBox(height: 9),
+                    Text.rich(
+                      TextSpan(
+                        style: AppTypography.body(fontSize: 12, color: colors.neutral500),
                         children: <InlineSpan>[
-                          TextSpan(
-                            text: '${todayParts.hours}',
-                            style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
-                          ),
-                          TextSpan(text: l10n.countdownHoursUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
-                          TextSpan(
-                            text: '${todayParts.minutes}',
-                            style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
-                          ),
-                          TextSpan(text: l10n.countdownMinutesUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
+                          TextSpan(text: l10n.countdownStreakHintPrefix),
+                          TextSpan(text: l10n.countdownStreakHintValue(streak + 1), style: TextStyle(color: colors.ember)),
+                          TextSpan(text: l10n.countdownStreakHintSuffix),
                         ],
                       ),
                     ),
-                    const Spacer(),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 7),
-                      child: Row(
-                        children: List<Widget>.generate(4, (int i) {
-                          return Padding(
-                            padding: const EdgeInsets.only(left: 5),
-                            child: Container(
-                              width: 9,
-                              height: 9,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: i < cycleDots ? colors.mint : const Color(0x1FFFFFFF),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
                   ],
-                ),
-                const SizedBox(height: 14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: SizedBox(
-                    height: 4,
-                    child: LinearProgressIndicator(
-                      value: cycleDots / 4,
-                      backgroundColor: const Color(0x17FFFFFF),
-                      valueColor: AlwaysStoppedAnimation<Color>(colors.mint),
-                    ),
-                  ),
-                ),
-                if (todayStats.completedCount == 0) ...<Widget>[
-                  const SizedBox(height: 9),
-                  Text.rich(
-                    TextSpan(
-                      style: AppTypography.body(fontSize: 12, color: colors.neutral500),
-                      children: <InlineSpan>[
-                        TextSpan(text: l10n.countdownStreakHintPrefix),
-                        TextSpan(text: l10n.countdownStreakHintValue(streak + 1), style: TextStyle(color: colors.ember)),
-                        TextSpan(text: l10n.countdownStreakHintSuffix),
-                      ],
-                    ),
-                  ),
                 ],
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 14),
-          SizedBox(
-            height: 60,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border.all(color: colors.ember),
-                borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: <Color>[colors.emberDeep, colors.emberDeep.withValues(alpha: 0)],
-                ),
-              ),
-              child: Material(
-                type: MaterialType.transparency,
-                child: InkWell(
+          RiseIn(
+            delay: RiseIn.step * 3,
+            child: SizedBox(
+              height: 60,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: colors.ember),
                   borderRadius: BorderRadius.circular(20),
-                  onTap: () async {
-                    await ref.read(pomodoroControllerProvider.notifier).startFocus();
-                    if (context.mounted) unawaited(context.push(RoutePaths.focusSession));
-                  },
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Icon(PhosphorIconsFill.play, size: 16, color: colors.ember),
-                        const SizedBox(width: 10),
-                        Text(focusButtonLabel, style: AppTypography.display(fontSize: 15.5, weight: FontWeight.w600, color: colors.ember)),
-                      ],
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: <Color>[colors.emberDeep, colors.emberDeep.withValues(alpha: 0)],
+                  ),
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () async {
+                      await ref.read(pomodoroControllerProvider.notifier).startFocus();
+                      if (context.mounted) unawaited(context.push(RoutePaths.focusSession));
+                    },
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Icon(PhosphorIconsFill.play, size: 16, color: colors.ember),
+                          const SizedBox(width: 10),
+                          Text(focusButtonLabel, style: AppTypography.display(fontSize: 15.5, weight: FontWeight.w600, color: colors.ember)),
+                        ],
+                      ),
                     ),
                   ),
                 ),

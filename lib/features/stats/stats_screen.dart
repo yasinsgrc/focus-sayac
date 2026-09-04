@@ -5,6 +5,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
+import '../../core/widgets/rise_in.dart';
 import '../../domain/stats/focus_stats.dart';
 import '../../domain/stats/stats_providers.dart';
 import '../../domain/time/duration_formatter.dart';
@@ -55,66 +56,86 @@ class StatsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   const SizedBox(height: 8),
-                  Text(l10n.statsTotalFocus, style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
+                  RiseIn(
+                    child: Text(
+                      l10n.statsTotalFocus,
+                      style: AppTypography.kicker(fontSize: 9, color: colors.neutral600),
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: ShaderMask(
-                      shaderCallback: (Rect bounds) => const LinearGradient(
-                        colors: AppColors.chromeGradient,
-                        stops: AppColors.chromeGradientStops,
-                      ).createShader(bounds),
-                      child: Text(
-                        _cumulativeText(l10n, stats.cumulativeSeconds),
-                        style: AppTypography.counter(
-                          fontSize: 46,
-                          color: Colors.white,
-                          letterSpacingEm: -0.055,
+                  RiseIn(
+                    delay: RiseIn.step,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: ShaderMask(
+                        shaderCallback: (Rect bounds) => const LinearGradient(
+                          colors: AppColors.chromeGradient,
+                          stops: AppColors.chromeGradientStops,
+                        ).createShader(bounds),
+                        child: Text(
+                          _cumulativeText(l10n, stats.cumulativeSeconds),
+                          style: AppTypography.counter(
+                            fontSize: 46,
+                            color: Colors.white,
+                            letterSpacingEm: -0.055,
+                          ),
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    l10n.statsWeeklyAverage(_averageText(l10n, stats.dailyAverageSeconds)),
-                    style: AppTypography.body(fontSize: 12.5, color: colors.neutral500),
+                  RiseIn(
+                    delay: RiseIn.step * 2,
+                    child: Text(
+                      l10n.statsWeeklyAverage(_averageText(l10n, stats.dailyAverageSeconds)),
+                      style: AppTypography.body(fontSize: 12.5, color: colors.neutral500),
+                    ),
                   ),
                   const SizedBox(height: 20),
-                  _Card(
-                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
-                    child: RepaintBoundary(
-                      child: CustomPaint(
-                        size: const Size(double.infinity, _chartHeight),
-                        painter: WeeklyFocusBarPainter(week: stats.lastWeek, colors: colors, l10n: l10n),
+                  RiseIn(
+                    delay: RiseIn.step * 3,
+                    child: _Card(
+                      padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
+                      child: RepaintBoundary(
+                        child: CustomPaint(
+                          size: const Size(double.infinity, _chartHeight),
+                          painter: WeeklyFocusBarPainter(week: stats.lastWeek, colors: colors, l10n: l10n),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: _MetricCard(
-                          label: l10n.statsLongestStreak,
-                          value: '${stats.longestStreak}',
-                          unit: l10n.statsDaysUnit,
-                          valueColor: colors.ember,
+                  RiseIn(
+                    delay: RiseIn.step * 4,
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: _MetricCard(
+                            label: l10n.statsLongestStreak,
+                            value: '${stats.longestStreak}',
+                            unit: l10n.statsDaysUnit,
+                            valueColor: colors.ember,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _MetricCard(
-                          label: l10n.statsCompletion,
-                          value: stats.completionPercent == null
-                              ? l10n.commonEmptyValue
-                              : l10n.statsCompletionPercent(stats.completionPercent!),
-                          valueColor: colors.mint,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MetricCard(
+                            label: l10n.statsCompletion,
+                            value: stats.completionPercent == null
+                                ? l10n.commonEmptyValue
+                                : l10n.statsCompletionPercent(stats.completionPercent!),
+                            valueColor: colors.mint,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   if (stats.productiveWindow != null) ...<Widget>[
                     const SizedBox(height: 12),
-                    _ProductiveWindowCard(window: stats.productiveWindow!),
+                    RiseIn(
+                      delay: RiseIn.step * 5,
+                      child: _ProductiveWindowCard(window: stats.productiveWindow!),
+                    ),
                   ],
                   const Spacer(),
                   // SPEC.md §7.1: banner yalnızca Ekran 02 ve Ekran 06.

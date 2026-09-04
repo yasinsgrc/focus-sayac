@@ -5,8 +5,8 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/app_back_button.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
+import '../../core/widgets/rise_in.dart';
 import '../../domain/exams/exam_providers.dart';
 import '../../domain/review/app_review_service.dart';
 import '../../domain/settings/app_data_reset_service.dart';
@@ -24,9 +24,8 @@ const int kBreakMinutesMin = 1;
 const int kBreakMinutesMax = 30;
 
 /// Ekran 07 — ayarlar. Prototip v2 satır 287-315 birebir. Prototipte alt
-/// gezinme çubuğu yoktu (Ekran 04 ile aynı durum, Faz 7 kararı); artık hem
-/// çubuk hem Ekran 05'teki geri ok var, yani sistem geri hareketi tek çıkış
-/// yolu değil.
+/// gezinme çubuğu yoktu (Ekran 04 ile aynı durum, Faz 7 kararı); artık çubuk
+/// burada da var, yani sistem geri hareketi tek çıkış yolu değil.
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -99,174 +98,184 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           const SizedBox(height: 8),
-          const Align(alignment: Alignment.centerLeft, child: AppBackButton()),
-          const SizedBox(height: 10),
-          Text(
-            l10n.settingsTitle,
-            style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text),
+          RiseIn(
+            child: Text(
+              l10n.settingsTitle,
+              style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text),
+            ),
           ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xB81E2030),
-              borderRadius: BorderRadius.circular(26),
-              border: const Border.fromBorderSide(BorderSide(color: Color(0x12FFFFFF))),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Text(
-                  l10n.settingsDurationsSection,
-                  style: AppTypography.kicker(fontSize: 8, color: colors.neutral600, letterSpacingEm: 0.24),
-                ),
-                const SizedBox(height: 14),
-                _DurationSlider(
-                  label: l10n.settingsFocusDuration,
-                  minutes: focus,
-                  min: kFocusMinutesMin,
-                  max: kFocusMinutesMax,
-                  tint: colors.ember,
-                  onChanged: (int value) => setState(() => _focusMinutes = value),
-                  onChangeEnd: (int value) => _write(AppSettingsTableCompanion(focusMinutes: Value<int>(value))),
-                ),
-                const SizedBox(height: 14),
-                _DurationSlider(
-                  label: l10n.settingsShortBreak,
-                  minutes: shortBreak,
-                  min: kBreakMinutesMin,
-                  max: kBreakMinutesMax,
-                  tint: colors.mint,
-                  onChanged: (int value) => setState(() => _shortBreakMinutes = value),
-                  onChangeEnd: (int value) => _write(AppSettingsTableCompanion(shortBreakMinutes: Value<int>(value))),
-                ),
-                const SizedBox(height: 14),
-                _DurationSlider(
-                  label: l10n.settingsLongBreak,
-                  minutes: longBreak,
-                  min: kBreakMinutesMin,
-                  max: kBreakMinutesMax,
-                  tint: colors.sky,
-                  onChanged: (int value) => setState(() => _longBreakMinutes = value),
-                  onChangeEnd: (int value) => _write(AppSettingsTableCompanion(longBreakMinutes: Value<int>(value))),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(26),
-            child: ColoredBox(
-              // Satır aralarındaki 1px'lik boşluk bu zeminden görünüyor
-              // (prototipteki `gap:1px` + kapsayıcı arka planı).
-              color: const Color(0x12FFFFFF),
+          RiseIn(
+            delay: RiseIn.step,
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xB81E2030),
+                borderRadius: BorderRadius.circular(26),
+                border: const Border.fromBorderSide(BorderSide(color: Color(0x12FFFFFF))),
+              ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  _SettingsRow(
-                    icon: PhosphorIconsDuotone.bell,
-                    iconColor: colors.accent400,
-                    label: l10n.settingsNotifications,
-                    value: _onOff(l10n, settings.notificationsEnabled),
-                    valueColor: _onOffColor(settings.notificationsEnabled, colors),
-                    onTap: () => _write(
-                      AppSettingsTableCompanion(notificationsEnabled: Value<bool>(!settings.notificationsEnabled)),
-                    ),
+                  Text(
+                    l10n.settingsDurationsSection,
+                    style: AppTypography.kicker(fontSize: 8, color: colors.neutral600, letterSpacingEm: 0.24),
                   ),
-                  _SettingsRow(
-                    icon: PhosphorIconsDuotone.speakerHigh,
-                    iconColor: colors.accent400,
-                    label: l10n.settingsSound,
-                    value: _onOff(l10n, settings.soundEnabled),
-                    valueColor: _onOffColor(settings.soundEnabled, colors),
-                    onTap: () => _write(AppSettingsTableCompanion(soundEnabled: Value<bool>(!settings.soundEnabled))),
+                  const SizedBox(height: 14),
+                  _DurationSlider(
+                    label: l10n.settingsFocusDuration,
+                    minutes: focus,
+                    min: kFocusMinutesMin,
+                    max: kFocusMinutesMax,
+                    tint: colors.ember,
+                    onChanged: (int value) => setState(() => _focusMinutes = value),
+                    onChangeEnd: (int value) => _write(AppSettingsTableCompanion(focusMinutes: Value<int>(value))),
                   ),
-                  _SettingsRow(
-                    icon: PhosphorIconsDuotone.vibrate,
-                    iconColor: colors.accent400,
-                    label: l10n.settingsHaptics,
-                    value: _onOff(l10n, settings.hapticEnabled),
-                    valueColor: _onOffColor(settings.hapticEnabled, colors),
-                    onTap: () => _write(AppSettingsTableCompanion(hapticEnabled: Value<bool>(!settings.hapticEnabled))),
+                  const SizedBox(height: 14),
+                  _DurationSlider(
+                    label: l10n.settingsShortBreak,
+                    minutes: shortBreak,
+                    min: kBreakMinutesMin,
+                    max: kBreakMinutesMax,
+                    tint: colors.mint,
+                    onChanged: (int value) => setState(() => _shortBreakMinutes = value),
+                    onChangeEnd: (int value) =>
+                        _write(AppSettingsTableCompanion(shortBreakMinutes: Value<int>(value))),
                   ),
-                  _SettingsRow(
-                    icon: PhosphorIconsDuotone.flame,
-                    iconColor: colors.ember,
-                    label: l10n.settingsStreakReminder,
-                    value: _onOff(l10n, settings.streakReminderEnabled),
-                    valueColor: _onOffColor(settings.streakReminderEnabled, colors),
-                    onTap: () => _write(
-                      AppSettingsTableCompanion(streakReminderEnabled: Value<bool>(!settings.streakReminderEnabled)),
-                    ),
-                  ),
-                  _SettingsRow(
-                    icon: PhosphorIconsDuotone.graduationCap,
-                    iconColor: colors.sky,
-                    label: l10n.settingsExamSelection,
-                    value: activeExam?.name ?? l10n.settingsNoExamSelected,
-                    valueColor: colors.neutral500,
-                    showCaret: true,
-                    onTap: () => showExamPickerSheet(context),
-                  ),
-                  _SettingsRow(
-                    icon: PhosphorIconsDuotone.clockCountdown,
-                    iconColor: colors.neutral500,
-                    label: l10n.settingsDayStartsAt,
-                    // SPEC.md §5.3'ün gün sınırı — dokunulacak bir hedefi yok,
-                    // bilgi satırı (bu yüzden `onTap: null` ve ok işareti yok).
-                    value: '',
-                    valueColor: colors.neutral500,
-                    onTap: null,
-                  ),
-                  _SettingsRow(
-                    icon: PhosphorIconsDuotone.star,
-                    iconColor: colors.ember,
-                    label: l10n.settingsRateApp,
-                    value: '',
-                    valueColor: colors.neutral500,
-                    showCaret: true,
-                    onTap: _openStoreListing,
-                  ),
-                  _SettingsRow(
-                    icon: PhosphorIconsDuotone.info,
-                    iconColor: colors.accent400,
-                    label: l10n.settingsAbout,
-                    value: '',
-                    valueColor: colors.neutral500,
-                    showCaret: true,
-                    onTap: () => _showInfoDialog(title: l10n.settingsAboutTitle, body: l10n.settingsAboutBody),
-                  ),
-                  _SettingsRow(
-                    icon: PhosphorIconsDuotone.shieldCheck,
-                    iconColor: colors.mint,
-                    label: l10n.settingsPrivacy,
-                    value: '',
-                    valueColor: colors.neutral500,
-                    showCaret: true,
-                    onTap: () => _showInfoDialog(title: l10n.settingsPrivacyTitle, body: l10n.settingsPrivacyBody),
-                  ),
-                  _SettingsRow(
-                    icon: PhosphorIconsDuotone.trash,
-                    iconColor: colors.rose,
-                    label: l10n.settingsResetData,
-                    value: '',
-                    valueColor: colors.neutral500,
-                    showCaret: true,
-                    onTap: _confirmReset,
+                  const SizedBox(height: 14),
+                  _DurationSlider(
+                    label: l10n.settingsLongBreak,
+                    minutes: longBreak,
+                    min: kBreakMinutesMin,
+                    max: kBreakMinutesMax,
+                    tint: colors.sky,
+                    onChanged: (int value) => setState(() => _longBreakMinutes = value),
+                    onChangeEnd: (int value) => _write(AppSettingsTableCompanion(longBreakMinutes: Value<int>(value))),
                   ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 10),
-          _RemoveAdsRow(colors: colors),
+          RiseIn(
+            delay: RiseIn.step * 2,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: ColoredBox(
+                // Satır aralarındaki 1px'lik boşluk bu zeminden görünüyor
+                // (prototipteki `gap:1px` + kapsayıcı arka planı).
+                color: const Color(0x12FFFFFF),
+                child: Column(
+                  children: <Widget>[
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.bell,
+                      iconColor: colors.accent400,
+                      label: l10n.settingsNotifications,
+                      value: _onOff(l10n, settings.notificationsEnabled),
+                      valueColor: _onOffColor(settings.notificationsEnabled, colors),
+                      onTap: () => _write(
+                        AppSettingsTableCompanion(notificationsEnabled: Value<bool>(!settings.notificationsEnabled)),
+                      ),
+                    ),
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.speakerHigh,
+                      iconColor: colors.accent400,
+                      label: l10n.settingsSound,
+                      value: _onOff(l10n, settings.soundEnabled),
+                      valueColor: _onOffColor(settings.soundEnabled, colors),
+                      onTap: () => _write(AppSettingsTableCompanion(soundEnabled: Value<bool>(!settings.soundEnabled))),
+                    ),
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.vibrate,
+                      iconColor: colors.accent400,
+                      label: l10n.settingsHaptics,
+                      value: _onOff(l10n, settings.hapticEnabled),
+                      valueColor: _onOffColor(settings.hapticEnabled, colors),
+                      onTap: () => _write(AppSettingsTableCompanion(hapticEnabled: Value<bool>(!settings.hapticEnabled))),
+                    ),
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.flame,
+                      iconColor: colors.ember,
+                      label: l10n.settingsStreakReminder,
+                      value: _onOff(l10n, settings.streakReminderEnabled),
+                      valueColor: _onOffColor(settings.streakReminderEnabled, colors),
+                      onTap: () => _write(
+                        AppSettingsTableCompanion(streakReminderEnabled: Value<bool>(!settings.streakReminderEnabled)),
+                      ),
+                    ),
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.graduationCap,
+                      iconColor: colors.sky,
+                      label: l10n.settingsExamSelection,
+                      value: activeExam?.name ?? l10n.settingsNoExamSelected,
+                      valueColor: colors.neutral500,
+                      showCaret: true,
+                      onTap: () => showExamPickerSheet(context),
+                    ),
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.clockCountdown,
+                      iconColor: colors.neutral500,
+                      label: l10n.settingsDayStartsAt,
+                      // SPEC.md §5.3'ün gün sınırı — dokunulacak bir hedefi yok,
+                      // bilgi satırı (bu yüzden `onTap: null` ve ok işareti yok).
+                      value: '',
+                      valueColor: colors.neutral500,
+                      onTap: null,
+                    ),
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.star,
+                      iconColor: colors.ember,
+                      label: l10n.settingsRateApp,
+                      value: '',
+                      valueColor: colors.neutral500,
+                      showCaret: true,
+                      onTap: _openStoreListing,
+                    ),
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.info,
+                      iconColor: colors.accent400,
+                      label: l10n.settingsAbout,
+                      value: '',
+                      valueColor: colors.neutral500,
+                      showCaret: true,
+                      onTap: () => _showInfoDialog(title: l10n.settingsAboutTitle, body: l10n.settingsAboutBody),
+                    ),
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.shieldCheck,
+                      iconColor: colors.mint,
+                      label: l10n.settingsPrivacy,
+                      value: '',
+                      valueColor: colors.neutral500,
+                      showCaret: true,
+                      onTap: () => _showInfoDialog(title: l10n.settingsPrivacyTitle, body: l10n.settingsPrivacyBody),
+                    ),
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.trash,
+                      iconColor: colors.rose,
+                      label: l10n.settingsResetData,
+                      value: '',
+                      valueColor: colors.neutral500,
+                      showCaret: true,
+                      onTap: _confirmReset,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          RiseIn(delay: RiseIn.step * 3, child: _RemoveAdsRow(colors: colors)),
           const SizedBox(height: 12),
-          Padding(
-            // Alt boşluk yüzen çubuğun kapladığı alan kadar: sorumluluk
-            // metni çubuğun altında kalmadan sonuna kadar kaydırılabilmeli.
-            padding: const EdgeInsets.only(bottom: kBottomNavReservedSpace),
-            child: Text(
-              l10n.settingsDisclaimer,
-              style: AppTypography.body(fontSize: 11.5, color: colors.neutral600, height: 1.5),
+          RiseIn(
+            delay: RiseIn.step * 4,
+            child: Padding(
+              // Alt boşluk yüzen çubuğun kapladığı alan kadar: sorumluluk
+              // metni çubuğun altında kalmadan sonuna kadar kaydırılabilmeli.
+              padding: const EdgeInsets.only(bottom: kBottomNavReservedSpace),
+              child: Text(
+                l10n.settingsDisclaimer,
+                style: AppTypography.body(fontSize: 11.5, color: colors.neutral600, height: 1.5),
+              ),
             ),
           ),
         ],

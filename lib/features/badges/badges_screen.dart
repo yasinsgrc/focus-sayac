@@ -2,14 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-import '../../core/widgets/app_back_button.dart';
 import '../../core/widgets/app_pill_button.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
+import '../../core/widgets/rise_in.dart';
 import '../../domain/badges/badge_definition.dart';
 import '../../domain/badges/badge_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
@@ -18,8 +16,8 @@ import '../../services/storage/app_database.dart';
 /// Ekran 04 — rozetler. Prototip satır 181-212 birebir. Prototipte bu ekranda
 /// alt gezinme çubuğu yoktu (yalnızca Ekran 02/06'da vardı — Faz 4 kararı) ama
 /// o zaman ekran çıkmaza giriyordu: jest navigasyonu kapalı cihazlarda geri
-/// dönmenin yolu kalmıyordu. Artık hem Ekran 05'teki geri oku hem de diğer
-/// dört sekmeye açılan çubuk burada.
+/// dönmenin yolu kalmıyordu. Artık çubuk beş ekranın hepsinde olduğu için
+/// çıkış yolu o; ayrı bir geri oku taşınmıyor.
 class BadgesScreen extends ConsumerWidget {
   const BadgesScreen({super.key});
 
@@ -60,46 +58,51 @@ class BadgesScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   const SizedBox(height: 8),
-                  const Align(alignment: Alignment.centerLeft, child: AppBackButton()),
-                  const SizedBox(height: 10),
-                  Text(
-                    AppLocalizations.of(context).badgesTitle,
-                    style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text),
+                  RiseIn(
+                    child: Text(
+                      AppLocalizations.of(context).badgesTitle,
+                      style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text),
+                    ),
                   ),
                   const SizedBox(height: 14),
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(999),
-                          child: SizedBox(
-                            height: 4,
-                            child: Stack(
-                              children: <Widget>[
-                                const DecoratedBox(decoration: BoxDecoration(color: Color(0x17FFFFFF))),
-                                FractionallySizedBox(
-                                  widthFactor: (unlockedCount / kBadgeCatalog.length).clamp(0, 1),
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(colors: <Color>[colors.mint, colors.ember, colors.mint]),
+                  RiseIn(
+                    delay: RiseIn.step,
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: SizedBox(
+                              height: 4,
+                              child: Stack(
+                                children: <Widget>[
+                                  const DecoratedBox(decoration: BoxDecoration(color: Color(0x17FFFFFF))),
+                                  FractionallySizedBox(
+                                    widthFactor: (unlockedCount / kBadgeCatalog.length).clamp(0, 1),
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: <Color>[colors.mint, colors.ember, colors.mint],
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '$unlockedCount/${kBadgeCatalog.length}',
-                        style: AppTypography.display(
-                          fontSize: 12,
-                          weight: FontWeight.w600,
-                          color: colors.neutral400,
-                        ).copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Text(
+                          '$unlockedCount/${kBadgeCatalog.length}',
+                          style: AppTypography.display(
+                            fontSize: 12,
+                            weight: FontWeight.w600,
+                            color: colors.neutral400,
+                          ).copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 22),
                   Expanded(
@@ -111,16 +114,22 @@ class BadgesScreen extends ConsumerWidget {
                             spacing: 12,
                             runSpacing: 12,
                             children: <Widget>[
-                              for (final BadgeDefinition definition in kBadgeCatalog)
+                              // Prototipte kartlar tek tek beliriyor; başlık ve
+                              // ilerleme çubuğu ilk iki basamağı aldığı için
+                              // ızgara üçüncüden devam ediyor.
+                              for (final (int index, BadgeDefinition definition) in kBadgeCatalog.indexed)
                                 SizedBox(
                                   width: cardWidth,
-                                  child: _BadgeCard(
-                                    definition: definition,
-                                    unlocked: unlockedKeys.contains(definition.key),
-                                    onTap: () => showBadgeUnlockDialog(
-                                      context,
+                                  child: RiseIn(
+                                    delay: RiseIn.step * (index + 2),
+                                    child: _BadgeCard(
                                       definition: definition,
                                       unlocked: unlockedKeys.contains(definition.key),
+                                      onTap: () => showBadgeUnlockDialog(
+                                        context,
+                                        definition: definition,
+                                        unlocked: unlockedKeys.contains(definition.key),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -306,9 +315,15 @@ class _BadgeUnlockDialog extends StatelessWidget {
               roleDeepColor: glow,
               // Dialog önce kapanıyor: açık kalsaydı Ekran 05'ten geri
               // dönüldüğünde kullanıcıyı yine kendi üstünde bulurdu.
+              //
+              // Geçiş `navigateToNavTab` üzerinden: düz `push` yığını
+              // sayaç→rozetler→başarı kartı diye üç kata çıkarıyordu, oysa
+              // `bottom_nav_bar.dart`taki kural sekmelerin kökün **tek** kat
+              // üstünde durması. Çubuktan gelen geçişle aynı yolu kullanmak
+              // ikisini de tek kuralda tutuyor.
               onPressed: () {
                 Navigator.of(context).pop();
-                unawaited(context.push(RoutePaths.storyCard));
+                navigateToNavTab(context, AppNavTab.storyCard, current: AppNavTab.badges);
               },
               weight: FontWeight.w600,
             ),
