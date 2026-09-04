@@ -46,7 +46,7 @@ Flutter 3.32+ / Dart 3.8+ · Material 3 · **Android-first** (iOS sonraki faz, m
 | Ekran uyanık | `wakelock_plus` |
 | Reklam | `google_mobile_ads` + UMP Consent SDK |
 | Satın alma | `in_app_purchase` (v1'de UI pasif — bkz. 7.3) |
-| Paylaşım | `share_plus` + `gal` + `pasteboard` |
+| Paylaşım | `share_plus` + `gal` |
 | Lokalizasyon | `flutter_localizations` + `intl` + ARB (tr varsayılan) |
 | Test | `flutter_test` + `mocktail` |
 
@@ -150,8 +150,9 @@ Tarihi geçmiş sınav seçiliyse → **Ekran 08**. Sayaç asla negatife düşme
 |---|---|
 | `{{ cardTag }}` `{{ cardBig }}` `{{ cardLine1 }}` `{{ cardLine2 }}` | Bugünkü odak + kalan gün + seri |
 | `{{ t.name }}` | `GECE MEŞALESİ` / `MİNİMAL SAYAÇ` / (3. şablon) — üçü de v1'de ücretsiz |
-| `focussayac.app` | Sabit filigran — kaldırma özelliği **yok** |
-| PAYLAŞ / Kaydet / Kopyala | `share_plus` / `gal` / `pasteboard` |
+| Alt imza | `focussayaç · Google Play` — üç şablonun da altında, şablonun vurgu renginde. (Eskiden filigran yoktu; Instagram paylaşım metnini yok saydığı için linkin görselin içinde de durması gerekti) |
+| PAYLAŞ / Kaydet | `share_plus` / `gal` |
+| Paylaşım metni | Kartın `shareHeadline`'ı + `kPlayStoreUrl`, `ShareParams.text` olarak — hedef uygulama metni düşürebilir, alt imza bunun yedeği |
 | `1080 × 1920 png` | `RenderRepaintBoundary`, `pixelRatio = 1080 / kartMantıksalGenişlik` |
 
 ### Ekran 06 — İstatistik

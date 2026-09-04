@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/story_card/story_card_text.dart';
+import '../../../l10n/gen/app_localizations.dart';
 
 /// Kartın **mantıksal** boyutu. Prototipin önizlemesi 248×441; buradaki
 /// 270×480 onunla aynı orana sahip (9:16) ama `pixelRatio`yu tam sayı
@@ -205,21 +205,20 @@ class _CardBody extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 22 * _s),
-        // SPEC.md Ekran 05: sabit filigran, kaldırma özelliği **yok**.
-        Row(
-          children: <Widget>[
-            Icon(PhosphorIconsFill.flame, size: 13 * _s, color: style.accent),
-            const SizedBox(width: 7 * _s),
-            Text(
-              'focussayac.app',
-              style: AppTypography.kicker(
-                fontSize: 8 * _s,
-                color: const Color(0xFFB2B6CA),
-                letterSpacingEm: 0.16,
-              ),
-            ),
-          ],
+        const SizedBox(height: 18 * _s),
+        // Alt imza (SPEC.md Ekran 05). Instagram gibi uygulamalar paylaşım
+        // metnini yok sayıp yalnızca görseli aldığı için kartın kendisi de
+        // nereden geldiğini söylemek zorunda. Rengi şablonun vurgusundan
+        // türüyor — üç kart için ayrı ayar gerekmiyor.
+        Text(
+          AppLocalizations.of(context).storyCardBrandFooter,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.kicker(
+            fontSize: 7.5 * _s,
+            color: style.accent.withValues(alpha: 0.7),
+            letterSpacingEm: 0.18,
+          ),
         ),
       ],
     );

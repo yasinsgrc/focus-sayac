@@ -9,6 +9,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/time/app_day.dart';
+import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
 import '../../core/widgets/rise_in.dart';
 import '../../domain/countdown/countdown_math.dart';
@@ -37,7 +38,7 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
   /// `RenderRepaintBoundary`ye ulaşıyor.
   final GlobalKey _cardKey = GlobalKey();
 
-  /// Aynı anda ikinci bir yakalama başlatılmasın (üç aksiyon da kartı
+  /// Aynı anda ikinci bir yakalama başlatılmasın (iki aksiyon da kartı
   /// yeniden çiziyor).
   bool _busy = false;
 
@@ -54,9 +55,15 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
       StoryCardExportResult.failed => messages.failed,
     };
     if (message == null) return;
-    ScaffoldMessenger.of(
+    showAppToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(message, style: AppTypography.body(fontSize: 13))));
+      message: message,
+      tone: switch (result) {
+        StoryCardExportResult.success => AppToastTone.success,
+        StoryCardExportResult.permissionDenied => AppToastTone.info,
+        StoryCardExportResult.failed => AppToastTone.error,
+      },
+    );
   }
 
   @override
@@ -139,44 +146,30 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
                     delay: RiseIn.step * 3,
                     child: _ShareButton(
                       enabled: !_busy,
-                      onPressed: () => _run(exporter.share, _Messages(failed: l10n.storyCardShareFailed)),
+                      onPressed: () => _run(
+                        // Paylaşım metni kartla aynı kaynaktan üretiliyor:
+                        // şablon değişince metin de kendiliğinden değişiyor.
+                        (GlobalKey key) => exporter.share(key, text: buildStoryCardShareText(l10n, text)),
+                        _Messages(failed: l10n.storyCardShareFailed),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
                   RiseIn(
                     delay: RiseIn.step * 4,
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: _SecondaryButton(
-                            icon: PhosphorIconsRegular.downloadSimple,
-                            label: l10n.storyCardSave,
-                            roleColor: colors.mint,
-                            enabled: !_busy,
-                            onPressed: () => _run(
-                              exporter.saveToGallery,
-                              _Messages(
-                                success: l10n.storyCardSaved,
-                                permissionDenied: l10n.storyCardSavePermissionDenied,
-                                failed: l10n.storyCardSaveFailed,
-                              ),
-                            ),
-                          ),
+                    child: _SecondaryButton(
+                      icon: PhosphorIconsRegular.downloadSimple,
+                      label: l10n.storyCardSave,
+                      roleColor: colors.mint,
+                      enabled: !_busy,
+                      onPressed: () => _run(
+                        exporter.saveToGallery,
+                        _Messages(
+                          success: l10n.storyCardSaved,
+                          permissionDenied: l10n.storyCardSavePermissionDenied,
+                          failed: l10n.storyCardSaveFailed,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _SecondaryButton(
-                            icon: PhosphorIconsRegular.copy,
-                            label: l10n.storyCardCopy,
-                            roleColor: colors.sky,
-                            enabled: !_busy,
-                            onPressed: () => _run(
-                              exporter.copyToClipboard,
-                              _Messages(success: l10n.storyCardCopied, failed: l10n.storyCardCopyFailed),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -326,7 +319,7 @@ class _ShareButton extends StatelessWidget {
   }
 }
 
-/// Prototip v2 satır 240-241 — "Kaydet" / "Kopyala".
+/// Prototip v2 satır 240 — "Kaydet".
 class _SecondaryButton extends StatelessWidget {
   const _SecondaryButton({
     required this.icon,

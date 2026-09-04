@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gal/gal.dart';
-import 'package:pasteboard/pasteboard.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -16,13 +15,13 @@ final Provider<StoryCardExporter> storyCardExporterProvider = Provider<StoryCard
   return const StoryCardExporter();
 });
 
-/// Ekran 05'in üç aksiyonunun sonucu. Ekran bunları kullanıcıya farklı
+/// Ekran 05'in iki aksiyonunun sonucu. Ekran bunları kullanıcıya farklı
 /// mesajlarla gösteriyor — özellikle [permissionDenied], "kaydedilemedi"
 /// ile aynı şey değil (kullanıcının yapabileceği bir şey var).
 enum StoryCardExportResult { success, permissionDenied, failed }
 
-/// Başarı kartını PNG'ye çevirip paylaşan/kaydeden/kopyalayan servis
-/// (SPEC.md Ekran 05: `share_plus` / `gal` / `pasteboard`).
+/// Başarı kartını PNG'ye çevirip paylaşan/kaydeden servis
+/// (SPEC.md Ekran 05: `share_plus` / `gal`).
 ///
 /// Metotlar `Riverpod` üzerinden geldiği ve sanal olduğu için testlerde alt
 /// sınıfla değiştirilebiliyor: eklenti kanalı olmayan koşumlarda gerçek
@@ -49,7 +48,16 @@ class StoryCardExporter {
     }
   }
 
-  Future<StoryCardExportResult> share(GlobalKey boundaryKey) async {
+  /// Kartı PNG olarak, [text] ile birlikte sistem paylaşım sayfasına verir.
+  ///
+  /// Metnin **içeriğini** çağıran belirliyor: hangi şablonun hangi cümleyi
+  /// ürettiği Ekran 05'in ve `AppLocalizations`'ın işi, bu servisin değil.
+  ///
+  /// Metnin hedefe ulaşacağı garanti değil — Android'de `EXTRA_TEXT`, iOS'ta
+  /// ikinci etkinlik öğesi olarak gidiyor ve alan uygulama ikisinden birini
+  /// düşürebiliyor (Instagram yalnızca görseli alır). Bu yüzden kartın kendi
+  /// alt imzası da var; bkz. `story_card_view.dart`.
+  Future<StoryCardExportResult> share(GlobalKey boundaryKey, {required String text}) async {
     final Uint8List? bytes = await capturePng(boundaryKey);
     if (bytes == null) return StoryCardExportResult.failed;
     try {
@@ -59,7 +67,7 @@ class StoryCardExporter {
       final File file = File('${directory.path}/$fileBaseName.png');
       await file.writeAsBytes(bytes);
       await SharePlus.instance.share(
-        ShareParams(files: <XFile>[XFile(file.path, mimeType: 'image/png')]),
+        ShareParams(files: <XFile>[XFile(file.path, mimeType: 'image/png')], text: text),
       );
       return StoryCardExportResult.success;
     } on PlatformException {
@@ -84,19 +92,6 @@ class StoryCardExporter {
       return error.type == GalExceptionType.accessDenied
           ? StoryCardExportResult.permissionDenied
           : StoryCardExportResult.failed;
-    } on PlatformException {
-      return StoryCardExportResult.failed;
-    } on MissingPluginException {
-      return StoryCardExportResult.failed;
-    }
-  }
-
-  Future<StoryCardExportResult> copyToClipboard(GlobalKey boundaryKey) async {
-    final Uint8List? bytes = await capturePng(boundaryKey);
-    if (bytes == null) return StoryCardExportResult.failed;
-    try {
-      await Pasteboard.writeImage(bytes);
-      return StoryCardExportResult.success;
     } on PlatformException {
       return StoryCardExportResult.failed;
     } on MissingPluginException {

@@ -10,6 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:focussayac/core/app_links.dart';
 import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/domain/story_card/story_card_text.dart';
 import 'package:focussayac/features/badges/badges_screen.dart';
@@ -133,6 +134,7 @@ void main() {
         big: '2:15',
         line1: 'Bugün 2 saat 15 dakika odaklandım.',
         line2: "YKS 2027'ye 132 gün kaldı",
+        shareHeadline: 'Bugün 2 saat 15 dakika odaklandım.',
       ),
     );
 
@@ -155,6 +157,7 @@ void main() {
       big: '999',
       line1: 'Bugün 12 saat 59 dakika odaklandım ve bu cümle bilerek çok uzun.',
       line2: "ÇOK UZUN BİR SINAV ADI VE OTURUM ETİKETİ 2027'ye 999 gün kaldı",
+      shareHeadline: 'Bugün 12 saat 59 dakika odaklandım ve bu cümle bilerek çok uzun.',
     );
 
     for (final StoryCardTemplate template in StoryCardTemplate.values) {
@@ -234,8 +237,64 @@ void main() {
 
     expect(find.text('BAŞARI KARTI'), findsOneWidget);
     expect(find.text('1080 × 1920 PNG'), findsOneWidget);
-    // Filigran kaldırılamaz (SPEC.md Ekran 05).
-    expect(find.text('focussayac.app'), findsOneWidget);
+    // Alt imza kartın içinde: Instagram paylaşım metnini yok saydığı için
+    // linkin görselin kendisinde de durması gerekiyor.
+    expect(find.text('focussayaç · Google Play'), findsOneWidget);
+
+    await _disposeTree(tester);
+  });
+
+  testWidgets('alt imza üç şablonda da çiziliyor', (WidgetTester tester) async {
+    _usePhoneSurface(tester);
+    for (final StoryCardTemplate template in StoryCardTemplate.values) {
+      await _pumpCard(
+        tester,
+        template: template,
+        text: const StoryCardText(
+          tag: 'SERİ',
+          big: '6',
+          line1: 'gün üst üste odaklandım.',
+          line2: "Yarın 7'ye çıkıyor",
+          shareHeadline: '6 gün üst üste odaklandım.',
+        ),
+      );
+      expect(find.text('focussayaç · Google Play'), findsOneWidget, reason: '$template');
+    }
+
+    await _disposeTree(tester);
+  });
+
+  testWidgets('PAYLAŞ görselin yanında mağaza adresini de gönderiyor',
+      (WidgetTester tester) async {
+    _usePhoneSurface(tester);
+    await initializeDateFormatting('tr_TR');
+    final AppDatabase database = await _newDatabase(tester);
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final _RecordingExporter exporter = _RecordingExporter();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(database),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          adServiceProvider.overrideWithValue(AdService.disabled()),
+          notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
+          onboardingCompletedAtLaunchProvider.overrideWithValue(true),
+          storyCardExporterProvider.overrideWithValue(exporter),
+        ],
+        child: localizedTestApp(const StoryCardScreen()),
+      ),
+    );
+    await _settle(tester);
+
+    await tester.tap(find.text('PAYLAŞ'));
+    await _settle(tester);
+
+    // Varsayılan şablon GECE MEŞALESİ — cümlesi tam, sonunda mağaza adresi.
+    expect(exporter.sharedText, isNotNull);
+    expect(exporter.sharedText, startsWith('Bugün '));
+    expect(exporter.sharedText, endsWith('focussayaç ile: $kPlayStoreUrl'));
 
     await _disposeTree(tester);
   });
@@ -280,5 +339,18 @@ class _DeniedExporter extends StoryCardExporter {
   @override
   Future<StoryCardExportResult> saveToGallery(GlobalKey boundaryKey) async {
     return StoryCardExportResult.permissionDenied;
+  }
+}
+
+/// Sistem paylaşım sayfasını açmadan, ekranın gönderdiği metni yakalar.
+class _RecordingExporter extends StoryCardExporter {
+  _RecordingExporter();
+
+  String? sharedText;
+
+  @override
+  Future<StoryCardExportResult> share(GlobalKey boundaryKey, {required String text}) async {
+    sharedText = text;
+    return StoryCardExportResult.success;
   }
 }

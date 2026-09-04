@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:focussayac/core/app_links.dart';
 import 'package:focussayac/domain/story_card/story_card_text.dart';
 
 import '../../support/localized_test_app.dart';
@@ -98,6 +99,49 @@ void main() {
 
       expect(text.big, '0');
       expect(text.line2, 'Bugün bir pomodoro seriyi başlatır.');
+    });
+  });
+
+  group('paylaşım metni', () {
+    test('her şablonda tam cümle + mağaza adresi', () {
+      // Kartta sayı (`big`) ve satır (`line1`) ayrı duruyor; paylaşımda
+      // "gün kaldı. focussayaç ile:" gibi yarım bir cümle çıkmamalı.
+      expect(
+        buildStoryCardShareText(testL10n, _text(StoryCardTemplate.nightTorch)),
+        'Bugün 2 saat 15 dakika odaklandım. — focussayaç ile: $kPlayStoreUrl',
+      );
+      expect(
+        buildStoryCardShareText(testL10n, _text(StoryCardTemplate.minimal)),
+        "YKS 2027'ye 132 gün kaldı — focussayaç ile: $kPlayStoreUrl",
+      );
+      expect(
+        buildStoryCardShareText(testL10n, _text(StoryCardTemplate.streak)),
+        '6 gün üst üste odaklandım. — focussayaç ile: $kPlayStoreUrl',
+      );
+    });
+
+    test('veri yokken uydurma sayı paylaşılmıyor', () {
+      final String noExam = buildStoryCardShareText(
+        testL10n,
+        _text(
+          StoryCardTemplate.minimal,
+          examName: null,
+          examDateText: null,
+          daysRemaining: null,
+        ),
+      );
+      // Kartın "—" ve "hedef seçilmedi." parçaları metne sızmamalı.
+      expect(noExam, 'Odaklanmaya devam ediyorum. — focussayaç ile: $kPlayStoreUrl');
+
+      final String noStreak =
+          buildStoryCardShareText(testL10n, _text(StoryCardTemplate.streak, streak: 0));
+      expect(noStreak, isNot(contains('0 gün')));
+      expect(noStreak, contains(kPlayStoreUrl));
+    });
+
+    test('mağaza adresindeki paket adı applicationId ile aynı', () {
+      // `android/app/build.gradle.kts` içindeki `applicationId`.
+      expect(kPlayStoreUrl, endsWith('?id=com.focussayac.focussayac'));
     });
   });
 

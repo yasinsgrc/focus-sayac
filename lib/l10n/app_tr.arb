@@ -85,6 +85,7 @@
   "focusRunning": "odak sürüyor",
   "focusPaused": "duraklatıldı",
   "focusHintRunning": "Ekran açık kalır · bitişte bildirim kurulu",
+  "focusHintRunningNoNotification": "Ekran açık kalır · bildirimler kapalı, bitişte uyarı yok",
   "focusHintPaused": "Meşale soldu — devam etmek için oynat",
   "focusAdHidden": "reklam gizli",
 
@@ -178,14 +179,24 @@
   "storyCardTemplateStreak": "SERİ",
   "storyCardShare": "PAYLAŞ",
   "storyCardSave": "Kaydet",
-  "storyCardCopy": "Kopyala",
+  "storyCardBrandFooter": "focussayaç · Google Play",
+  "storyCardShareMessage": "{headline} — focussayaç ile: {url}",
+  "@storyCardShareMessage": {
+    "placeholders": {
+      "headline": { "type": "String" },
+      "url": { "type": "String" }
+    }
+  },
+  "storyCardShareNoTargetHeadline": "Odaklanmaya devam ediyorum.",
+  "storyCardShareStreakHeadline": "{days} gün üst üste odaklandım.",
+  "@storyCardShareStreakHeadline": {
+    "placeholders": { "days": { "type": "int" } }
+  },
   "storyCardExportSize": "1080 × 1920 PNG",
   "storyCardShareFailed": "Kart paylaşılamadı.",
   "storyCardSaved": "Kart galeriye kaydedildi.",
   "storyCardSavePermissionDenied": "Galeriye kaydetmek için izin gerekiyor.",
   "storyCardSaveFailed": "Kart kaydedilemedi.",
-  "storyCardCopied": "Kart panoya kopyalandı.",
-  "storyCardCopyFailed": "Kart kopyalanamadı.",
   "storyCardTodayTag": "BUGÜNÜN ODAĞI",
   "storyCardTodayLine": "Bugün {duration} odaklandım.",
   "@storyCardTodayLine": {
