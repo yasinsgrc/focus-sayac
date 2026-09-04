@@ -1,15 +1,17 @@
 # FocusSayaç — Kalan İş Sırası
 
-Durum: **Faz 0-13 bitti**, **Faz 14 ve 15'in kod tarafı bitti** (geri sayım,
-sınav seçimi, odak/mola durum makinesi, bildirimler, rozetler, başarı kartı +
-export, istatistik, onboarding + izinler + UMP, reklamlar + satın alma,
-ayarlar, ARB yerelleştirme, performans geçişi, testler + yayın paketi).
-`flutter analyze` 0/0, 159 test geçiyor. Kaynak plan: `SPEC.md` §8.
+Durum: **Faz 0-13 bitti**, **Faz 14 ve 15'in kod tarafı bitti**, **SPEC §10 DoD
+kapanışı bitti** (geri sayım, sınav seçimi, odak/mola durum makinesi,
+bildirimler, rozetler, başarı kartı + export, istatistik, onboarding + izinler +
+UMP, reklamlar + satın alma, ayarlar, ARB yerelleştirme, performans geçişi,
+testler + yayın paketi, demo sayı/palet taramaları).
+`flutter analyze` 0/0, 167 test geçiyor. Kaynak plan: `SPEC.md` §8.
 Kararlar: `DECISIONS.md`. Yayın adımları: `docs/play/RELEASE.md`.
 
-Depoda yapılabilecek iş bitti; kalan üç kutu dış kaynak bekliyor: **cihazda**
+Depoda yapılabilecek iş bitti; kalan dört kutu dış kaynak bekliyor: **cihazda**
 `--profile` 60 fps ölçümü (madde 8), **cihazda** store ekran görüntüleri ve
-**AdMob hesabı** gerektiren gerçek reklam kimlikleri (madde 9).
+**AdMob hesabı** gerektiren gerçek reklam kimlikleri (madde 9), **cihazda**
+prototiple yan yana görsel karşılaştırma (madde 10).
 
 Aşağıdaki maddeler **teste/yayına çıkma önceliğine** göre sıralı. Her madde tek
 oturumda (`/clear` sonrası) yapılabilecek şekilde bağımsız yazıldı: sırayla git,
@@ -258,11 +260,49 @@ engel.
 
 ---
 
+## 10. SPEC §10 DoD kapanışı 🟡 kod tarafı bitti, iki kutu cihaz bekliyor
+
+Aşağıdaki kontrol listesinin depodan kapatılabilecek kutuları kapatıldı, kalan
+ikisi tek bir dış kaynağa — bağlı bir Android cihaza — bağlandı. 167 test
+geçiyor (+8). Kararlar: `DECISIONS.md` "SPEC §10 DoD kapanışı".
+
+- **Demo sayıları artık taramayla pinli** (`test/prototype/demo_numbers_scan_test.dart`).
+  SPEC "demo sayılarının hiçbiri **kodda** yok" dediği için kontrol ekran değil
+  kaynak düzeyinde: bir widget testi yalnız o an çizdiği ağacı görür, sızıntının
+  hangi ekrandan geleceğiyse önceden bilinmiyor (madde 7 ve 8'in tarama kalıbı).
+  Altı demo değer de (`132`, `42`, `%86`, `6`, `3/7`, `11`) iki yüzeyde aranıyor:
+  ARB değerleri ve `lib/` Dart dize sabitleri. Sayılar **rakam koşusu** olarak
+  karşılaştırılıyor, alt dize olarak değil — yoksa `1080 × 1920 PNG` ve AdMob
+  test kimliği yanlış alarm verir, tek haneli `6` ise taramayı kullanılamaz
+  kılardı. Sonuç: hiçbir yüzeyde tek bir demo değer yok; ekrana çıkan her sayı
+  kullanıcının kendi verisinden türüyor.
+- **Palet/tipografi prototipten ayrıştırılıp doğrulanıyor**
+  (`test/prototype/prototype_palette_test.dart`). `app_colors.dart`ın "prototipin
+  `:root`undan birebir" iddiası bugüne kadar yalnızca bir yorum satırıydı. Test
+  tasarım dosyasını kaynak kabul edip dokuz rol rengini, `body` zeminini,
+  `--chrome` gradyanının renk ve duraklarını, `--disp`/`--mono` ailelerini ve
+  `letter-spacing` oranlarını koda karşı sınıyor — hepsi eşleşiyor.
+- **12 ekranın metin denetimi:** prototipteki her kullanıcı metninin ARB'de
+  birebir karşılığı var; prototipte sabit görünen sayıların tamamı (`{days} gün
+  seri`, `ODAK {position}/4`, `{position}. pomodoro bitti`, `$unlockedCount/7`)
+  placeholder'a bağlı.
+- **İki tarama da mutasyonla doğrulandı:** ARB'ye `11 GÜN` sokulunca ve `ember`
+  bir bit kaydırılınca ikisi de düşüyor.
+
+**Kalan (ikisi de aynı engelde):** `--profile` 60 fps ölçümü (madde 8) ve
+"her ekran prototiple yan yana ayırt edilemiyor" görsel karşılaştırması. İkincinin
+mekanik kısmı yukarıda doğrulandı, ama maddenin sözü *yan yana konduğunda* — bu
+bir render kararı ve bağlı bir cihaz istiyor (madde 9'un store ekran
+görüntüleriyle aynı engel). Bu makinede Android cihaz/emülatör yok.
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı
-- [ ] Her ekran prototiple ayırt edilemiyor
-- [ ] Demo sayılarının hiçbiri kodda yok (132, 42, %86, 6, 3/7, 11)
+- [ ] Her ekran prototiple ayırt edilemiyor *(madde 10 — metin/palet/tipografi
+      doğrulandı, yan yana görsel karşılaştırma cihaz gerektiriyor)*
+- [x] Demo sayılarının hiçbiri kodda yok (132, 42, %86, 6, 3/7, 11)
 - [x] 10 dk arka plandan dönüşte sayaç doğru
 - [x] Uygulama öldürülüp açıldığında aktif seans kurtarılıyor
 - [x] Cihaz saati geriye alındığında seans yanlış "tamamlandı" sayılmıyor
@@ -274,7 +314,7 @@ engel.
 - [ ] Odak ekranı `--profile` modda sürekli 60 fps *(madde 8 — cihaz gerekiyor)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(159 test, `flutter test`)*
+- [x] Testler geçiyor *(167 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

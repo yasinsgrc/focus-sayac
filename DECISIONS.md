@@ -887,3 +887,38 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   AdMob hesabı gerektiriyor (kod tarafı hazır: `--dart-define`, kod değişikliği yok); ekran
   görüntüleri bağlı bir Android cihaz gerektiriyor — madde 8'in `--profile` ölçümüyle aynı
   engel. İkisi de `docs/play/RELEASE.md`in kontrol listesinde açık kutu olarak duruyor.
+
+## SPEC §10 DoD kapanışı (ROADMAP madde 10)
+
+- **Demo sayıları için ekran testi değil kaynak taraması.** SPEC §10 "demo sayılarının
+  hiçbiri **kodda** yok" diyor; bir widget testi yalnız o an çizdiği ağacı görür, oysa
+  sızıntının hangi ekrandan geleceği önceden bilinmiyor. Tarama madde 7'nin ("hard-coded
+  Türkçe metin yok") ve madde 8'in (`runtime_blur_scan_test.dart`) yaklaşımını sürdürüyor:
+  `test/prototype/demo_numbers_scan_test.dart`.
+- **Sayılar alt dize olarak değil rakam koşusu olarak aranıyor.** `132|42|86|6|11` düz
+  `contains` ile arandığında `1080 × 1920 PNG` ve AdMob test kimliği (`3940256099942544`)
+  yanlış alarm verirdi; tek haneli `6` ise taramayı tamamen kullanılamaz kılardı. Maksimal
+  basamak dizileri çıkarılıp **tam eşitlik** aranınca altı demo değerin hepsi, `6` dâhil,
+  yanlış alarmsız kontrol edilebiliyor. Rozet sayacı `3/7` rakam koşusu olarak masum ('3'
+  ve '7') olduğu için ayrıca birebir dizeyle aranıyor.
+- **Taranan iki yüzey: ARB ve Dart dize sabitleri.** Faz 13'ten beri kullanıcıya görünen
+  metnin tek kaynağı ARB, dolayısıyla ekrana çıkan bir sayının saklanabileceği yer orası;
+  Dart tarafı ikinci ağ olarak taranıyor. Üretilen kod (`l10n/gen/`, `*.g.dart`,
+  `*.freezed.dart`) dışarıda — elle yazılmıyor ve kaynağı zaten taranıyor.
+- **Palet prototipten ayrıştırılarak doğrulanıyor.** `app_colors.dart` başından beri
+  "prototipteki `:root` değişkenlerinden birebir" diyordu ama bu yalnızca bir yorumdu.
+  `test/prototype/prototype_palette_test.dart` tasarım dosyasını **kaynak** kabul edip
+  `--ember … --sky-deep`, `body` zemini, `--chrome` gradyanının renk/durakları ve
+  `--disp`/`--mono` ailelerini ayrıştırıp koda karşı sınıyor. Nötrler (#9397ab, #75798c …)
+  prototipte satır içi yazıldığı için `:root`ta yok, kapsam dışı.
+- **İki tarama da mutasyonla doğrulandı.** ARB'ye `11 GÜN` sokulunca ve `ember`
+  `0xFFFFB03A → 0xFFFFB03B` yapılınca ikisi de düşüyor; yani boş bir listeyle sessizce
+  "geçen" testler değiller. Karşı kontrol ayrıca test içinde de duruyor.
+- **"Her ekran prototiple ayırt edilemiyor" kutusu işaretlenmedi.** Mekanik olarak
+  doğrulanabilecek her şey doğrulandı: 12 ekranın tüm prototip metni ARB'de birebir
+  karşılığını buluyor (demo sayılar placeholder'a bağlı), palet/tipografi prototiple
+  eşleşiyor. Ama maddenin sözü "**yan yana konduğunda**" — bu bir render kararı ve bağlı
+  bir Android cihaz istiyor; madde 8'in `--profile` ölçümü ve madde 9'un store ekran
+  görüntüleriyle aynı engel. Mekanik kısmı "doğrulandı" diye işaretleyip görsel kısmı
+  sessizce atlamak, kutuyu yanlış kapatmak olurdu.
+
