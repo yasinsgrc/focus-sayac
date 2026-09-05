@@ -14,6 +14,7 @@ import '../../core/time/app_day.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
 import '../../core/widgets/rise_in.dart';
 import '../../domain/countdown/countdown_math.dart';
+import '../../domain/exams/exam_picker_request.dart';
 import '../../domain/exams/exam_providers.dart';
 import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_phase.dart';
@@ -120,6 +121,16 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     final AsyncValue<Exam?> activeExamAsync = ref.watch(activeExamProvider);
+
+    // Ana ekran widgetindan gelen "sinav sec" istegi (Faz 16). Ekran zaten
+    // acikken geldigi icin `autoOpenSheet` parametresi ise yaramiyor:
+    // `go_router` ayni konuma gidince bu State yeniden kurulmuyor.
+    ref.listen<int>(examPickerRequestProvider, (int? previous, int next) {
+      if (previous == null || next <= previous) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) showExamPickerSheet(context);
+      });
+    });
 
     ref.listen<AsyncValue<Exam?>>(activeExamProvider, (AsyncValue<Exam?>? previous, AsyncValue<Exam?> next) {
       final Exam? exam = next.value;

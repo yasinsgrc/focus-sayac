@@ -7,6 +7,7 @@ import 'package:home_widget/home_widget.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/router/route_paths.dart';
+import '../../domain/exams/exam_picker_request.dart';
 import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_phase.dart';
 
@@ -54,7 +55,12 @@ class _WidgetLaunchScopeState extends ConsumerState<WidgetLaunchScope> {
       case RoutePaths.focusSession:
         await _openFocusSession(router, autostart: uri.queryParameters['autostart'] == '1');
       case RoutePaths.countdown:
-        router.go(RoutePaths.countdown, extra: uri.queryParameters['pick'] == '1');
+        router.go(RoutePaths.countdown);
+        // `extra` yeterli degil: uygulama zaten Ekran 02'deyse ayni konuma
+        // gitmek State'i yeniden kurmuyor ve parametre okunmuyor.
+        if (uri.queryParameters['pick'] == '1') {
+          ref.read(examPickerRequestProvider.notifier).request();
+        }
       case RoutePaths.stats:
       case RoutePaths.examExpired:
         router.go(path);

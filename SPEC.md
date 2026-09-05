@@ -412,4 +412,11 @@ aynıdır.
 - [x] Sınav seçilmemiş / bugün / geçmiş durumları ayrı ayrı çiziliyor
 - [x] Sayaç negatife düşmüyor (`coerceAtLeast(0)`)
 - [x] Widget'tan gelen odak isteği süren seansı sıfırlamıyor
-- [ ] Emülatörde beş widget görsel doğrulaması
+- [x] Emülatörde görsel doğrulama (API 36): Halka, Şerit, Seri gerçek veriyle
+      doğru çiziliyor; beşi de widget seçicide doğru ad/boyut/önizlemeyle
+      listeleniyor; Halka yeniden başlatmadan sağ çıkıyor
+- [x] Derin bağlantılar: Seri → `/stats`, Hızlı Odak → `/focus?autostart=1`
+      (seans gerçekten başlıyor), süren seansta ikinci kez tetiklenince
+      sıfırlanmıyor, `?pick=1` sınav seçiciyi açıyor
+- [ ] Hızlı Odak ve Panorama widget'larının ana ekranda yerleşik görünümü
+      (niyetleri doğrulandı, kartların kendisi emülatörde yerleştirilemedi)

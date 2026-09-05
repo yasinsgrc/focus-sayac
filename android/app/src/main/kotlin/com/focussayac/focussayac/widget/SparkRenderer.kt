@@ -19,6 +19,7 @@ object SparkRenderer {
 
     private const val BAR_COUNT = 7
     private const val PAST_ALPHA = 0x4D
+    private const val CORNER_RATIO = 0.26f
 
     fun render(
         context: Context,
@@ -32,9 +33,13 @@ object SparkRenderer {
 
         val gapPx = widthPx * 0.055f
         val barWidth = (widthPx - gapPx * (BAR_COUNT - 1)) / BAR_COUNT
-        val radius = barWidth / 2f
-        // Bos gunun gorunur kalmasi icin taban: yariciptan kucuk olamaz,
-        // yoksa yuvarlatilmis dikdortgen kendini yiyor.
+        // Yaricap bilerek kucuk. barWidth/2 denenmisti: butun gunler sifirken
+        // sutun yuksekligi genisligine esitleniyor ve yuvarlatilmis
+        // dikdortgen tam daireye donusuyordu; ImageView fitXY ile gerince de
+        // ovallesiyordu. Sutunlar sutun gibi okunmali.
+        val radius = barWidth * CORNER_RATIO
+        // Odak yapilmamis gun bosluk degil, ince bir taban birakir: bos hafta
+        // "veri yok" degil "sifir" olarak okunmali.
         val minHeight = radius * 2f
 
         val maxValue = (values.maxOrNull() ?: 0).coerceAtLeast(1)

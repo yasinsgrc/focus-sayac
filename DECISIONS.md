@@ -1150,3 +1150,50 @@ gerçek bir iş yapmıyordu.
 ve bu iş için kurmak kapsamı ciddi büyütürdü. Dart tarafı (sözleşme, servis,
 palet) test edilmiş durumda; Kotlin çizim katmanının doğrulaması emülatörde
 görsel olarak yapılacak — Faz 16 DoD'sinde açık madde olarak duruyor.
+
+---
+
+## Madde 16: Widget'ların emülatör doğrulaması ve çıkan üç hata
+
+Faz 16'nın DoD'sinde açık duran görsel doğrulama yapıldı (API 36 emülatörü).
+Üç gerçek hata çıktı, üçü de düzeltildi.
+
+**1. Halka widget'ının görseli hiç çizilmiyordu.** `widget_ring.xml` içindeki
+`ImageView`a dikey bir `LinearLayout` altında `layout_width="0dp"` verilmişti.
+Ağırlık dikey yerleşimde yüksekliğe uygulanır, genişliğe değil; görünüm sıfır
+genişlikte kalıyordu. Panorama'da aynı halka görünüyordu çünkü oradaki kapsayıcı
+yatay. `match_parent` ile düzeltildi.
+
+**2. Haftalık sütunlar oval çiziliyordu.** `SparkRenderer` köşe yarıçapını
+`barWidth / 2` alıyordu; bütün günler sıfırken sütun yüksekliği taban değerine
+düşüyor, yuvarlatılmış dikdörtgen tam daireye dönüşüyor ve `ImageView`ın
+`fitXY` germesi onu ovalleştiriyordu. Yarıçap `barWidth * 0.26`ya indirildi.
+
+**3. `?pick=1` sınav seçiciyi açmıyordu.** Ekran 02 seçiciyi yalnızca
+`initState` içinde, `autoOpenSheet` parametresinden açıyor. Widget isteği
+uygulama zaten geri sayım ekranındayken geliyor ve `go_router` aynı konuma
+gidince State yeniden kurulmuyor — parametre bir daha hiç okunmuyordu.
+`examPickerRequestProvider` eklendi: değer değil **değişim** anlamlı, böylece
+arka arkaya iki istek seçiciyi iki kez açıyor. Ekran 02 `ref.listen` ile
+dinliyor.
+
+**Doğrulananlar.** Halka/Şerit/Seri gerçek veriyle doğru (288 gün, `288g 08s`,
+`0 gün seri`, ember dolgu %28 = 1−288/400). Beş widget da seçicide doğru
+Türkçe ad, boyut ve önizlemeyle listeleniyor. Halka cihaz yeniden başladıktan
+sonra uygulama hiç açılmadan doğru sayıyla yeniden çiziliyor. Seri → `/stats`,
+Hızlı Odak → `/focus?autostart=1` (seans gerçekten başlıyor). Süren seansta
+autostart niyeti tekrar gönderildiğinde sayaç 24:50'den 24:19'a **devam etti**,
+25:00'a dönmedi — iptal diyaloğu "1 dakika 12 saniye odaklandın" diyerek tek
+seans olduğunu doğruladı.
+
+**Doğrulanamayan.** Hızlı Odak ve Panorama kartlarının ana ekrandaki yerleşik
+görünümü. `adb input draganddrop` ile widget yerleştirme güvenilir çalışmadı
+(4×2 için ekranda yer kalmıyordu ve seçici koordinatları kayıyordu). İkisinin
+de niyet/rota tarafı doğrulandı, çizim tarafı ise zaten doğrulanmış
+`RingRenderer` ve `SparkRenderer`ı kullanıyor; kalan risk yalnızca yerleşim.
+
+**Emülatör bir kez çöktü, sebebi bizim kodumuz değildi.** Gece yarısı cihaz
+saati geriye sıçrayınca AOSP'nin `Notifier.notifyWakelockRelease` yolu negatif
+süre üretip `AppOpsService` içinde `Invalid @IntRange(from = -1): -38649` ile
+system_server'ı düşürdü. Stack'te uygulamaya ait tek satır yok; soğuk
+başlatmayla geçildi.
