@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
 import 'app_typography.dart';
 
-/// FocusSayaç tek teması: prototip yalnız koyu zeminde tasarlandı, açık tema yok.
-ThemeData buildAppTheme() {
-  final AppColors colors = AppColors.dark();
+/// Koyu tema — prototipin tasarlandığı zemin, uygulamanın varsayılanı.
+ThemeData buildAppTheme() => _themeFrom(AppColors.dark());
+
+/// Açık tema. Prototipte karşılığı yok; [AppColors.light] tokenlarının
+/// anlamsal eşlemesi üzerine kuruluyor (Faz 17).
+ThemeData buildAppLightTheme() => _themeFrom(AppColors.light());
+
+/// İki tema da aynı iskeleti paylaşıyor — fark yalnız hangi [AppColors]
+/// setinin verildiği. Tipografi, yuvarlaklık ve boşluklar temadan bağımsız.
+ThemeData _themeFrom(AppColors colors) {
+  final bool isDark = colors.brightness == Brightness.dark;
   return ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
+    brightness: colors.brightness,
     scaffoldBackgroundColor: colors.bg,
     canvasColor: colors.bg,
     fontFamily: AppFonts.body,
-    colorScheme: ColorScheme.dark(
+    colorScheme: ColorScheme(
+      brightness: colors.brightness,
       surface: colors.bg,
       onSurface: colors.text,
       primary: colors.ember,
@@ -34,6 +44,13 @@ ThemeData buildAppTheme() {
       bodyMedium: AppTypography.body(fontSize: 14, color: colors.text),
       bodySmall: AppTypography.body(fontSize: 13, color: colors.neutral400),
       labelSmall: AppTypography.kicker(fontSize: 10, color: colors.neutral600),
+    ),
+    // Durum çubuğu ikonları zeminin tersi olmalı. Ekranların hiçbirinde
+    // `AppBar` yok ama `AppBarTheme.systemOverlayStyle` uygulama genelindeki
+    // varsayılanı da belirliyor; açıkça verilmezse açık temada beyaz ikonlar
+    // beyaz zemine basılıyor.
+    appBarTheme: AppBarTheme(
+      systemOverlayStyle: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
     ),
     extensions: <ThemeExtension<dynamic>>[colors],
   );

@@ -99,7 +99,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0x1FFFFFFF)),
+                        border: Border.all(color: colors.fillMedium),
                       ),
                       child: Icon(PhosphorIconsRegular.x, size: 16, color: colors.neutral400),
                     ),
@@ -208,7 +208,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(color: const Color(0x0AFFFFFF), borderRadius: BorderRadius.circular(18)),
+                decoration: BoxDecoration(color: colors.fillFaint, borderRadius: BorderRadius.circular(18)),
                 child: Row(
                   children: <Widget>[
                     Icon(PhosphorIconsFill.timer, size: 20, color: colors.ember),
@@ -307,15 +307,15 @@ class _TextField extends StatelessWidget {
         hintText: hint,
         hintStyle: AppTypography.body(fontSize: 15, color: colors.neutral600),
         filled: true,
-        fillColor: const Color(0xCC1E2030),
+        fillColor: colors.surfaceCard,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
+          borderSide: BorderSide(color: colors.borderSubtle),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
+          borderSide: BorderSide(color: colors.borderSubtle),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
@@ -343,9 +343,9 @@ class _PickerField extends StatelessWidget {
         height: 54,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: const Color(0xCC1E2030),
+          color: colors.surfaceCard,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0x1AFFFFFF)),
+          border: Border.all(color: colors.borderSubtle),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

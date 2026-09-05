@@ -68,8 +68,8 @@ class StatsScreen extends ConsumerWidget {
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: ShaderMask(
-                        shaderCallback: (Rect bounds) => const LinearGradient(
-                          colors: AppColors.chromeGradient,
+                        shaderCallback: (Rect bounds) => LinearGradient(
+                          colors: colors.chromeGradient,
                           stops: AppColors.chromeGradientStops,
                         ).createShader(bounds),
                         child: Text(
@@ -183,12 +183,13 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppColors colors = Theme.of(context).extension<AppColors>()!;
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: const Color(0xB81E2030),
+        color: colors.surfaceCardSoft,
         borderRadius: BorderRadius.circular(26),
-        border: const Border.fromBorderSide(BorderSide(color: Color(0x12FFFFFF))),
+        border: Border.fromBorderSide(BorderSide(color: colors.hairline)),
       ),
       child: child,
     );
@@ -251,7 +252,7 @@ class _ProductiveWindowCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0x9910283F),
+        color: colors.skyDeep.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: colors.sky.withValues(alpha: 0.2)),
       ),

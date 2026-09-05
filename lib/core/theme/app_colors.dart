@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 
-/// FocusSayaç renk tokenları — prototipteki `:root` değişkenlerinden birebir.
+/// FocusSayaç renk tokenları. Koyu set prototipteki `:root` değişkenlerinden
+/// birebir; açık set onun anlamsal aynası (SPEC dışı, Faz 17 kararı).
 /// Widget'larda ham `Color(0x...)` veya `Colors.*` kullanmak yerine
 /// `Theme.of(context).extension<AppColors>()!` üzerinden erişilir.
+///
+/// **Anlamsal eşleme kuralı:** açık varyant "aynı rengin açığı" değil, aynı
+/// *rolün* açık zemindeki karşılığıdır. Nötr rampa bu yüzden ters çevrilir —
+/// `neutral300` koyuda en açık ikincil metin, açıkta en koyu ikincil metindir.
+/// Böylece 90 küsur çağrı yerinin hiçbiri değişmeden iki temada da doğru
+/// kontrastı tutturur.
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors({
+    required this.brightness,
     required this.bg,
     required this.text,
     required this.ember,
@@ -29,10 +37,27 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.accent400,
     required this.accent900,
     required this.surfaceCard,
+    required this.surfaceCardSoft,
+    required this.surfaceCardStrong,
+    required this.surfaceSheet,
+    required this.surfaceDialog,
+    required this.surfaceSunken,
+    required this.surfaceNav,
     required this.divider,
+    required this.hairline,
+    required this.borderSubtle,
+    required this.borderStrong,
+    required this.fillFaint,
+    required this.fillSubtle,
+    required this.fillMedium,
+    required this.fillStrong,
+    required this.scrim,
+    required this.glowViolet,
+    required this.chromeGradient,
   });
 
   factory AppColors.dark() => const AppColors(
+        brightness: Brightness.dark,
         bg: Color(0xFF0B0C14),
         text: Color(0xFFF6F7FF),
         ember: Color(0xFFFFB03A),
@@ -56,8 +81,96 @@ class AppColors extends ThemeExtension<AppColors> {
         accent400: Color(0xFFB5ABFC),
         accent900: Color(0xFF2B2741),
         surfaceCard: Color(0xD11E2030),
+        surfaceCardSoft: Color(0xB81E2030),
+        surfaceCardStrong: Color(0xDB1E2030),
+        surfaceSheet: Color(0xF5181A28),
+        surfaceDialog: Color(0xF61A1C2A),
+        surfaceSunken: Color(0xFF12131C),
+        surfaceNav: Color(0xC7181A28),
         divider: Color(0x14FFFFFF),
+        hairline: Color(0x12FFFFFF),
+        borderSubtle: Color(0x1AFFFFFF),
+        borderStrong: Color(0x24FFFFFF),
+        fillFaint: Color(0x0DFFFFFF),
+        fillSubtle: Color(0x17FFFFFF),
+        fillMedium: Color(0x1FFFFFFF),
+        fillStrong: Color(0x33FFFFFF),
+        scrim: Color(0xAD04050A),
+        glowViolet: Color(0xFF9184D9),
+        chromeGradient: <Color>[
+          Color(0xFFF6F7FF),
+          Color(0xFFB5ABFC),
+          Color(0xFF63B4FF),
+          Color(0xFFFFB03A),
+          Color(0xFFFFFFFF),
+        ],
       );
+
+  /// Açık tema. Vurgu renkleri koyu setin "aynısı" değil, açık zeminde
+  /// WCAG AA (>=4.5:1 metin) tutturan koyulaştırılmış karşılıkları — ham
+  /// `#FFB03A` beyaz üzerinde 1.8:1 ile okunamaz durumda kalıyordu.
+  /// Oranları `test/core/theme/light_palette_contrast_test.dart` sabitliyor;
+  /// bir tokenı açmaya kalkan değişiklik orada düşer.
+  /// Dekoratif ember (alev, geri sayım halkası) kendi gradyan duraklarını
+  /// taşıdığı için parlak kalır; koyulaşan yalnızca anlamsal `ember` tokenı.
+  factory AppColors.light() => const AppColors(
+        brightness: Brightness.light,
+        bg: Color(0xFFF4F5FA),
+        text: Color(0xFF14161F),
+        ember: Color(0xFFA35D00),
+        emberDim: Color(0xFFFFD79A),
+        emberDeep: Color(0xFFFFF1D9),
+        mint: Color(0xFF0B7A5E),
+        mintDeep: Color(0xFFD8F7EC),
+        rose: Color(0xFFC82848),
+        roseDeep: Color(0xFFFDE1E7),
+        sky: Color(0xFF1E6FC0),
+        skyDeep: Color(0xFFDCEBFA),
+        // Ters rampa: koyudaki "en açık nötr" burada "en koyu nötr".
+        neutral300: Color(0xFF3A3E4E),
+        neutral400: Color(0xFF4E5264),
+        neutral500: Color(0xFF63677A),
+        neutral600: Color(0xFF7C8093),
+        neutral700: Color(0xFF9BA0B2),
+        neutral800: Color(0xFFC4C8D6),
+        neutral900: Color(0xFFE2E5EE),
+        accent200: Color(0xFF2E2856),
+        accent300: Color(0xFF4A3FA0),
+        accent400: Color(0xFF5A4BD0),
+        accent900: Color(0xFFEAE7FD),
+        surfaceCard: Color(0xD1FFFFFF),
+        surfaceCardSoft: Color(0xB8FFFFFF),
+        surfaceCardStrong: Color(0xDBFFFFFF),
+        surfaceSheet: Color(0xF7FFFFFF),
+        surfaceDialog: Color(0xF9FFFFFF),
+        // Koyuda `surfaceSunken` zeminden bir tık **açık** (yükselti), açıkta
+        // aynı "ayrı düzlem" hissi bir tık **koyu** olmakla veriliyor.
+        surfaceSunken: Color(0xFFE9EBF3),
+        surfaceNav: Color(0xD6FFFFFF),
+        divider: Color(0x14000000),
+        hairline: Color(0x12000000),
+        borderSubtle: Color(0x1A000000),
+        borderStrong: Color(0x24000000),
+        fillFaint: Color(0x0D000000),
+        fillSubtle: Color(0x14000000),
+        fillMedium: Color(0x18000000),
+        // Siyah bindirme açık zeminde beyazın koyu zemindekinden daha güçlü
+        // okunuyor; `fillStrong` bu yüzden 0x33 yerine 0x26.
+        fillStrong: Color(0x26000000),
+        scrim: Color(0x66151726),
+        glowViolet: Color(0xFF6E5FD0),
+        chromeGradient: <Color>[
+          Color(0xFF1A1C2A),
+          Color(0xFF5A4BD0),
+          Color(0xFF1E6FC0),
+          Color(0xFFA35D00),
+          Color(0xFF14161F),
+        ],
+      );
+
+  /// Hangi setin yürürlükte olduğunu soran nadir çağrı yerleri için
+  /// (ör. gölge sertliği, `SystemUiOverlayStyle`).
+  final Brightness brightness;
 
   /// `ember` = ateş, seri, aktif odak.
   final Color ember;
@@ -93,21 +206,49 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color accent400;
   final Color accent900;
 
+  /// Yüzey basamakları — hepsi zeminin üstünde yarı saydam bir düzlem.
+  /// Opaklık arttıkça öğe kullanıcıya "yaklaşır":
+  /// `Soft` (kart) < `Card` < `Strong` (liste satırı) < `Nav`/`Sheet` < `Dialog`.
   final Color surfaceCard;
-  final Color divider;
+  final Color surfaceCardSoft;
+  final Color surfaceCardStrong;
+  final Color surfaceSheet;
+  final Color surfaceDialog;
 
-  /// Prototipin `--chrome` gradyanı: krom tipografi için `ShaderMask` ile kullanılır.
-  static const List<Color> chromeGradient = <Color>[
-    Color(0xFFF6F7FF),
-    Color(0xFFB5ABFC),
-    Color(0xFF63B4FF),
-    Color(0xFFFFB03A),
-    Color(0xFFFFFFFF),
-  ];
+  /// Ayrı düzlemde duran, pasif/kilitli öğe zemini (kilitli rozet kutusu).
+  final Color surfaceSunken;
+  final Color surfaceNav;
+
+  /// Çizgiler ve dolgular — ikisi de nötr bir bindirme, ayrımları güçlerinde.
+  /// `divider`/`hairline` çizgi, `fill*` ise alan kaplar. Merdiven kapalı bir
+  /// küme: çağrı yerlerindeki eski ham alfalar (0x0A, 0x0F, 0x29, 0x2E) en
+  /// yakın basamağa yuvarlandı — aradaki fark 255'te 10'un altında ve gözle
+  /// ayırt edilmiyor, karşılığında iki temada da tek kaynak var.
+  final Color divider;
+  final Color hairline;
+  final Color borderSubtle;
+  final Color borderStrong;
+  final Color fillFaint;
+  final Color fillSubtle;
+  final Color fillMedium;
+  final Color fillStrong;
+
+  /// Diyalog/alt sayfa arkasındaki karartma.
+  final Color scrim;
+
+  /// Geri sayım ve onboarding'deki mor hâle (prototipin `#9184D9`'u).
+  final Color glowViolet;
+
+  /// Prototipin `--chrome` gradyanı: krom tipografi için `ShaderMask` ile
+  /// kullanılır. Açık temada duraklar koyulaşır, yoksa beyaz zeminde kaybolur.
+  final List<Color> chromeGradient;
+
+  /// Duraklar iki temada da aynı — yalnız renkler değişiyor.
   static const List<double> chromeGradientStops = <double>[0, 0.34, 0.52, 0.78, 1];
 
   @override
   AppColors copyWith({
+    Brightness? brightness,
     Color? bg,
     Color? text,
     Color? ember,
@@ -131,9 +272,26 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? accent400,
     Color? accent900,
     Color? surfaceCard,
+    Color? surfaceCardSoft,
+    Color? surfaceCardStrong,
+    Color? surfaceSheet,
+    Color? surfaceDialog,
+    Color? surfaceSunken,
+    Color? surfaceNav,
     Color? divider,
+    Color? hairline,
+    Color? borderSubtle,
+    Color? borderStrong,
+    Color? fillFaint,
+    Color? fillSubtle,
+    Color? fillMedium,
+    Color? fillStrong,
+    Color? scrim,
+    Color? glowViolet,
+    List<Color>? chromeGradient,
   }) {
     return AppColors(
+      brightness: brightness ?? this.brightness,
       bg: bg ?? this.bg,
       text: text ?? this.text,
       ember: ember ?? this.ember,
@@ -157,7 +315,23 @@ class AppColors extends ThemeExtension<AppColors> {
       accent400: accent400 ?? this.accent400,
       accent900: accent900 ?? this.accent900,
       surfaceCard: surfaceCard ?? this.surfaceCard,
+      surfaceCardSoft: surfaceCardSoft ?? this.surfaceCardSoft,
+      surfaceCardStrong: surfaceCardStrong ?? this.surfaceCardStrong,
+      surfaceSheet: surfaceSheet ?? this.surfaceSheet,
+      surfaceDialog: surfaceDialog ?? this.surfaceDialog,
+      surfaceSunken: surfaceSunken ?? this.surfaceSunken,
+      surfaceNav: surfaceNav ?? this.surfaceNav,
       divider: divider ?? this.divider,
+      hairline: hairline ?? this.hairline,
+      borderSubtle: borderSubtle ?? this.borderSubtle,
+      borderStrong: borderStrong ?? this.borderStrong,
+      fillFaint: fillFaint ?? this.fillFaint,
+      fillSubtle: fillSubtle ?? this.fillSubtle,
+      fillMedium: fillMedium ?? this.fillMedium,
+      fillStrong: fillStrong ?? this.fillStrong,
+      scrim: scrim ?? this.scrim,
+      glowViolet: glowViolet ?? this.glowViolet,
+      chromeGradient: chromeGradient ?? this.chromeGradient,
     );
   }
 
@@ -165,6 +339,8 @@ class AppColors extends ThemeExtension<AppColors> {
   AppColors lerp(ThemeExtension<AppColors>? other, double t) {
     if (other is! AppColors) return this;
     return AppColors(
+      // Ara karelerde tek bir "yarı aydınlık" yok; eşik geçilince değişiyor.
+      brightness: t < 0.5 ? brightness : other.brightness,
       bg: Color.lerp(bg, other.bg, t)!,
       text: Color.lerp(text, other.text, t)!,
       ember: Color.lerp(ember, other.ember, t)!,
@@ -188,7 +364,26 @@ class AppColors extends ThemeExtension<AppColors> {
       accent400: Color.lerp(accent400, other.accent400, t)!,
       accent900: Color.lerp(accent900, other.accent900, t)!,
       surfaceCard: Color.lerp(surfaceCard, other.surfaceCard, t)!,
+      surfaceCardSoft: Color.lerp(surfaceCardSoft, other.surfaceCardSoft, t)!,
+      surfaceCardStrong: Color.lerp(surfaceCardStrong, other.surfaceCardStrong, t)!,
+      surfaceSheet: Color.lerp(surfaceSheet, other.surfaceSheet, t)!,
+      surfaceDialog: Color.lerp(surfaceDialog, other.surfaceDialog, t)!,
+      surfaceSunken: Color.lerp(surfaceSunken, other.surfaceSunken, t)!,
+      surfaceNav: Color.lerp(surfaceNav, other.surfaceNav, t)!,
       divider: Color.lerp(divider, other.divider, t)!,
+      hairline: Color.lerp(hairline, other.hairline, t)!,
+      borderSubtle: Color.lerp(borderSubtle, other.borderSubtle, t)!,
+      borderStrong: Color.lerp(borderStrong, other.borderStrong, t)!,
+      fillFaint: Color.lerp(fillFaint, other.fillFaint, t)!,
+      fillSubtle: Color.lerp(fillSubtle, other.fillSubtle, t)!,
+      fillMedium: Color.lerp(fillMedium, other.fillMedium, t)!,
+      fillStrong: Color.lerp(fillStrong, other.fillStrong, t)!,
+      scrim: Color.lerp(scrim, other.scrim, t)!,
+      glowViolet: Color.lerp(glowViolet, other.glowViolet, t)!,
+      chromeGradient: <Color>[
+        for (int i = 0; i < chromeGradient.length; i++)
+          Color.lerp(chromeGradient[i], other.chromeGradient[i], t)!,
+      ],
     );
   }
 }

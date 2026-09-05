@@ -10,6 +10,7 @@ import 'core/l10n/l10n_providers.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/time/app_day.dart';
+import 'domain/settings/settings_providers.dart';
 import 'domain/streak/streak_calculator.dart';
 import 'l10n/gen/app_localizations.dart';
 import 'services/ads/ad_service.dart';
@@ -73,6 +74,7 @@ Future<void> main() async {
         consentServiceProvider.overrideWithValue(consentService),
         adServiceProvider.overrideWithValue(adService),
         onboardingCompletedAtLaunchProvider.overrideWithValue(launchSettings.onboardingCompleted),
+        themeModeAtLaunchProvider.overrideWithValue(launchSettings.themeMode),
       ],
       // Ana ekran widgetlari iki gorunmez kabuk kullaniyor (Faz 16):
       // `HomeWidgetSyncScope` anlik goruntuyu paylasilan depoya yazar,
@@ -131,7 +133,12 @@ class FocusSayacApp extends ConsumerWidget {
     return MaterialApp.router(
       onGenerateTitle: (BuildContext context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
+      // `theme` Material'ın açık yuvası, `darkTheme` koyu yuvası — isimlendirme
+      // framework'ten geliyor. Uygulamanın tasarım referansı olan koyu tema
+      // `darkTheme`e, Faz 17'de eklenen açık tema `theme`e gidiyor.
+      theme: buildAppLightTheme(),
+      darkTheme: buildAppTheme(),
+      themeMode: ref.watch(themeModeProvider),
       // Tek dil sabitleniyor: cihaz Türkçe değilken de uygulama Türkçe kalır
       // (ARB'de yalnızca `tr` var). Delegeler Material'ın kendi metinlerini
       // (tarih/saat seçici, `showDatePicker`) de Türkçeye çeviriyor.

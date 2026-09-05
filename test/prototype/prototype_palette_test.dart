@@ -102,7 +102,7 @@ void main() {
 
     expect(
       stops.map((String s) => _argbFromCss(s.split(' ').first)).toList(),
-      AppColors.chromeGradient.map((Color c) => c.toARGB32()).toList(),
+      colors.chromeGradient.map((Color c) => c.toARGB32()).toList(),
       reason: 'krom gradyanının renkleri prototiple uyuşmuyor',
     );
 

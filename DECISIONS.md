@@ -69,6 +69,7 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
 
 - `AppColors` tek koyu tema olarak modellendi (`AppColors.dark()`) — prototip yalnızca koyu zeminde
   tasarlandı, açık tema hiçbir ekranda yok, bu yüzden `ThemeMode`/açık varyant eklenmedi.
+  **(Faz 17'de geri alındı: `AppColors.light()` + `ThemeMode` eklendi — bkz. "Faz 17".)**
 - Tipografi sabitleri (`AppTypography.display/kicker/body/counter`) `letterSpacing`'i `fontSize * em`
   olarak hesaplıyor — CSS'teki `em` birimi font boyutuna göreli, Flutter'ın `letterSpacing`'i mutlak
   piksel; birebir görsel eşleşme için bu dönüşüm gerekli. Ekrana özgü tam piksel boyutları (örn. büyük
@@ -554,6 +555,8 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   görselin kullanıcının gördüğünden sapabileceği tek yer olurdu.
 - **Kart renkleri `AppColors`tan değil, sabit** — kart bir **görsel** olarak cihazdan çıkıyor; tema
   uzantısına bağlanırsa aynı şablon ileride tema değiştiğinde farklı renkte paylaşılırdı.
+  **(Faz 17'de kısmen geri alındı: renkler hâlâ `AppColors`a bağlı değil ama her şablonun bir açık
+  bir koyu varyantı var; hangisinin çizileceğine uygulamanın teması karar veriyor.)**
 - **Taşma kırpmayla değil küçültmeyle çözülüyor** — büyük sayı `Flexible` + `FittedBox(scaleDown)`
   içinde, hem genişliğe hem kalan yüksekliğe uyuyor; etiket/satırlar `maxLines` + ellipsis. SPEC §9'un
   "3 haneli gün + uzun rumuz" testi üç şablonu da tek tek pompalayıp `takeException`ı denetliyor.
@@ -1197,3 +1200,43 @@ saati geriye sıçrayınca AOSP'nin `Notifier.notifyWakelockRelease` yolu negati
 süre üretip `AppOpsService` içinde `Invalid @IntRange(from = -1): -38649` ile
 system_server'ı düşürdü. Stack'te uygulamaya ait tek satır yok; soğuk
 başlatmayla geçildi.
+
+## Faz 17 — Açık tema
+
+- **Faz 2'nin "tek koyu tema" kararı geri alındı.** `AppColors` artık iki fabrika taşıyor
+  (`dark()`/`light()`) ve `MaterialApp` `theme`/`darkTheme`/`themeMode` üçlüsüyle kuruluyor.
+  Koyu setin tek değeri değişmedi — `test/prototype/prototype_palette_test.dart` hâlâ prototiple
+  birebir karşılaştırıyor, yani DoD'un "prototiple ayırt edilemiyor" maddesi bozulmadı.
+- **Açık palet "aynı rengin açığı" değil, aynı *rolün* açık zemindeki karşılığı.** Nötr rampa ters
+  çevrildi: `neutral300` koyuda en açık ikincil metin, açıkta en koyu. Bunun bedeli sıfır çağrı yeri
+  değişikliği — 90 küsur kullanımın hiçbiri "hangi temadayım" diye sormuyor.
+- **Vurgu renkleri açık temada koyulaştırıldı.** Ham `#FFB03A` beyaz üzerinde 1.8:1; ilk denemede
+  seçilen `#B96A00` bile 3.71:1'de kalıyordu. `light_palette_contrast_test.dart` WCAG AA'yı (4.5:1)
+  zorunlu kılıyor ve ember/mint/rose'u bu test yüzünden bir tur daha koyulaştırdık.
+  Dekoratif ember (alev, halka gradyanları) parlak kaldı — onlar kendi zeminlerini taşıyor.
+- **~90 gömülü `Color(0x...)` literali token'a çevrildi.** Yüzey basamakları
+  (`surfaceCardSoft/Card/Strong/Sheet/Dialog/Sunken/Nav`) ve çizgi/dolgu merdiveni
+  (`hairline`, `divider`, `borderSubtle/Strong`, `fillFaint/Subtle/Medium/Strong`) bu iş için eklendi.
+  Merdiven kapalı bir küme: eski 0x0A/0x0F/0x29/0x2E alfaları en yakın basamağa yuvarlandı
+  (255'te 10'un altı, gözle ayırt edilmiyor) — karşılığında iki temada da tek kaynak var.
+- **Painter'lar paleti parametre olarak alıyor.** `CustomPainter`ın `BuildContext`i yok;
+  `AppColors.dark()/light()` `const` olduğu için `shouldRepaint`teki kimlik karşılaştırması
+  yalnızca tema gerçekten değiştiğinde yeniden çizdiriyor.
+- **Splash ve ana ekran widget'ları sistem temasını izler, uygulama içi seçimi değil.**
+  İkisi de Flutter ağacının dışında, Android kaynak sisteminde çözülüyor: `values/focus_colors.xml`
+  açık, `values-night/` koyu. Sistemi koyu olan cihazda uygulamada "Açık" seçilirse splash koyu
+  açılıp uygulama açık geliyor — platformun sınırı, kaynaklar süreç başlamadan çözülüyor.
+  `focus_palette_sync_test.dart` artık iki XML'i birden denetliyor.
+- **Aktif sekme hapı temaya duyarlı.** Koyu temada rol renginin dolu gradyanı + açık yazı; açık
+  temada aynı gradyan neredeyse beyaza bittiği için yazı kayboluyordu — gradyan seyreltiliyor (0.22)
+  ve yazı rolün koyu tonuna düşüyor. Ayarlar hapı istisna: nötr rampa zaten ters çevrildiğinden
+  kendiliğinden çalışıyor.
+- **Ayarlar satırı üç durumlu ama yerinde dönüyor** (Sistem → Açık → Koyu → Sistem). Üstteki
+  açık/kapalı anahtarlarıyla aynı kalıp, bu yüzden ok işareti yok. Etiketler ayrı ARB anahtarları:
+  "Açık" Türkçede hem *on* hem *light* demek, tek anahtara bağlanırsa biri diğerini bozardı.
+- **Şema v2 → v3**, `theme_mode TEXT NOT NULL DEFAULT 'system'`. Cihazdaki temiz kurulum
+  `onCreate`ten geçtiği için yükseltme yolu orada hiç çalışmıyor; `theme_mode_migration_test.dart`
+  v2 şemasını elle kurup `onUpgrade`i ve eldeki verinin korunduğunu doğruluyor.
+- **Bilinen açık uç:** başarı kartının "Gece Meşalesi" şablonu açık temada açık bir kart çiziyor;
+  adı artık içeriğini anlatmıyor. Ya şablon yeniden adlandırılmalı ya da açık varyantı ayrı bir
+  şablon olarak sunulmalı — ürün kararı.

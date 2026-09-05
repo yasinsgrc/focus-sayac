@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,7 +53,10 @@ final Provider<HomeWidgetSnapshot?> homeWidgetSnapshotProvider =
     examName: exam.name,
     examSubtitle: exam.subtitle,
     targetUtc: examTargetUtc(exam),
-    accentColor: examAccentColor(exam.accentRole, AppColors.dark()),
+    // Widget'lar Flutter tema agacinin disinda, sistem temasini izliyor
+    // (`FocusPalette` + `values-night`). Uygulama ici "Acik/Koyu" secimi burada
+    // yanlis cevap olurdu: kullanici koyu secse bile launcher acik kalabilir.
+    accentColor: examAccentColor(exam.accentRole, _systemPalette()),
     streak: streak,
     todayMinutes: todayMinutes,
     weeklyMinutes: weeklyMinutes,
@@ -60,6 +64,15 @@ final Provider<HomeWidgetSnapshot?> homeWidgetSnapshotProvider =
     updatedAtUtc: nowUtc,
   );
 });
+
+/// Cihazın o anki sistem teması. Sağlayıcının `BuildContext`i yok, bu yüzden
+/// `MediaQuery` yerine doğrudan platformdan okunuyor — zaten istenen de
+/// uygulama içi tercih değil, launcher'ın gördüğü tema.
+AppColors _systemPalette() {
+  return PlatformDispatcher.instance.platformBrightness == Brightness.dark
+      ? AppColors.dark()
+      : AppColors.light();
+}
 
 /// `Exam.dateUtc` günü, `Exam.timeOfDay` ("HH:mm") saati taşır — geri sayım
 /// ekranı ikisini birlikte kullanır, widget'ın da aynı anı görmesi gerekir.

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Adaptive icon'un zemin katmani. Gorsel Kimlik 02: "Adaptive zemin icin ember
+  radyal gradyan secildi: koyu temayla surekli, alevin isigini simgeye
+  tasiyor."
+
+  Gradyan rengi `focus_ember` (#FFB03A) ile ayni ama alfasi degisken oldugu
+  icin burada duz hex yaziliyor - `<gradient>` bir renk kaynagina alfa
+  uygulayamiyor. Zemin rengi `focus_colors.xml`den geliyor.
+
+  Ayni gradyan `tool/generate_app_icon.py` icinde `render_background()` olarak
+  duruyor; eski (pre-API 26) simge ve Play gorseli oradan rasterize ediliyor.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/focus_bg" />
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:centerX="0.5"
+                android:centerY="0.52"
+                android:gradientRadius="62%p"
+                android:startColor="#2EFFB03A"
+                android:endColor="#00FFB03A" />
+        </shape>
+    </item>
+</layer-list>

@@ -34,10 +34,10 @@ class _ExamPickerSheet extends ConsumerWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(26, 18, 26, 30),
-        decoration: const BoxDecoration(
-          color: Color(0xF5181A28),
-          border: Border(top: BorderSide(color: Color(0x1AFFFFFF))),
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: colors.surfaceSheet,
+          border: Border(top: BorderSide(color: colors.borderSubtle)),
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(32),
             topRight: Radius.circular(32),
           ),
@@ -50,7 +50,7 @@ class _ExamPickerSheet extends ConsumerWidget {
               height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: const Color(0x33FFFFFF),
+                color: colors.fillStrong,
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
@@ -81,7 +81,7 @@ class _ExamPickerSheet extends ConsumerWidget {
               height: 52,
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0x2EFFFFFF)),
+                  side: BorderSide(color: colors.fillStrong),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                 ),
                 onPressed: () {
@@ -113,13 +113,13 @@ class _ExamList extends ConsumerWidget {
     final DateTime nowUtc = DateTime.now().toUtc();
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0x14FFFFFF),
+        color: colors.divider,
         borderRadius: BorderRadius.circular(22),
       ),
       child: Column(
         children: <Widget>[
           for (int i = 0; i < exams.length; i++) ...<Widget>[
-            if (i > 0) const Divider(height: 1, color: Color(0x14FFFFFF)),
+            if (i > 0) Divider(height: 1, color: colors.divider),
             _ExamRow(
               exam: exams[i],
               colors: colors,

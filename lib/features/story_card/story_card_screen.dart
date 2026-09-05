@@ -223,9 +223,9 @@ class _TemplatePicker extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: const Color(0xCC1E2030),
+        color: colors.surfaceCard,
         borderRadius: BorderRadius.circular(18),
-        border: const Border.fromBorderSide(BorderSide(color: Color(0x12FFFFFF))),
+        border: Border.fromBorderSide(BorderSide(color: colors.hairline)),
       ),
       child: Row(
         children: <Widget>[
@@ -246,7 +246,15 @@ class _TemplatePicker extends StatelessWidget {
                           ? LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: <Color>[const Color(0xFF5D5294), colors.accent900],
+                              // Alt gezinme hapıyla aynı mantık: koyu temada
+                              // dolu mor bir gradyan + açık yazı, açık temada
+                              // seyreltik gradyan + koyu yazı.
+                              colors: <Color>[
+                                colors.brightness == Brightness.dark
+                                    ? const Color(0xFF5D5294)
+                                    : colors.accent400.withValues(alpha: 0.22),
+                                colors.accent900,
+                              ],
                             )
                           : null,
                     ),
@@ -257,7 +265,9 @@ class _TemplatePicker extends StatelessWidget {
                         style: AppTypography.display(
                           fontSize: 11,
                           weight: FontWeight.w600,
-                          color: template == selected ? const Color(0xFFF5F4FF) : colors.neutral600,
+                          color: template == selected
+                              ? (colors.brightness == Brightness.dark ? const Color(0xFFF5F4FF) : colors.accent200)
+                              : colors.neutral600,
                         ),
                       ),
                     ),
@@ -345,7 +355,7 @@ class _SecondaryButton extends StatelessWidget {
       height: 50,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0x1FFFFFFF)),
+          border: Border.all(color: colors.fillMedium),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Material(

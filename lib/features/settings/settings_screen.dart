@@ -5,6 +5,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
 import '../../core/widgets/rise_in.dart';
 import '../../domain/exams/exam_providers.dart';
@@ -13,6 +14,7 @@ import '../../domain/settings/app_data_reset_service.dart';
 import '../../domain/settings/settings_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/storage/app_database.dart';
+import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
 import '../countdown/widgets/exam_picker_sheet.dart';
 
@@ -110,9 +112,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: const Color(0xB81E2030),
+                color: colors.surfaceCardSoft,
                 borderRadius: BorderRadius.circular(26),
-                border: const Border.fromBorderSide(BorderSide(color: Color(0x12FFFFFF))),
+                border: Border.fromBorderSide(BorderSide(color: colors.hairline)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -164,7 +166,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: ColoredBox(
                 // Satır aralarındaki 1px'lik boşluk bu zeminden görünüyor
                 // (prototipteki `gap:1px` + kapsayıcı arka planı).
-                color: const Color(0x12FFFFFF),
+                color: colors.hairline,
                 child: Column(
                   children: <Widget>[
                     _SettingsRow(
@@ -201,6 +203,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       valueColor: _onOffColor(settings.streakReminderEnabled, colors),
                       onTap: () => _write(
                         AppSettingsTableCompanion(streakReminderEnabled: Value<bool>(!settings.streakReminderEnabled)),
+                      ),
+                    ),
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.circleHalf,
+                      iconColor: colors.accent400,
+                      label: l10n.settingsTheme,
+                      value: _themeLabel(l10n, settings.themeMode),
+                      valueColor: colors.neutral500,
+                      // Üç durumlu ama yine **yerinde** değişiyor: her dokunuş
+                      // bir sonraki moda geçiriyor (Sistem → Açık → Koyu →
+                      // Sistem). Bu yüzden ok işareti yok — üstteki açık/kapalı
+                      // satırlarıyla aynı kalıp, değerin kendisi hem durumu hem
+                      // dokunmanın sonucunu gösteriyor.
+                      onTap: () => _write(
+                        AppSettingsTableCompanion(
+                          themeMode: Value<AppThemeMode>(_nextThemeMode(settings.themeMode)),
+                        ),
                       ),
                     ),
                     _SettingsRow(
@@ -285,6 +304,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   static String _onOff(AppLocalizations l10n, bool enabled) => enabled ? l10n.settingsOn : l10n.settingsOff;
 
+  /// Tema etiketleri açık/kapalı anahtarlarınkinden ayrı anahtarlar: ikisi de
+  /// Türkçede "Açık" diyor ama biri "on", diğeri "light" — tek anahtara
+  /// bağlanırsa ilerideki bir dil ya da metin değişikliği ikisini birden
+  /// bozardı.
+  static String _themeLabel(AppLocalizations l10n, AppThemeMode mode) => switch (mode) {
+        AppThemeMode.system => l10n.settingsThemeSystem,
+        AppThemeMode.light => l10n.settingsThemeLight,
+        AppThemeMode.dark => l10n.settingsThemeDark,
+      };
+
+  static AppThemeMode _nextThemeMode(AppThemeMode mode) => switch (mode) {
+        AppThemeMode.system => AppThemeMode.light,
+        AppThemeMode.light => AppThemeMode.dark,
+        AppThemeMode.dark => AppThemeMode.system,
+      };
+
   static Color _onOffColor(bool enabled, AppColors colors) => enabled ? colors.mint : colors.neutral500;
 
   Future<void> _openStoreListing() async {
@@ -292,15 +327,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (opened || !mounted) return;
     // Açık bir dokunuş sessizce yutulmamalı (mağaza uygulaması yoksa ya da
     // kanal yanıt vermezse `openStoreListing` false döner).
-    ScaffoldMessenger.of(
+    showAppToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).settingsStoreOpenFailed)));
+      message: AppLocalizations.of(context).settingsStoreOpenFailed,
+      tone: AppToastTone.error,
+    );
   }
 
   Future<void> _showInfoDialog({required String title, required String body}) {
     return showDialog<void>(
       context: context,
-      barrierColor: const Color(0xAD04050A),
+      barrierColor: Theme.of(context).extension<AppColors>()!.scrim,
       builder: (BuildContext context) => _InfoDialog(title: title, body: body),
     );
   }
@@ -308,13 +345,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _confirmReset() async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
-      barrierColor: const Color(0xAD04050A),
+      barrierColor: Theme.of(context).extension<AppColors>()!.scrim,
       builder: (BuildContext context) => const _ResetConfirmDialog(),
     );
     if (confirmed != true) return;
     await ref.read(appDataResetServiceProvider).resetProgress();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).settingsResetDone)));
+    showAppToast(context, message: AppLocalizations.of(context).settingsResetDone);
   }
 }
 
@@ -372,7 +409,7 @@ class _DurationSlider extends StatelessWidget {
             data: SliderThemeData(
               trackHeight: 4,
               activeTrackColor: tint,
-              inactiveTrackColor: const Color(0x17FFFFFF),
+              inactiveTrackColor: colors.fillSubtle,
               thumbColor: tint,
               // Prototipin 18px'lik yuvarlak tutamağı: Material 3'ün varsayılan
               // çubuk tutamağı yerine açıkça yuvarlak şekil veriliyor.
@@ -426,7 +463,7 @@ class _SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     return Material(
-      color: const Color(0xDB1E2030),
+      color: colors.surfaceCardStrong,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -464,7 +501,7 @@ class _RemoveAdsRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0x24FFFFFF)),
+        border: Border.all(color: colors.borderStrong),
       ),
       child: Row(
         children: <Widget>[
@@ -478,7 +515,7 @@ class _RemoveAdsRow extends StatelessWidget {
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: const Color(0x0FFFFFFF), borderRadius: BorderRadius.circular(999)),
+            decoration: BoxDecoration(color: colors.fillFaint, borderRadius: BorderRadius.circular(999)),
             child: Text(
               AppLocalizations.of(context).settingsComingSoon,
               style: AppTypography.kicker(fontSize: 8, color: colors.neutral500, letterSpacingEm: 0.16),
@@ -500,11 +537,11 @@ class _InfoDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     return Dialog(
-      backgroundColor: const Color(0xF51A1C2A),
+      backgroundColor: colors.surfaceDialog,
       insetPadding: const EdgeInsets.symmetric(horizontal: 28),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(32),
-        side: const BorderSide(color: Color(0x1AFFFFFF)),
+        side: BorderSide(color: colors.borderSubtle),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(26, 28, 26, 16),
@@ -553,11 +590,11 @@ class _ResetConfirmDialog extends StatelessWidget {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     final AppLocalizations l10n = AppLocalizations.of(context);
     return Dialog(
-      backgroundColor: const Color(0xF71A1C2A),
+      backgroundColor: colors.surfaceDialog,
       insetPadding: const EdgeInsets.symmetric(horizontal: 28),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(32),
-        side: const BorderSide(color: Color(0x47FF6A86)),
+        side: BorderSide(color: colors.rose.withValues(alpha: 0.28)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(26, 30, 26, 22),
@@ -610,7 +647,7 @@ class _ResetConfirmDialog extends StatelessWidget {
               height: 50,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0x59FF6A86)),
+                  border: Border.all(color: colors.rose.withValues(alpha: 0.35)),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Material(

@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
+
 /// Ekran 03/09'un dairesel ilerleme halkası. SPEC.md binding haritası:
 /// "Dairesel halka `FC = 2π×135` — prototipin sabiti"; prototipin
 /// `viewBox="0 0 330 330"`, merkez (165,165) geometrisi birebir. Odak ve mola
@@ -10,12 +12,17 @@ import 'package:flutter/material.dart';
 class SessionRingPainter extends CustomPainter {
   const SessionRingPainter({
     required this.progress,
+    required this.colors,
     this.gradientColors,
     this.gradientStops,
     this.solidColor,
   });
 
   final double progress;
+
+  /// Painter'ın `BuildContext`i yok; palet çağıran ekrandan geçiriliyor
+  /// ([CountdownRingPainter] ile aynı gerekçe).
+  final AppColors colors;
   final List<Color>? gradientColors;
   final List<double>? gradientStops;
   final Color? solidColor;
@@ -33,7 +40,7 @@ class SessionRingPainter extends CustomPainter {
       center,
       _outerRadius * scale,
       Paint()
-        ..color = const Color(0x14FFFFFF)
+        ..color = colors.divider
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1 * scale,
     );
@@ -42,7 +49,7 @@ class SessionRingPainter extends CustomPainter {
       center,
       _trackRadius * scale,
       Paint()
-        ..color = const Color(0x12FFFFFF)
+        ..color = colors.hairline
         ..style = PaintingStyle.stroke
         ..strokeWidth = 10 * scale,
     );
@@ -53,16 +60,16 @@ class SessionRingPainter extends CustomPainter {
       ..strokeWidth = 10 * scale
       ..strokeCap = StrokeCap.round;
 
-    final List<Color>? colors = gradientColors;
-    if (colors != null) {
+    final List<Color>? gradient = gradientColors;
+    if (gradient != null) {
       progressPaint.shader = LinearGradient(
         begin: Alignment.bottomLeft,
         end: Alignment.topRight,
-        colors: colors,
+        colors: gradient,
         stops: gradientStops,
       ).createShader(progressRect);
     } else {
-      progressPaint.color = solidColor ?? const Color(0xFF595D6C);
+      progressPaint.color = solidColor ?? colors.neutral700;
     }
 
     const double startAngle = -math.pi / 2;
@@ -74,6 +81,7 @@ class SessionRingPainter extends CustomPainter {
   bool shouldRepaint(covariant SessionRingPainter oldDelegate) {
     return oldDelegate.progress != progress ||
         oldDelegate.gradientColors != gradientColors ||
-        oldDelegate.solidColor != solidColor;
+        oldDelegate.solidColor != solidColor ||
+        oldDelegate.colors != colors;
   }
 }

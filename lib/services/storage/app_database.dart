@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -46,6 +46,12 @@ class AppDatabase extends _$AppDatabase {
           if (from < 2) {
             await m.addColumn(exams, exams.presetKey);
             await _backfillPresetKeys(this);
+          }
+          if (from < 3) {
+            // Kolonun `withDefault`'u mevcut satıra da uygulanıyor, ayrıca
+            // backfill gerekmiyor — `presetKey`ten farkı bu: orada varsayılan
+            // yoktu, anlamlı değer seed dosyasından türetilmek zorundaydı.
+            await m.addColumn(appSettingsTable, appSettingsTable.themeMode);
           }
         },
       );

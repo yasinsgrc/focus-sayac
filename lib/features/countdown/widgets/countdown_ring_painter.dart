@@ -2,14 +2,26 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
+
 /// Ekran 02'nin dairesel ilerleme halkası. SPEC.md binding haritası:
 /// "Dairesel ilerleme ... `CustomPainter`, `C = 2πr`, r=130" — prototipin
 /// `viewBox="0 0 316 316"`, merkez (158,158) geometrisi birebir.
 class CountdownRingPainter extends CustomPainter {
-  const CountdownRingPainter({required this.progressRatio, required this.dashRotation});
+  const CountdownRingPainter({
+    required this.progressRatio,
+    required this.dashRotation,
+    required this.colors,
+  });
 
   final double progressRatio;
   final double dashRotation;
+
+  /// Painter'ın `BuildContext`i yok; palet çağıran ekrandan geçiriliyor.
+  /// [AppColors.dark]/[AppColors.light] `const` olduğu için her çağrıda aynı
+  /// örnek dönüyor — [shouldRepaint]'teki kimlik karşılaştırması bu sayede
+  /// yalnızca tema gerçekten değiştiğinde yeniden çizdiriyor.
+  final AppColors colors;
 
   static const double _viewBoxSize = 316;
   static const double _outerRadius = 142;
@@ -22,13 +34,13 @@ class CountdownRingPainter extends CustomPainter {
     final Offset center = Offset(size.width / 2, size.height / 2);
 
     final Paint outer = Paint()
-      ..color = const Color(0x17FFFFFF)
+      ..color = colors.fillSubtle
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1 * scale;
     canvas.drawCircle(center, _outerRadius * scale, outer);
 
     final Paint track = Paint()
-      ..color = const Color(0x12FFFFFF)
+      ..color = colors.hairline
       ..style = PaintingStyle.stroke
       ..strokeWidth = 9 * scale;
     canvas.drawCircle(center, _trackRadius * scale, track);
@@ -38,17 +50,20 @@ class CountdownRingPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 9 * scale
       ..strokeCap = StrokeCap.round
-      ..shader = const SweepGradient(
-        colors: <Color>[Color(0xFF63B4FF), Color(0xFFB5ABFC), Color(0xFFFFB03A)],
-        stops: <double>[0, 0.48, 1],
-        transform: GradientRotation(-math.pi / 2),
+      // Koyu temada bu üçlü prototipin `#63b4ff → #b5abfc → #ffb03a`
+      // duraklarıyla birebir aynı değerlere çözülüyor; açık temada rollerin
+      // koyulaştırılmış karşılıklarına geçip beyaz zeminde solmayı önlüyor.
+      ..shader = SweepGradient(
+        colors: <Color>[colors.sky, colors.accent400, colors.ember],
+        stops: const <double>[0, 0.48, 1],
+        transform: const GradientRotation(-math.pi / 2),
       ).createShader(progressRect);
     const double startAngle = -math.pi / 2;
     final double sweepAngle = 2 * math.pi * progressRatio.clamp(0.0, 1.0);
     canvas.drawArc(progressRect, startAngle, sweepAngle, false, progress);
 
     final Paint dashed = Paint()
-      ..color = const Color(0x59FFB03A)
+      ..color = colors.ember.withValues(alpha: 0.35)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1 * scale;
     _drawDashedCircle(
@@ -90,6 +105,8 @@ class CountdownRingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CountdownRingPainter oldDelegate) {
-    return oldDelegate.progressRatio != progressRatio || oldDelegate.dashRotation != dashRotation;
+    return oldDelegate.progressRatio != progressRatio ||
+        oldDelegate.dashRotation != dashRotation ||
+        oldDelegate.colors != colors;
   }
 }

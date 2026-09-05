@@ -40,11 +40,11 @@ class ExamExpiredScreen extends ConsumerWidget {
               child: Container(
                 width: 520,
                 height: 420,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: <Color>[Color(0x2EFF6A86), Colors.transparent],
-                    stops: <double>[0, 0.64],
+                    colors: <Color>[colors.rose.withValues(alpha: 0.18), Colors.transparent],
+                    stops: const <double>[0, 0.64],
                   ),
                 ),
               ),
@@ -62,7 +62,7 @@ class ExamExpiredScreen extends ConsumerWidget {
                       height: 140,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0x24FFFFFF)),
+                        border: Border.all(color: colors.borderStrong),
                       ),
                       child: Icon(PhosphorIconsDuotone.calendarX, size: 46, color: colors.neutral600),
                     ),

@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
+<!--
+  Gorsel Kimlik 05 · ACILIS. Sablonun `@android:color/white` zemini
+  `focus_bg` ile degisti - acilistan ilk Flutter karesine gecerken renk flasi
+  kalmiyor. `focus_bg` sistem temasina gore cozuluyor: `values/` acik,
+  `values-night/` koyu (Faz 17).
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+  Ortadaki isaret 128 dp; PNG'leri `tool/generate_app_icon.py` uretiyor.
+  Android 12+ bu dosyayi kullanmiyor, sistem splash API'sine `values-v31/
+  styles.xml` cevap veriyor.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/focus_bg" />
+
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:src="@drawable/ic_splash_logo" />
+    </item>
 </layer-list>

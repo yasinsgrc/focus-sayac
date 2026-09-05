@@ -24,16 +24,23 @@ const double kStoryCardPreviewWidth = 248;
 /// tuvale taşınırken hepsi bu katsayıyla ölçeklendi.
 const double _s = kStoryCardWidth / 248;
 
-/// Bir şablonun sabit görsel kimliği. Renkler bilinçli olarak `AppColors`
-/// yerine sabit: kart bir **görsel** olarak dışa aktarılıyor, tema
-/// değişkenlerine bağlanırsa aynı şablon farklı cihazlarda farklı renkte
-/// paylaşılabilirdi.
+/// Bir şablonun görsel kimliği. Renkler `AppColors` tokenlarına **bağlı
+/// değil**, şablona özel sabitler: kart bir görsel olarak dışa aktarılıyor ve
+/// şablonun kimliği paletin ileriki değişikliklerinden bağımsız kalmalı.
+///
+/// Faz 17'de tek istisna eklendi: her şablonun bir de açık varyantı var,
+/// hangisinin çizileceğine uygulamanın o anki teması karar veriyor
+/// (DECISIONS.md'deki "kart her zaman koyu" kararı bilerek geri alındı).
+/// Varyant **uygulama içi** temayı izler, sistemi değil — kullanıcı kartı
+/// ekranda gördüğüyle aynı tonda paylaşsın diye.
 class StoryCardStyle {
   const StoryCardStyle({
     required this.background,
     required this.accent,
     required this.bigColor,
     required this.bigFontSize,
+    required this.textPrimary,
+    required this.textMuted,
     this.glowColor,
     this.glowCenter = Alignment.center,
     this.glowStop = 0.62,
@@ -43,9 +50,22 @@ class StoryCardStyle {
   final Color accent;
   final Color bigColor;
   final double bigFontSize;
+
+  /// Kartın gövde metinleri. Üç şablonun üçünde de aynı ikili, ama varyanta
+  /// göre yön değiştiriyor — bu yüzden şablonun kendi tanımında duruyor.
+  final Color textPrimary;
+  final Color textMuted;
   final Color? glowColor;
   final Alignment glowCenter;
   final double glowStop;
+}
+
+/// Şablonun yürürlükteki varyantı. Tek çözüm noktası: hem ekrandaki önizleme
+/// hem dışa aktarılan PNG buradan geçiyor, ikisi ayrışamaz.
+StoryCardStyle storyCardStyle(StoryCardTemplate template, Brightness brightness) {
+  final Map<StoryCardTemplate, StoryCardStyle> set =
+      brightness == Brightness.dark ? kStoryCardStyles : kStoryCardLightStyles;
+  return set[template]!;
 }
 
 /// Prototip v2 satır 506-510'daki üç kart tanımı birebir.
@@ -55,6 +75,8 @@ const Map<StoryCardTemplate, StoryCardStyle> kStoryCardStyles = <StoryCardTempla
     accent: Color(0xFFFFB03A),
     bigColor: Color(0xFFFFD79A),
     bigFontSize: 66 * _s,
+    textPrimary: Color(0xFFF6F7FF),
+    textMuted: Color(0xFFCFD3E5),
     glowColor: Color(0x6BFFB03A),
     glowCenter: Alignment(0, 0.68), // CSS `circle at 50% 84%`
   ),
@@ -63,14 +85,55 @@ const Map<StoryCardTemplate, StoryCardStyle> kStoryCardStyles = <StoryCardTempla
     accent: Color(0xFFB5ABFC),
     bigColor: Color(0xFFF6F7FF),
     bigFontSize: 108 * _s,
+    textPrimary: Color(0xFFF6F7FF),
+    textMuted: Color(0xFFCFD3E5),
   ),
   StoryCardTemplate.streak: StoryCardStyle(
     background: Color(0xFF151A3C),
     accent: Color(0xFF4FE0B4),
     bigColor: Color(0xFF9DF3D9),
     bigFontSize: 108 * _s,
+    textPrimary: Color(0xFFF6F7FF),
+    textMuted: Color(0xFFCFD3E5),
     glowColor: Color(0x6663B4FF),
     glowCenter: Alignment(-0.64, -0.68), // CSS `circle at 18% 16%`
+    glowStop: 0.6,
+  ),
+};
+
+/// Koyu setin açık karşılıkları. Her şablonun **kendi rengi** (ember / mor /
+/// nane) korunuyor, değişen yalnız zeminin yönü: koyu zeminde açık yazı yerine
+/// açık zeminde koyu yazı. Geometri, yazı boyutu ve hâle konumları koyu setle
+/// birebir aynı — böylece şablon değiştirmeden tema değiştiren biri aynı kartı
+/// tanıyor.
+const Map<StoryCardTemplate, StoryCardStyle> kStoryCardLightStyles = <StoryCardTemplate, StoryCardStyle>{
+  StoryCardTemplate.nightTorch: StoryCardStyle(
+    background: Color(0xFFFFF7EC),
+    accent: Color(0xFFA35D00),
+    bigColor: Color(0xFF7A4400),
+    bigFontSize: 66 * _s,
+    textPrimary: Color(0xFF14161F),
+    textMuted: Color(0xFF4E5264),
+    glowColor: Color(0x4DFFB03A),
+    glowCenter: Alignment(0, 0.68),
+  ),
+  StoryCardTemplate.minimal: StoryCardStyle(
+    background: Color(0xFFF7F8FC),
+    accent: Color(0xFF5A4BD0),
+    bigColor: Color(0xFF14161F),
+    bigFontSize: 108 * _s,
+    textPrimary: Color(0xFF14161F),
+    textMuted: Color(0xFF4E5264),
+  ),
+  StoryCardTemplate.streak: StoryCardStyle(
+    background: Color(0xFFEDF3FC),
+    accent: Color(0xFF0B7A5E),
+    bigColor: Color(0xFF07553F),
+    bigFontSize: 108 * _s,
+    textPrimary: Color(0xFF14161F),
+    textMuted: Color(0xFF4E5264),
+    glowColor: Color(0x3D63B4FF),
+    glowCenter: Alignment(-0.64, -0.68),
     glowStop: 0.6,
   ),
 };
@@ -95,7 +158,7 @@ class StoryCardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final StoryCardStyle style = kStoryCardStyles[template]!;
+    final StoryCardStyle style = storyCardStyle(template, Theme.of(context).brightness);
 
     return RepaintBoundary(
       key: boundaryKey,
@@ -152,7 +215,7 @@ class _CardBody extends StatelessWidget {
                 text.tag.toUpperCase(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.kicker(fontSize: 8 * _s, color: const Color(0xFFCFD3E5)),
+                style: AppTypography.kicker(fontSize: 8 * _s, color: style.textMuted),
               ),
             ),
           ],
@@ -188,7 +251,7 @@ class _CardBody extends StatelessWidget {
           style: AppTypography.display(
             fontSize: 16 * _s,
             weight: FontWeight.w600,
-            color: const Color(0xFFF6F7FF),
+            color: style.textPrimary,
             height: 1.28,
           ).copyWith(letterSpacing: 16 * _s * -0.02),
         ),
@@ -200,7 +263,7 @@ class _CardBody extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: AppTypography.body(
               fontSize: 12.5 * _s,
-              color: const Color(0xFFCFD3E5),
+              color: style.textMuted,
               height: 1.45,
             ),
           ),

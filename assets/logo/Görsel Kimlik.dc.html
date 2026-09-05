@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link href="https://fonts.googleapis.com/css2?family=Michroma&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    body { margin: 0; background: #08090F; }
+    a { color: #FFB03A; text-decoration: none; }
+    a:hover { color: #FFD08A; }
+  </style>
+</helmet>
+<div style="min-height:100%;background:#08090F;padding:48px 28px 96px;font-family:Inter,sans-serif;color:#F6F7FF;box-sizing:border-box">
+  <div style="max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:56px">
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:Michroma,sans-serif;font-size:9px;letter-spacing:2.34px;color:#75798C">FOCUSSAYAÇ · MARKA İŞARETİ</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:600;letter-spacing:-1.5px;color:#F6F7FF">Sayaç halkası + alev çekirdeği</div>
+      <div style="font-size:14px;line-height:1.55;color:#9397AB;max-width:620px;text-wrap:pretty">Tek bir işaret, beş yerde: launcher, adaptive katmanlar, bildirim, açılış ekranı, mağaza. Halka geri sayımın <span style="color:#CFD3E5">CountdownRingPainter</span> geometrisinden, alev <span style="color:#CFD3E5">FlameWidget</span>'ın elips yarıçaplarından türetildi.</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px;align-items:start">
+      <div style="background:rgba(30,32,48,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:26px;display:flex;flex-direction:column;gap:22px;align-items:center">
+        <div style="width:320px;height:320px;max-width:100%">
+          <div style="width:512px;height:512px;transform:scale(0.625);transform-origin:top left">
+            <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+          </div>
+        </div>
+        <div style="font-family:Michroma,sans-serif;font-size:9px;letter-spacing:2.34px;color:#75798C">ANA İŞARET · TAM RENK</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="background:rgba(30,32,48,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:Michroma,sans-serif;font-size:9px;letter-spacing:2.34px;color:#75798C">GEOMETRİ</div>
+          <div style="display:flex;flex-direction:column;gap:9px;font-size:13px;line-height:1.5;color:#B2B6CA">
+            <div>Halka kalınlığı = yarıçapın %16'sı, üstten -90° başlar, 0.78 tur döner — geri sayım halkasının açık ucu.</div>
+            <div>Halka gradyanı: <span style="color:#63B4FF">#63B4FF</span> → <span style="color:#B5ABFC">#B5ABFC</span> → <span style="color:#FFB03A">#FFB03A</span> (SweepGradient stops 0 / .48 / 1).</div>
+            <div>İçteki noktalı çember: <span style="color:#FFB03A">#FFB03A</span> %42 alfa, dashRotation halkası.</div>
+            <div>Alev gövdesi: <span style="color:#FFB03A">#7A2F0C → #FFB03A → #FFF3D8</span>, çekirdek <span style="color:#FFF3D8">rgba(255,250,240,.95)</span>.</div>
+          </div>
+        </div>
+        <div style="background:rgba(30,32,48,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:14px">
+          <div style="font-family:Michroma,sans-serif;font-size:9px;letter-spacing:2.34px;color:#75798C">ZEMİN</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+              <div style="width:64px;height:64px;border-radius:14px;background:#0B0C14;border:1px solid rgba(255,255,255,0.10)"></div>
+              <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">0B0C14</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+              <div style="width:64px;height:64px;border-radius:14px;background:radial-gradient(circle at 50% 60%,#2E1708 0%,#16131E 58%,#0B0C14 100%);border:1px solid rgba(255,255,255,0.10)"></div>
+              <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">EMBER</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+              <div style="width:64px;height:64px;border-radius:14px;background:#FFB03A;border:1px solid rgba(255,255,255,0.10)"></div>
+              <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">FFB03A</div>
+            </div>
+          </div>
+          <div style="font-size:13px;line-height:1.5;color:#9397AB">Adaptive zemin için ember radyal gradyan seçildi: koyu temayla sürekli, alevin ışığını simgeye taşıyor.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:Michroma,sans-serif;font-size:9px;letter-spacing:2.34px;color:#FFB03A">01 · LAUNCHER</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:600;letter-spacing:-0.9px">mipmap-*/ic_launcher.png · 5 yoğunluk</div>
+        <div style="font-size:13px;line-height:1.5;color:#9397AB">Eski (pre-API 26) kare simge: zemin gömülü, işaret %76 alanda. 48 / 72 / 96 / 144 / 192 px.</div>
+      </div>
+      <div style="background:rgba(30,32,48,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:26px;display:flex;gap:28px;flex-wrap:wrap;align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="position:relative;width:200px;height:200px;border-radius:46px;overflow:hidden;background:radial-gradient(circle at 50% 60%,#2E1708 0%,#16131E 58%,#0B0C14 100%)">
+            <div style="position:absolute;left:24px;top:24px;width:152px;height:152px">
+              <div style="width:512px;height:512px;transform:scale(0.296875);transform-origin:top left">
+                <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+              </div>
+            </div>
+          </div>
+          <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">192 PX</div>
+        </div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="position:relative;width:96px;height:96px;border-radius:22px;overflow:hidden;background:radial-gradient(circle at 50% 60%,#2E1708 0%,#16131E 58%,#0B0C14 100%)">
+              <div style="position:absolute;left:11px;top:11px;width:74px;height:74px">
+                <div style="width:512px;height:512px;transform:scale(0.14453125);transform-origin:top left">
+                  <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+                </div>
+              </div>
+            </div>
+            <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">96</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="position:relative;width:72px;height:72px;border-radius:16px;overflow:hidden;background:radial-gradient(circle at 50% 60%,#2E1708 0%,#16131E 58%,#0B0C14 100%)">
+              <div style="position:absolute;left:8px;top:8px;width:56px;height:56px">
+                <div style="width:512px;height:512px;transform:scale(0.109375);transform-origin:top left">
+                  <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+                </div>
+              </div>
+            </div>
+            <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">72</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="position:relative;width:48px;height:48px;border-radius:11px;overflow:hidden;background:radial-gradient(circle at 50% 60%,#2E1708 0%,#16131E 58%,#0B0C14 100%)">
+              <div style="position:absolute;left:5px;top:5px;width:38px;height:38px">
+                <div style="width:512px;height:512px;transform:scale(0.07421875);transform-origin:top left">
+                  <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+                </div>
+              </div>
+            </div>
+            <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">48</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:Michroma,sans-serif;font-size:9px;letter-spacing:2.34px;color:#B5ABFC">02 · ADAPTIVE</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:600;letter-spacing:-0.9px">mipmap-anydpi-v26/ic_launcher.xml</div>
+        <div style="font-size:13px;line-height:1.5;color:#9397AB">108×108 dp katmanlar, işaret 72 dp güvenli alanda — sistem hangi maskeyi uygularsa uygulasın halka kesilmiyor.</div>
+      </div>
+      <div style="background:rgba(30,32,48,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:26px;display:flex;gap:30px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="position:relative;width:216px;height:216px;border-radius:8px;overflow:hidden;background:repeating-conic-gradient(#15161F 0% 25%,#1B1D28 0% 50%) 0 0/24px 24px">
+            <div style="position:absolute;left:36px;top:36px;width:144px;height:144px">
+              <div style="width:512px;height:512px;transform:scale(0.28125);transform-origin:top left">
+                <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+              </div>
+            </div>
+            <sc-if value="{{ safeZone }}" hint-placeholder-val="{{ true }}">
+              <div style="position:absolute;left:36px;top:36px;width:142px;height:142px;border:1px dashed rgba(255,176,58,0.55);border-radius:50%"></div>
+            </sc-if>
+          </div>
+          <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">FOREGROUND</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="width:216px;height:216px;border-radius:8px;background:radial-gradient(circle at 50% 60%,#2E1708 0%,#16131E 58%,#0B0C14 100%)"></div>
+          <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">BACKGROUND</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px;justify-content:center">
+          <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">SİSTEM MASKELERİ</div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            <div style="position:relative;width:132px;height:132px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 60%,#2E1708 0%,#16131E 58%,#0B0C14 100%)">
+              <div style="position:absolute;left:22px;top:22px;width:88px;height:88px">
+                <div style="width:512px;height:512px;transform:scale(0.171875);transform-origin:top left">
+                  <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+                </div>
+              </div>
+            </div>
+            <div style="position:relative;width:132px;height:132px;border-radius:30px;overflow:hidden;background:radial-gradient(circle at 50% 60%,#2E1708 0%,#16131E 58%,#0B0C14 100%)">
+              <div style="position:absolute;left:22px;top:22px;width:88px;height:88px">
+                <div style="width:512px;height:512px;transform:scale(0.171875);transform-origin:top left">
+                  <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+                </div>
+              </div>
+            </div>
+            <div style="position:relative;width:132px;height:132px;border-radius:10px;overflow:hidden;background:radial-gradient(circle at 50% 60%,#2E1708 0%,#16131E 58%,#0B0C14 100%)">
+              <div style="position:absolute;left:22px;top:22px;width:88px;height:88px">
+                <div style="width:512px;height:512px;transform:scale(0.171875);transform-origin:top left">
+                  <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:Michroma,sans-serif;font-size:9px;letter-spacing:2.34px;color:#4FE0B4">03 · THEMED</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:600;letter-spacing:-0.9px">monochrome katmanı · Android 13+</div>
+        <div style="font-size:13px;line-height:1.5;color:#9397AB">Tek renk + alfa. Noktalı çember ve alev çekirdeği düşer; kalan siluet halka + alev gövdesi. Sistem duvar kağıdından renk çeker.</div>
+      </div>
+      <div style="background:rgba(30,32,48,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:26px;display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="position:relative;width:132px;height:132px;border-radius:8px;overflow:hidden;background:repeating-conic-gradient(#15161F 0% 25%,#1B1D28 0% 50%) 0 0/16px 16px;color:#F6F7FF">
+            <div style="position:absolute;left:20px;top:20px;width:92px;height:92px">
+              <div style="width:512px;height:512px;transform:scale(0.1796875);transform-origin:top left">
+                <dc-import name="FocusMarkMono" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+              </div>
+            </div>
+          </div>
+          <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">MONOCHROME</div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div style="position:relative;width:132px;height:132px;border-radius:50%;overflow:hidden;background:#3E2A12;color:#F6C98A">
+            <div style="position:absolute;left:20px;top:20px;width:92px;height:92px">
+              <div style="width:512px;height:512px;transform:scale(0.1796875);transform-origin:top left">
+                <dc-import name="FocusMarkMono" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+              </div>
+            </div>
+          </div>
+          <div style="position:relative;width:132px;height:132px;border-radius:50%;overflow:hidden;background:#E7E5FE;color:#2B2741">
+            <div style="position:absolute;left:20px;top:20px;width:92px;height:92px">
+              <div style="width:512px;height:512px;transform:scale(0.1796875);transform-origin:top left">
+                <dc-import name="FocusMarkMono" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+              </div>
+            </div>
+          </div>
+          <div style="position:relative;width:132px;height:132px;border-radius:50%;overflow:hidden;background:#10283F;color:#63B4FF">
+            <div style="position:absolute;left:20px;top:20px;width:92px;height:92px">
+              <div style="width:512px;height:512px;transform:scale(0.1796875);transform-origin:top left">
+                <dc-import name="FocusMarkMono" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:Michroma,sans-serif;font-size:9px;letter-spacing:2.34px;color:#FF6A86">04 · BİLDİRİM</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:600;letter-spacing:-0.9px">drawable/ic_notification · 24 dp</div>
+        <div style="font-size:13px;line-height:1.5;color:#9397AB">Aynı siluet, tek renk + alfa. <span style="color:#CFD3E5">notification_service.dart</span> içindeki <span style="color:#CFD3E5">@mipmap/ic_launcher</span> bununla değişir — durum çubuğundaki beyaz leke böyle biter.</div>
+      </div>
+      <div style="background:rgba(30,32,48,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:26px;display:flex;flex-direction:column;gap:22px">
+        <div style="display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="position:relative;width:96px;height:96px;color:#F6F7FF">
+              <div style="width:512px;height:512px;transform:scale(0.1875);transform-origin:top left">
+                <dc-import name="FocusMarkMono" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+              </div>
+            </div>
+            <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">SİLUET</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div style="position:relative;width:24px;height:24px;color:#F6F7FF">
+              <div style="width:512px;height:512px;transform:scale(0.046875);transform-origin:top left">
+                <dc-import name="FocusMarkMono" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+              </div>
+            </div>
+            <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">24 DP</div>
+          </div>
+        </div>
+        <div style="height:1px;background:rgba(255,255,255,0.08)"></div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">DURUM ÇUBUĞU</div>
+          <div style="width:100%;max-width:420px;height:36px;border-radius:12px;background:#0B0C14;border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;padding:0 14px;gap:10px">
+            <div style="position:relative;width:18px;height:18px;color:#F6F7FF">
+              <div style="width:512px;height:512px;transform:scale(0.03515625);transform-origin:top left">
+                <dc-import name="FocusMarkMono" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+              </div>
+            </div>
+            <div style="flex:1"></div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;color:#CFD3E5;letter-spacing:-0.3px">9:41</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:Michroma,sans-serif;font-size:9px;letter-spacing:2.34px;color:#63B4FF">05 · AÇILIŞ</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:600;letter-spacing:-0.9px">launch_background.xml · #0B0C14</div>
+        <div style="font-size:13px;line-height:1.5;color:#9397AB">Düz beyaz zemin uygulamanın kendi <span style="color:#CFD3E5">colors.bg</span> değeriyle değişiyor; beyaz flaş kalkıyor. Android 12+ splash API'sinde ortadaki katman işaretin kendisi.</div>
+      </div>
+      <div style="background:rgba(30,32,48,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:26px;display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start">
+        <div style="width:260px;height:540px;border-radius:46px;background:#0B0C14;border:1px solid rgba(255,255,255,0.10);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
+          <div style="position:absolute;top:0;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;color:#75798C">
+            <div>9:41</div>
+            <div style="width:36px;height:5px;border-radius:3px;background:rgba(255,255,255,0.14)"></div>
+          </div>
+          <div style="position:absolute;left:50%;top:50%;width:580px;height:520px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(145,132,217,0.34) 0%,rgba(145,132,217,0) 60%);pointer-events:none"></div>
+          <div style="position:relative;width:128px;height:128px">
+            <div style="width:512px;height:512px;transform:scale(0.25);transform-origin:top left">
+              <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.5;color:#B2B6CA;max-width:340px">
+          <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">NOTLAR</div>
+          <div>Zemin <span style="color:#CFD3E5">#0B0C14</span>, arkada geri sayım ekranının mor halo'su (<span style="color:#B5ABFC">rgba(145,132,217,.34)</span>) — açılıştan ana ekrana geçiş kesintisiz.</div>
+          <div>İşaret 128 dp; splash API ikonu 240 dp kutuda %66 alan istiyor, bu ölçü ona oturuyor.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font-family:Michroma,sans-serif;font-size:9px;letter-spacing:2.34px;color:#FFB03A">06 · MAĞAZA</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:600;letter-spacing:-0.9px">Play simgesi · 512×512 · alfa yok</div>
+        <div style="font-size:13px;line-height:1.5;color:#9397AB">Tam kare, saydamlık yok, köşe yuvarlatma yok — Play kendi maskesini uygular. Zemin adaptive background ile aynı.</div>
+      </div>
+      <div style="background:rgba(30,32,48,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:26px;display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="position:relative;width:240px;height:240px;overflow:hidden;background:radial-gradient(circle at 50% 60%,#2E1708 0%,#16131E 58%,#0B0C14 100%)">
+            <div style="position:absolute;left:25px;top:25px;width:190px;height:190px">
+              <div style="width:512px;height:512px;transform:scale(0.37109375);transform-origin:top left">
+                <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+              </div>
+            </div>
+          </div>
+          <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">512 × 512</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+          <div style="position:relative;width:120px;height:120px;border-radius:26px;overflow:hidden;background:radial-gradient(circle at 50% 60%,#2E1708 0%,#16131E 58%,#0B0C14 100%)">
+            <div style="position:absolute;left:13px;top:13px;width:94px;height:94px">
+              <div style="width:512px;height:512px;transform:scale(0.18359375);transform-origin:top left">
+                <dc-import name="FocusMark" style="width:512px;height:512px" hint-size="512px,512px"></dc-import>
+              </div>
+            </div>
+          </div>
+          <div style="font-family:Michroma,sans-serif;font-size:7.5px;letter-spacing:1.6px;color:#75798C">LİSTE ÖNİZLEME</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;safeZone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { safeZone: this.props.safeZone ?? true };
+  }
+}
+</script>
+</body>
+</html>

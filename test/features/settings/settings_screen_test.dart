@@ -156,6 +156,33 @@ void main() {
     await _disposeTree(tester);
   });
 
+  testWidgets('tema satırı Sistem → Açık → Koyu → Sistem sırasıyla dönüyor', (WidgetTester tester) async {
+    final AppDatabase database = await _pumpSettings(tester);
+
+    // Kolon varsayılanı: cihazın tercihine uyulur.
+    expect((await _read(tester, database.appSettingsDao.getSettings)).themeMode, AppThemeMode.system);
+    expect(find.text('Sistem'), findsOneWidget);
+
+    // Ara adımın etiketi ("Açık") üstteki anahtarların metniyle çakıştığı için
+    // satırdan değil doğrudan ayardan doğrulanıyor.
+    await tester.tap(find.text('Tema'));
+    await _settle(tester);
+    expect((await _read(tester, database.appSettingsDao.getSettings)).themeMode, AppThemeMode.light);
+
+    await tester.tap(find.text('Tema'));
+    await _settle(tester);
+    expect((await _read(tester, database.appSettingsDao.getSettings)).themeMode, AppThemeMode.dark);
+    expect(find.text('Koyu'), findsOneWidget);
+
+    // Üçüncü dokunuş başa dönüyor: kullanıcı sistem tercihine geri
+    // dönebilmeli, yoksa seçim tek yönlü bir kapan olurdu.
+    await tester.tap(find.text('Tema'));
+    await _settle(tester);
+    expect((await _read(tester, database.appSettingsDao.getSettings)).themeMode, AppThemeMode.system);
+
+    await _disposeTree(tester);
+  });
+
   testWidgets('verileri sıfırla onaylanınca geçmiş ve rozetler siliniyor, sınavlar kalıyor',
       (WidgetTester tester) async {
     final AppDatabase database = await _pumpSettings(tester);

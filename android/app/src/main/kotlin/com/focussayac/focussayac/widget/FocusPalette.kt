@@ -5,13 +5,16 @@ import androidx.annotation.ColorInt
 import com.focussayac.focussayac.R
 
 /**
- * `lib/core/theme/app_colors.dart` icindeki `AppColors.dark()` tokenlarina
- * Kotlin tarafindan erisim.
+ * `lib/core/theme/app_colors.dart` tokenlarina Kotlin tarafindan erisim.
  *
- * Degerler burada tanimli DEGIL; tek kaynak `res/values/focus_colors.xml`.
- * Boylece palet Android tarafinda tek yerde durur ve
- * `test/android/focus_palette_sync_test.dart` o tek dosyayi Dart paletiyle
- * karsilastirarak sapmayi yakalayabilir.
+ * Degerler burada tanimli DEGIL; kaynak `res/values/focus_colors.xml` (acik) ve
+ * `res/values-night/focus_colors.xml` (koyu). Hangisinin cozulecegine
+ * `context.getColor` cagrilirken widget host'unun yapilandirmasi karar veriyor,
+ * yani widget'lar **sistem** temasini izler - uygulama ici "Acik/Koyu" secimi
+ * buraya ulasmaz (Flutter tema agacinin disindayiz).
+ *
+ * `test/android/focus_palette_sync_test.dart` iki XML'i de Dart paletiyle
+ * karsilastirarak sapmayi yakalar.
  */
 class FocusPalette(context: Context) {
     @ColorInt val bg: Int = context.getColor(R.color.focus_bg)

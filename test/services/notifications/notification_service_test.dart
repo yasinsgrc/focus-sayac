@@ -18,12 +18,26 @@ int _idOf(MethodCall call) {
   return arguments is Map<Object?, Object?> ? arguments['id']! as int : arguments! as int;
 }
 
+/// `zonedSchedule` çağrısının eklentiye geçirdiği `AndroidScheduleMode` adı —
+/// kesin/kesin olmayan alarm ayrımını testten görebilmenin tek yolu.
+String _scheduleModeOf(MethodCall call) {
+  final Map<Object?, Object?> arguments = call.arguments as Map<Object?, Object?>;
+  final Map<Object?, Object?> specifics = arguments['platformSpecifics']! as Map<Object?, Object?>;
+  return specifics['scheduleMode']! as String;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late List<MethodCall> calls;
 
+  /// `SCHEDULE_EXACT_ALARM` verilmemiş bir cihazı taklit eder: Android 12+
+  /// bu izin olmadan kesin alarm kurmayı `exact_alarms_not_permitted` ile
+  /// reddeder.
+  late bool exactAlarmsPermitted;
+
   setUp(() {
+    exactAlarmsPermitted = true;
     // Eklenti platform uygulamasını `defaultTargetPlatform`a göre seçiyor;
     // test sürecinin işletim sistemi (Windows) yerine uygulamanın hedefi
     // sabitleniyor. `registerWith` normalde üretilen kayıt defterinin işi.
@@ -34,6 +48,14 @@ void main() {
       _channel,
       (MethodCall call) async {
         calls.add(call);
+        if (call.method == 'zonedSchedule' &&
+            !exactAlarmsPermitted &&
+            _scheduleModeOf(call).startsWith('exact')) {
+          throw PlatformException(
+            code: 'exact_alarms_not_permitted',
+            message: 'Exact alarms are not permitted',
+          );
+        }
         return call.method == 'initialize' ? true : null;
       },
     );
@@ -118,6 +140,43 @@ void main() {
     expect(
       calls.where((MethodCall call) => call.method == 'cancel').map(_idOf),
       <int>[1001, 1002, 1004],
+    );
+  });
+
+  // SPEC.md Ekran 01: "İkisi de reddedilse uygulama tam çalışmaya devam
+  // eder." `SCHEDULE_EXACT_ALARM` verilmemişken kesin alarm kurmak
+  // `PlatformException(exact_alarms_not_permitted)` fırlatıyor ve bu hata,
+  // çağıran akışı (`PomodoroController._completeFocus`) ortasından kesip
+  // rozet açılışını hiç çalıştırmıyordu. Bildirim kurulamaması, seansın
+  // domain sonuçlarını iptal edemez.
+  test('kesin alarm izni yokken zamanlama patlamıyor, kesin olmayana düşüyor', () async {
+    final NotificationService service = await serviceWith(notificationsEnabled: true);
+    exactAlarmsPermitted = false;
+
+    await service.scheduleFocusSessionEnd(
+      endAtUtc: DateTime.now().toUtc().add(const Duration(minutes: 10)),
+      focusMinutes: 25,
+      breakMinutes: 5,
+    );
+    await service.scheduleBreakEnd(
+      endAtUtc: DateTime.now().toUtc().add(const Duration(minutes: 5)),
+      breakMinutes: 5,
+    );
+
+    final List<MethodCall> scheduled =
+        calls.where((MethodCall call) => call.method == 'zonedSchedule').toList();
+    // Her iki bildirim de önce kesin modda denenip, reddedilince kesin
+    // olmayan modda yeniden kuruluyor: bildirim yine geliyor, yalnızca
+    // Android'in takdirine bağlı bir gecikmeyle.
+    expect(scheduled.map(_idOf), <int>[1001, 1001, 1004, 1004]);
+    expect(
+      scheduled.map(_scheduleModeOf),
+      <String>[
+        'exactAllowWhileIdle',
+        'inexactAllowWhileIdle',
+        'exactAllowWhileIdle',
+        'inexactAllowWhileIdle',
+      ],
     );
   });
 

@@ -90,7 +90,7 @@ class WeeklyFocusBarPainter extends CustomPainter {
       );
       final Paint barPaint = Paint();
       if (day.minutes == 0) {
-        barPaint.color = const Color(0x14FFFFFF);
+        barPaint.color = colors.divider;
       } else {
         barPaint.shader = LinearGradient(
           begin: Alignment.topCenter,

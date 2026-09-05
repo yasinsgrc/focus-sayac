@@ -15,9 +15,24 @@ import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_math.dart';
 import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
+import '../../domain/settings/settings_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
 import 'widgets/flame_widget.dart';
 import 'widgets/session_ring_painter.dart';
+
+/// Odak halkasının gradyanı. Koyu temada prototipin `fdg`'si birebir: karanlık
+/// közden aleve, en açık durak neredeyse beyaz. Açık temada o sıra halkanın
+/// ucunu zemine karıştırıyor — bu yüzden ters çevriliyor, açık ember'dan koyu
+/// ember'a gidiyor ve halka beyaz zeminde de baştan sona görünür kalıyor.
+List<Color> _focusRingGradient(AppColors colors) => colors.brightness == Brightness.dark
+    ? const <Color>[Color(0xFF8A4F14), Color(0xFFFFB03A), Color(0xFFFFF1D0)]
+    : <Color>[colors.emberDim, const Color(0xFFF0A32E), colors.ember];
+
+/// Mola halkasının gradyanı — [_focusRingGradient] ile aynı gerekçe, nane
+/// rolünde (prototipin `mdg`'si).
+List<Color> _breakRingGradient(AppColors colors) => colors.brightness == Brightness.dark
+    ? const <Color>[Color(0xFF0D3A31), Color(0xFF4FE0B4), Color(0xFFD6FFF2)]
+    : <Color>[colors.mintDeep, const Color(0xFF3FC79E), colors.mint];
 
 /// Ekran 03 (odak) + Ekran 09 (mola) + Ekran 10 (iptal onayı). Faz 2
 /// `DECISIONS.md`'nin kararı gereği tek rota/ekran: `PomodoroPhase`e göre
@@ -174,7 +189,7 @@ void _confirmCancel(BuildContext context, WidgetRef ref, PomodoroPhase phase) {
 
   showDialog<void>(
     context: context,
-    barrierColor: const Color(0xA8040509),
+    barrierColor: Theme.of(context).extension<AppColors>()!.scrim,
     builder: (BuildContext dialogContext) {
       return _CancelConfirmDialog(
         l10n: l10n,
@@ -215,7 +230,17 @@ class _FocusBody extends ConsumerWidget {
     final Color phaseColor = running ? colors.ember : colors.rose;
     final Color hintIconColor = running ? colors.mint : colors.rose;
     final String phaseLabel = running ? l10n.focusRunning : l10n.focusPaused;
-    final String hintLine = running ? l10n.focusHintRunning : l10n.focusHintPaused;
+    // İpucu satırı bir *bilgi*, kalıcı bir durum göstergesi değil: metin
+    // gerçeğe bağlanıyor ve birkaç saniye sonra sönüyor (bkz.
+    // [_FocusHintLine]). "bitişte bildirim kurulu" cümlesi koşulsuz yazıldığı
+    // sürece yanlış olabiliyordu — `NotificationService._allowedPreferences`
+    // ana anahtar (Ekran 07 "Bildirimler") kapalıyken hiçbir bildirim kurmuyor.
+    final bool notificationsEnabled = ref.watch(appSettingsProvider).value?.notificationsEnabled ?? true;
+    final String hintLine = switch ((running, notificationsEnabled)) {
+      (false, _) => l10n.focusHintPaused,
+      (true, true) => l10n.focusHintRunning,
+      (true, false) => l10n.focusHintRunningNoNotification,
+    };
 
     return SafeArea(
       child: Padding(
@@ -261,10 +286,15 @@ class _FocusBody extends ConsumerWidget {
                       painter: running
                           ? SessionRingPainter(
                               progress: progress,
-                              gradientColors: const <Color>[Color(0xFF8A4F14), Color(0xFFFFB03A), Color(0xFFFFF1D0)],
+                              colors: colors,
+                              gradientColors: _focusRingGradient(colors),
                               gradientStops: const <double>[0, 0.62, 1],
                             )
-                          : SessionRingPainter(progress: progress, solidColor: const Color(0xFF595D6C)),
+                          : SessionRingPainter(
+                              progress: progress,
+                              colors: colors,
+                              solidColor: colors.neutral700,
+                            ),
                     ),
                   ),
                   RepaintBoundary(
@@ -308,28 +338,94 @@ class _FocusBody extends ConsumerWidget {
               ],
             ),
             const Spacer(),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xB31E2030),
-                borderRadius: BorderRadius.circular(20),
-                border: const Border.fromBorderSide(BorderSide(color: Color(0x12FFFFFF))),
-              ),
-              child: Row(
-                children: <Widget>[
-                  Icon(PhosphorIconsDuotone.deviceMobileSlash, size: 21, color: hintIconColor),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(hintLine, style: AppTypography.body(fontSize: 12.5, color: colors.neutral400))),
-                ],
-              ),
-            ),
+            _FocusHintLine(text: hintLine, iconColor: hintIconColor),
           ],
         ),
       ),
     );
   }
 
+}
+
+/// Ekran 03'ün alt ipucu kutusu. Prototipteki gibi hep ekranda durmuyor:
+/// göründükten [_visibleFor] sonra sönüyor ve metin değiştiğinde (duraklat →
+/// devam, ya da ayarlardan bildirimler kapatıldığında) yeniden beliriyor.
+/// Gerekçe: satır bir kerelik bir *bilgi* — seans boyunca sabit durması hem
+/// meşale/sayaç kompozisyonundan dikkat çalıyor hem de okunduktan sonra
+/// bilgi taşımıyor.
+///
+/// Sönerken kutu ağaçtan **çıkarılmıyor**, yalnızca saydamlaşıyor: aynı
+/// yüksekliği koruması, üstündeki oynat/duraklat düğmesinin ekranda yer
+/// değiştirmemesini garanti ediyor.
+class _FocusHintLine extends StatefulWidget {
+  const _FocusHintLine({required this.text, required this.iconColor});
+
+  final String text;
+  final Color iconColor;
+
+  @override
+  State<_FocusHintLine> createState() => _FocusHintLineState();
+}
+
+class _FocusHintLineState extends State<_FocusHintLine> {
+  static const Duration _visibleFor = Duration(seconds: 6);
+  static const Duration _fadeDuration = Duration(milliseconds: 450);
+
+  Timer? _hideTimer;
+  bool _visible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _restartHideTimer();
+  }
+
+  @override
+  void didUpdateWidget(_FocusHintLine oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) _restartHideTimer();
+  }
+
+  void _restartHideTimer() {
+    _hideTimer?.cancel();
+    _visible = true;
+    _hideTimer = Timer(_visibleFor, () {
+      if (mounted) setState(() => _visible = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppColors colors = Theme.of(context).extension<AppColors>()!;
+
+    return AnimatedOpacity(
+      opacity: _visible ? 1 : 0,
+      duration: _fadeDuration,
+      curve: Curves.easeOut,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: colors.surfaceCardSoft,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.fromBorderSide(BorderSide(color: colors.hairline)),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(PhosphorIconsDuotone.deviceMobileSlash, size: 21, color: widget.iconColor),
+            const SizedBox(width: 12),
+            Expanded(child: Text(widget.text, style: AppTypography.body(fontSize: 12.5, color: colors.neutral400))),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _RingIconButton extends StatelessWidget {
@@ -341,11 +437,12 @@ class _RingIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppColors colors = Theme.of(context).extension<AppColors>()!;
     return SizedBox(
       width: 58,
       height: 58,
       child: DecoratedBox(
-        decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0x1FFFFFFF))),
+        decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: colors.fillMedium)),
         child: Material(
           type: MaterialType.transparency,
           child: InkWell(
@@ -375,9 +472,15 @@ class _PlayPauseButton extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: colors.ember),
-          gradient: const RadialGradient(
-            center: Alignment(0, -0.68),
-            colors: <Color>[Color(0xFFB06A1C), Color(0xFF2A1A08)],
+          // Dolu birincil düğme; kontrastını kendi içinde taşıyor, o yüzden
+          // zeminden bağımsız. Yine de koyu setin közü açık zeminde ekranda
+          // bir "delik" gibi duruyordu: açık temada aynı ışık düşümü korunup
+          // gradyan sıcak ember'a çekiliyor, krem ikon iki durumda da okunur.
+          gradient: RadialGradient(
+            center: const Alignment(0, -0.68),
+            colors: colors.brightness == Brightness.dark
+                ? const <Color>[Color(0xFFB06A1C), Color(0xFF2A1A08)]
+                : const <Color>[Color(0xFFE0912B), Color(0xFF8A4500)],
           ),
         ),
         child: Material(
@@ -467,7 +570,8 @@ class _BreakBody extends ConsumerWidget {
                       size: const Size(330, 330),
                       painter: SessionRingPainter(
                         progress: progress,
-                        gradientColors: const <Color>[Color(0xFF0D3A31), Color(0xFF4FE0B4), Color(0xFFD6FFF2)],
+                        colors: colors,
+                        gradientColors: _breakRingGradient(colors),
                         gradientStops: const <double>[0, 0.7, 1],
                       ),
                     ),
@@ -477,7 +581,17 @@ class _BreakBody extends ConsumerWidget {
                     children: <Widget>[
                       Icon(PhosphorIconsDuotone.coffee, size: 64, color: colors.mint),
                       const SizedBox(height: 2),
-                      Text(formatClock(remaining), style: AppTypography.counter(fontSize: 72, color: const Color(0xFFE7FFF8), height: 1)),
+                      // Koyu temada sayaç neredeyse beyaz bir nane tonu;
+                      // açık zeminde o ton kaybolduğu için gövde metnine
+                      // düşülüyor (halka ve ikon nane rolünü zaten taşıyor).
+                      Text(
+                        formatClock(remaining),
+                        style: AppTypography.counter(
+                          fontSize: 72,
+                          color: colors.brightness == Brightness.dark ? const Color(0xFFE7FFF8) : colors.text,
+                          height: 1,
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       Text(l10n.breakRunning, style: AppTypography.kicker(fontSize: 9, color: colors.mint)),
                     ],
@@ -490,9 +604,9 @@ class _BreakBody extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: const Color(0xB81E2030),
+                color: colors.surfaceCardSoft,
                 borderRadius: BorderRadius.circular(24),
-                border: const Border.fromBorderSide(BorderSide(color: Color(0x12FFFFFF))),
+                border: Border.fromBorderSide(BorderSide(color: colors.hairline)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,11 +694,11 @@ class _CancelConfirmDialog extends StatelessWidget {
         : l10n.cancelDialogBody(_words(elapsed));
 
     return Dialog(
-      backgroundColor: const Color(0xF71A1C2A),
+      backgroundColor: colors.surfaceDialog,
       insetPadding: const EdgeInsets.symmetric(horizontal: 28),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(32),
-        side: const BorderSide(color: Color(0x47FF6A86)),
+        side: BorderSide(color: colors.rose.withValues(alpha: 0.28)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(26, 30, 26, 22),
@@ -604,7 +718,7 @@ class _CancelConfirmDialog extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(color: const Color(0x0DFFFFFF), borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(color: colors.fillFaint, borderRadius: BorderRadius.circular(16)),
               child: Row(
                 children: <Widget>[
                   Icon(PhosphorIconsRegular.clockCountdown, size: 19, color: colors.mint),
@@ -631,7 +745,7 @@ class _CancelConfirmDialog extends StatelessWidget {
               height: 50,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0x59FF6A86)),
+                  border: Border.all(color: colors.rose.withValues(alpha: 0.35)),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Material(

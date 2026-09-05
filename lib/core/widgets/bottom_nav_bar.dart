@@ -68,11 +68,14 @@ class BottomNavBar extends StatelessWidget {
         tab: AppNavTab.countdown,
         icon: PhosphorIconsRegular.timer,
         label: l10n.navCountdown,
-        pill: _PillStyle(
+        pill: _PillStyle.forRole(
+          colors: colors,
           label: l10n.navCountdown,
           icon: PhosphorIconsFill.timer,
-          gradient: <Color>[colors.accent400.withValues(alpha: 0.55), colors.accent900],
-          foreground: const Color(0xFFF5F4FF),
+          role: colors.accent400,
+          deep: colors.accent900,
+          darkStart: colors.accent400.withValues(alpha: 0.55),
+          darkForeground: const Color(0xFFF5F4FF),
         ),
       ),
       // "Alev" = seri. Ekran 05 (başarı kartı) serinin paylaşılabilir yüzü ve
@@ -84,33 +87,44 @@ class BottomNavBar extends StatelessWidget {
         tab: AppNavTab.storyCard,
         icon: PhosphorIconsRegular.flame,
         label: l10n.storyCardTitle,
-        pill: _PillStyle(
+        pill: _PillStyle.forRole(
+          colors: colors,
           label: l10n.navStoryCard,
           icon: PhosphorIconsFill.flame,
-          gradient: <Color>[colors.ember.withValues(alpha: 0.5), colors.emberDeep],
-          foreground: const Color(0xFFFFE7C4),
+          role: colors.ember,
+          deep: colors.emberDeep,
+          darkStart: colors.ember.withValues(alpha: 0.5),
+          darkForeground: const Color(0xFFFFE7C4),
         ),
       ),
       _NavSlot(
         tab: AppNavTab.badges,
         icon: PhosphorIconsRegular.medal,
         label: l10n.badgesTitle,
-        pill: _PillStyle(
+        pill: _PillStyle.forRole(
+          colors: colors,
           label: l10n.badgesTitle,
           icon: PhosphorIconsFill.medal,
-          gradient: <Color>[colors.mint.withValues(alpha: 0.45), colors.mintDeep],
-          foreground: const Color(0xFFD6FFF2),
+          role: colors.mint,
+          deep: colors.mintDeep,
+          darkStart: colors.mint.withValues(alpha: 0.45),
+          darkForeground: const Color(0xFFD6FFF2),
         ),
       ),
       _NavSlot(
         tab: AppNavTab.stats,
         icon: PhosphorIconsRegular.chartBar,
         label: l10n.navStats,
-        pill: _PillStyle(
+        pill: _PillStyle.forRole(
+          colors: colors,
           label: l10n.navStats,
           icon: PhosphorIconsFill.chartBar,
-          gradient: <Color>[const Color(0xFF1D466E), colors.skyDeep],
-          foreground: const Color(0xFFD7ECFF),
+          role: colors.sky,
+          deep: colors.skyDeep,
+          // Tek opak başlangıç: diğer dördünün aksine prototipte burada
+          // saydam bir sky değil, kendi mavisi yazılıydı.
+          darkStart: const Color(0xFF1D466E),
+          darkForeground: const Color(0xFFD7ECFF),
         ),
       ),
       // Ayarların bir renk rolü yok (ateş/veri/başarı gibi bir anlamı da);
@@ -132,7 +146,7 @@ class BottomNavBar extends StatelessWidget {
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: const Color(0xC7181A28),
+        color: colors.surfaceNav,
         borderRadius: BorderRadius.circular(26),
         border: Border.all(color: colors.divider),
       ),
@@ -181,6 +195,34 @@ class _NavSlot {
 
 class _PillStyle {
   const _PillStyle({required this.label, required this.icon, required this.gradient, required this.foreground});
+
+  /// Renk rolü olan dört hap (sayaç/kart/rozet/veriler) için temaya duyarlı
+  /// kurulum.
+  ///
+  /// Koyu temada hap, rol renginin **koyu** bir gradyanı; yazı o rolün açık
+  /// tonu — prototipteki değerler [darkStart] ve [darkForeground] ile birebir
+  /// korunuyor. Açık temada aynı gradyan neredeyse beyaza bittiği için o açık
+  /// yazı kayboluyordu: gradyan seyreltiliyor (0.22) ve yazı rolün kendi koyu
+  /// tonuna ([role]) düşüyor. Ayarlar hapının renk rolü olmadığı için bu
+  /// fabrikayı kullanmıyor — nötr rampa zaten ters çevrildiğinden iki temada
+  /// da doğru çalışıyor.
+  factory _PillStyle.forRole({
+    required AppColors colors,
+    required String label,
+    required IconData icon,
+    required Color role,
+    required Color deep,
+    required Color darkStart,
+    required Color darkForeground,
+  }) {
+    final bool isDark = colors.brightness == Brightness.dark;
+    return _PillStyle(
+      label: label,
+      icon: icon,
+      gradient: <Color>[isDark ? darkStart : role.withValues(alpha: 0.22), deep],
+      foreground: isDark ? darkForeground : role,
+    );
+  }
 
   final String label;
   final IconData icon;

@@ -153,11 +153,11 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
               child: Container(
                 width: 580,
                 height: 520,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: <Color>[Color(0x579184D9), Colors.transparent],
-                    stops: <double>[0, 0.6],
+                    colors: <Color>[colors.glowViolet.withValues(alpha: 0.34), Colors.transparent],
+                    stops: const <double>[0, 0.6],
                   ),
                 ),
               ),
@@ -227,7 +227,7 @@ class _NoExamBody extends StatelessWidget {
               height: 140,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0x24FFFFFF)),
+                border: Border.all(color: colors.borderStrong),
               ),
               child: Icon(PhosphorIconsDuotone.calendarBlank, size: 46, color: colors.neutral600),
             ),
@@ -340,7 +340,7 @@ class _CountdownBody extends ConsumerWidget {
                     height: 42,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0x1FFFFFFF)),
+                      border: Border.all(color: colors.fillMedium),
                     ),
                     child: Icon(PhosphorIconsRegular.plus, size: 18, color: colors.neutral400),
                   ),
@@ -367,6 +367,7 @@ class _CountdownBody extends ConsumerWidget {
                             painter: CountdownRingPainter(
                               progressRatio: ratio,
                               dashRotation: dashController.value * 2 * math.pi,
+                              colors: colors,
                             ),
                           );
                         },
@@ -376,8 +377,8 @@ class _CountdownBody extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         ShaderMask(
-                          shaderCallback: (Rect bounds) => const LinearGradient(
-                            colors: AppColors.chromeGradient,
+                          shaderCallback: (Rect bounds) => LinearGradient(
+                            colors: colors.chromeGradient,
                             stops: AppColors.chromeGradientStops,
                           ).createShader(bounds),
                           child: Text(
@@ -415,9 +416,9 @@ class _CountdownBody extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xB81E2030),
+                color: colors.surfaceCardSoft,
                 borderRadius: BorderRadius.circular(24),
-                border: const Border.fromBorderSide(BorderSide(color: Color(0x12FFFFFF))),
+                border: Border.fromBorderSide(BorderSide(color: colors.hairline)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -474,7 +475,7 @@ class _CountdownBody extends ConsumerWidget {
                                 height: 9,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: i < cycleDots ? colors.mint : const Color(0x1FFFFFFF),
+                                  color: i < cycleDots ? colors.mint : colors.fillMedium,
                                 ),
                               ),
                             );
@@ -490,7 +491,7 @@ class _CountdownBody extends ConsumerWidget {
                       height: 4,
                       child: LinearProgressIndicator(
                         value: cycleDots / 4,
-                        backgroundColor: const Color(0x17FFFFFF),
+                        backgroundColor: colors.fillSubtle,
                         valueColor: AlwaysStoppedAnimation<Color>(colors.mint),
                       ),
                     ),

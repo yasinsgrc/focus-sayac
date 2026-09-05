@@ -76,7 +76,7 @@ class BadgesScreen extends ConsumerWidget {
                               height: 4,
                               child: Stack(
                                 children: <Widget>[
-                                  const DecoratedBox(decoration: BoxDecoration(color: Color(0x17FFFFFF))),
+                                  DecoratedBox(decoration: BoxDecoration(color: colors.fillSubtle)),
                                   FractionallySizedBox(
                                     widthFactor: (unlockedCount / kBadgeCatalog.length).clamp(0, 1),
                                     child: DecoratedBox(
@@ -173,10 +173,12 @@ class _BadgeCard extends StatelessWidget {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     final AppLocalizations l10n = AppLocalizations.of(context);
     final Color tint = definition.tint.resolve(colors);
-    final Color iconBg = unlocked ? tint.withValues(alpha: 0.32) : const Color(0x0DFFFFFF);
+    final Color iconBg = unlocked ? tint.withValues(alpha: 0.32) : colors.fillFaint;
     final Color iconColor = unlocked ? tint : colors.neutral700;
     final Color titleColor = unlocked ? colors.text : colors.neutral600;
-    final Color cardBg = unlocked ? const Color(0xDB1E2030) : const Color(0xCC12131C);
+    // Kilitli kart açılmış olandan bir düzlem geride duruyor: koyu temada
+    // zeminden biraz daha karanlık, açık temada biraz daha gri.
+    final Color cardBg = unlocked ? colors.surfaceCardStrong : colors.surfaceSunken.withValues(alpha: 0.8);
 
     return Material(
       color: Colors.transparent,
@@ -188,7 +190,7 @@ class _BadgeCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0x12FFFFFF)),
+            border: Border.all(color: colors.hairline),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,7 +236,7 @@ Future<void> showBadgeUnlockDialog(
 }) {
   return showDialog<void>(
     context: context,
-    barrierColor: const Color(0xAD04050A),
+    barrierColor: Theme.of(context).extension<AppColors>()!.scrim,
     builder: (BuildContext context) => _BadgeUnlockDialog(definition: definition, unlocked: unlocked),
   );
 }
@@ -263,9 +265,9 @@ class _BadgeUnlockDialog extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(26, 34, 26, 24),
         decoration: BoxDecoration(
-          color: const Color(0xF51A1C2A),
+          color: colors.surfaceDialog,
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: const Color(0x1AFFFFFF)),
+          border: Border.all(color: colors.borderSubtle),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

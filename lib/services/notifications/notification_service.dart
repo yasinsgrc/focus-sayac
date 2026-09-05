@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -175,7 +176,12 @@ class NotificationService {
     if (plugin == null) return;
     tz_data.initializeTimeZones();
     _istanbul = tz.getLocation('Europe/Istanbul');
-    const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    // Görsel Kimlik 04: durum çubuğu ikonu tek renk + alfa olmak zorunda.
+    // `@mipmap/ic_launcher` tam renkli olduğu için Android onu düz beyaz bir
+    // lekeye indirgiyordu; `ic_notification` işaretin siluetini taşıyor.
+    // Buradaki değer varsayılan: `AndroidNotificationDetails`lerin hiçbiri
+    // `icon:` geçmiyor, hepsi bunu miras alıyor.
+    const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@drawable/ic_notification');
     await plugin.initialize(settings: const InitializationSettings(android: androidInit));
   }
 
@@ -202,6 +208,52 @@ class NotificationService {
     return preferences.notificationsEnabled ? preferences : null;
   }
 
+  /// Zamanlanan üç bildirimin tek çıkışı. Kesin alarm (`exactAllowWhileIdle`)
+  /// Android 12+'ta `SCHEDULE_EXACT_ALARM` izni ister; izin verilmemişse
+  /// eklenti `PlatformException(exact_alarms_not_permitted)` **fırlatır**.
+  ///
+  /// Bu hata çağıranlara sızmamalı: SPEC.md Ekran 01 "ikisi de reddedilse
+  /// uygulama tam çalışmaya devam eder" diyor, oysa fırlayan hata
+  /// `PomodoroController.startFocus`/`_completeFocus`'u ortasından kesiyordu —
+  /// odak tamamlanışında rozet değerlendirmesi (`BadgeUnlockService`), haptik
+  /// ve interstitial hiç çalışmıyordu. Kapıyı burada, tek noktada tutmak
+  /// üç çağıranın her birine ayrı `try` dağıtmaktan güvenli (ana anahtar ve
+  /// sesli/sessiz kanal seçimi de aynı gerekçeyle burada).
+  ///
+  /// Sessizce yutmak yerine kesin olmayan moda düşülüyor: `inexact` alarm izin
+  /// istemiyor, bildirim yine geliyor — yalnızca Android'in takdirine bağlı
+  /// bir gecikmeyle. Bildirimi tümden atmak, izni vermeyen kullanıcıyı
+  /// seansın bittiğinden habersiz bırakırdı.
+  Future<void> _zonedSchedule(
+    FlutterLocalNotificationsPlugin plugin, {
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails notificationDetails,
+  }) async {
+    try {
+      await plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: scheduledDate,
+        notificationDetails: notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    } on PlatformException catch (error) {
+      if (error.code != 'exact_alarms_not_permitted') rethrow;
+      await plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: scheduledDate,
+        notificationDetails: notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
+  }
+
   /// SPEC.md Ekran 12 "Seans bitişi" — seans başında kurulur, [endAtUtc]'de
   /// tetiklenir. Metindeki dakika sayıları demo veri değil, çağıranın
   /// geçtiği gerçek ayar değerleridir (SPEC DoD "demo sayılarının hiçbiri
@@ -215,7 +267,8 @@ class NotificationService {
     if (plugin == null) return;
     final NotificationPreferences? preferences = await _allowedPreferences();
     if (preferences == null) return;
-    await plugin.zonedSchedule(
+    await _zonedSchedule(
+      plugin,
       id: _sessionEndNotificationId,
       title: _l10n.notificationSessionEndTitle,
       body: _l10n.notificationSessionEndBody(focusMinutes, breakMinutes),
@@ -223,7 +276,6 @@ class NotificationService {
       notificationDetails: NotificationDetails(
         android: preferences.soundEnabled ? _sessionEndAndroidDetails : _sessionEndSilentAndroidDetails,
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
 
@@ -245,7 +297,8 @@ class NotificationService {
     if (plugin == null) return;
     final NotificationPreferences? preferences = await _allowedPreferences();
     if (preferences == null) return;
-    await plugin.zonedSchedule(
+    await _zonedSchedule(
+      plugin,
       id: _breakEndNotificationId,
       title: _l10n.notificationBreakEndTitle,
       body: _l10n.notificationBreakEndBody(breakMinutes),
@@ -253,7 +306,6 @@ class NotificationService {
       notificationDetails: NotificationDetails(
         android: preferences.soundEnabled ? _sessionEndAndroidDetails : _sessionEndSilentAndroidDetails,
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
 
@@ -301,7 +353,8 @@ class NotificationService {
     final tz.TZDateTime now = tz.TZDateTime.now(_location);
     final tz.TZDateTime target = tz.TZDateTime(_location, now.year, now.month, now.day, 21);
     if (!target.isAfter(now)) return;
-    await plugin.zonedSchedule(
+    await _zonedSchedule(
+      plugin,
       id: _streakRiskNotificationId,
       title: _l10n.notificationStreakRiskTitle,
       body: _l10n.notificationStreakRiskBody(streak),
@@ -309,7 +362,6 @@ class NotificationService {
       notificationDetails: NotificationDetails(
         android: preferences.soundEnabled ? _streakRiskAndroidDetails : _streakRiskSilentAndroidDetails,
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
 

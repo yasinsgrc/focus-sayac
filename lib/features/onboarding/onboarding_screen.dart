@@ -81,15 +81,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
       backgroundColor: colors.bg,
       body: Stack(
         children: <Widget>[
-          const Positioned(
+          Positioned(
             top: -140,
             left: -60,
-            child: _AuroraBlob(width: 520, height: 420, color: Color(0x57FFB03A), stop: 0.62),
+            child: _AuroraBlob(
+              width: 520,
+              height: 420,
+              color: colors.ember.withValues(alpha: 0.34),
+              stop: 0.62,
+            ),
           ),
-          const Positioned(
+          Positioned(
             bottom: -160,
             right: -100,
-            child: _AuroraBlob(width: 460, height: 380, color: Color(0x4D9184D9), stop: 0.64),
+            child: _AuroraBlob(
+              width: 460,
+              height: 380,
+              color: colors.glowViolet.withValues(alpha: 0.30),
+              stop: 0.64,
+            ),
           ),
           SafeArea(
             child: Padding(
@@ -165,7 +175,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                             children: <Widget>[
                               // Prototipin akan `sheen` parlamasının durağan
                               // hâli: üstten aşağı sönen beyaz gradient.
-                              const Positioned(
+                              Positioned(
                                 left: 0,
                                 right: 0,
                                 top: 0,
@@ -176,7 +186,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                                       gradient: LinearGradient(
                                         begin: Alignment.topCenter,
                                         end: Alignment.bottomCenter,
-                                        colors: <Color>[Color(0x29FFFFFF), Colors.transparent],
+                                        colors: <Color>[colors.fillStrong, Colors.transparent],
                                       ),
                                     ),
                                   ),
@@ -274,13 +284,14 @@ class _ShimmerTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppColors colors = Theme.of(context).extension<AppColors>()!;
     return AnimatedBuilder(
       animation: shimmer,
       builder: (BuildContext context, Widget? child) {
         return ShaderMask(
           shaderCallback: (Rect bounds) {
-            return const LinearGradient(
-              colors: AppColors.chromeGradient,
+            return LinearGradient(
+              colors: colors.chromeGradient,
               stops: AppColors.chromeGradientStops,
             ).createShader(
               Rect.fromLTWH(

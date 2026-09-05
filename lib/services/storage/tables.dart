@@ -61,6 +61,12 @@ class AppSettingsTable extends Table {
   BoolColumn get onboardingCompleted => boolean().withDefault(const Constant(false))();
   BoolColumn get streakReminderEnabled => boolean().withDefault(const Constant(true))();
 
+  /// Varsayılan `system`: ilk kurulumda cihazın tercihine uyulur. Mevcut
+  /// kurulumlar migration'da aynı varsayılanı alır — v2'ye kadar uygulama
+  /// zaten tek koyu temaydı, cihazı koyu olan kullanıcı hiçbir değişiklik
+  /// görmez.
+  TextColumn get themeMode => textEnum<AppThemeMode>().withDefault(const Constant('system'))();
+
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }
