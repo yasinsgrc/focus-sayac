@@ -9,10 +9,12 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/time/app_day.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
 import '../../core/widgets/rise_in.dart';
+import '../../core/widgets/rolling_number.dart';
 import '../../domain/countdown/countdown_math.dart';
 import '../../domain/exams/exam_picker_request.dart';
 import '../../domain/exams/exam_providers.dart';
@@ -359,16 +361,26 @@ class _CountdownBody extends ConsumerWidget {
                   alignment: Alignment.center,
                   children: <Widget>[
                     RepaintBoundary(
-                      child: AnimatedBuilder(
-                        animation: dashController,
-                        builder: (BuildContext context, Widget? child) {
-                          return CustomPaint(
-                            size: const Size(316, 316),
-                            painter: CountdownRingPainter(
-                              progressRatio: ratio,
-                              dashRotation: dashController.value * 2 * math.pi,
-                              colors: colors,
-                            ),
+                      // Oran yalnızca sınav değişince ve gün dönümünde
+                      // değişiyor; saniye tikleri `days`i kımıldatmadığı için
+                      // tween boşta çalışmıyor, o iki anda akıyor.
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween<double>(end: ratio),
+                        duration: AppMotion.respectingMotion(context, AppMotion.slow),
+                        curve: AppMotion.standard,
+                        builder: (BuildContext context, double animatedRatio, Widget? _) {
+                          return AnimatedBuilder(
+                            animation: dashController,
+                            builder: (BuildContext context, Widget? child) {
+                              return CustomPaint(
+                                size: const Size(316, 316),
+                                painter: CountdownRingPainter(
+                                  progressRatio: animatedRatio,
+                                  dashRotation: dashController.value * 2 * math.pi,
+                                  colors: colors,
+                                ),
+                              );
+                            },
                           );
                         },
                       ),
@@ -381,8 +393,8 @@ class _CountdownBody extends ConsumerWidget {
                             colors: colors.chromeGradient,
                             stops: AppColors.chromeGradientStops,
                           ).createShader(bounds),
-                          child: Text(
-                            '$days',
+                          child: RollingNumber(
+                            value: days,
                             style: AppTypography.counter(fontSize: 100, weight: FontWeight.w700, color: Colors.white, height: 1),
                           ),
                         ),
@@ -437,7 +449,11 @@ class _CountdownBody extends ConsumerWidget {
                             children: <Widget>[
                               Icon(PhosphorIconsFill.flame, size: 13, color: colors.ember),
                               const SizedBox(width: 5),
-                              Text(l10n.countdownStreakBadge(streak), style: AppTypography.body(fontSize: 11.5, weight: FontWeight.w500, color: colors.ember)),
+                              RollingNumber(
+                                value: streak,
+                                text: l10n.countdownStreakBadge(streak),
+                                style: AppTypography.body(fontSize: 11.5, weight: FontWeight.w500, color: colors.ember),
+                              ),
                             ],
                           ),
                         ),
@@ -447,21 +463,25 @@ class _CountdownBody extends ConsumerWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: <Widget>[
-                      RichText(
-                        text: TextSpan(
-                          children: <InlineSpan>[
-                            TextSpan(
-                              text: '${todayParts.hours}',
-                              style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
-                            ),
-                            TextSpan(text: l10n.countdownHoursUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
-                            TextSpan(
-                              text: '${todayParts.minutes}',
-                              style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
-                            ),
-                            TextSpan(text: l10n.countdownMinutesUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
-                          ],
-                        ),
+                      // Sayılar `RollingNumber`a taşındığı için `RichText`in
+                      // tek ağacı Row'a açıldı; hizalama yine yazı tabanında,
+                      // yani span'ların verdiğinin aynısı.
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: <Widget>[
+                          RollingNumber(
+                            value: todayParts.hours,
+                            style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
+                          ),
+                          Text(l10n.countdownHoursUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
+                          RollingNumber(
+                            value: todayParts.minutes,
+                            style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
+                          ),
+                          Text(l10n.countdownMinutesUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
+                        ],
                       ),
                       const Spacer(),
                       Padding(

@@ -17,6 +17,7 @@ import 'package:focussayac/services/storage/storage_enums.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
 
 import '../../support/localized_test_app.dart';
+import '../../support/rolling_number_finder.dart';
 
 /// Gerekçe için bkz. `test/features/settings/settings_screen_test.dart` —
 /// drift sorguları gerçek zamanda, widget ağacı sahte saatte ilerliyor.
@@ -138,18 +139,21 @@ void main() {
     );
     await _settle(tester);
 
-    expect(find.text('3 SAAT'), findsOneWidget);
+    // Sayılar `RollingNumber`da: her karakter ayrı bir `Text`, aranan dize
+    // widget'ın etiketi (bkz. `findRollingNumber`).
+    expect(findRollingNumber('3 SAAT'), findsOneWidget);
     // 180 dk / 7 gün = 25 dk (tam sayı bölümü).
     expect(find.text('Son 7 gün · günlük ortalama 25 dk'), findsOneWidget);
-    expect(find.text('1 GÜN'), findsOneWidget);
-    expect(find.text('%75'), findsOneWidget);
+    expect(findRollingNumber('1'), findsOneWidget);
+    expect(find.text(' GÜN'), findsOneWidget);
+    expect(findRollingNumber('%75'), findsOneWidget);
     // Dört seans da aynı saat kovasında → aralık satırı görünür.
     expect(find.textContaining('tamamlanma %75.'), findsOneWidget);
 
     // SPEC DoD: demo sayılarının hiçbiri kodda yok.
-    expect(find.text('42 SAAT'), findsNothing);
-    expect(find.text('11 GÜN'), findsNothing);
-    expect(find.text('%86'), findsNothing);
+    expect(findRollingNumber('42 SAAT'), findsNothing);
+    expect(findRollingNumber('11'), findsNothing);
+    expect(findRollingNumber('%86'), findsNothing);
 
     await _disposeTree(tester);
   });
@@ -166,10 +170,11 @@ void main() {
     );
     await _settle(tester);
 
-    expect(find.text('0 DAKİKA'), findsOneWidget);
-    expect(find.text('0 GÜN'), findsOneWidget);
+    expect(findRollingNumber('0 DAKİKA'), findsOneWidget);
+    expect(findRollingNumber('0'), findsOneWidget);
+    expect(find.text(' GÜN'), findsOneWidget);
     // Hiç seans yokken oran tanımsız — `%0` yanıltıcı olurdu.
-    expect(find.text('—'), findsOneWidget);
+    expect(findRollingNumber('—'), findsOneWidget);
     expect(find.textContaining('En verimli aralığın'), findsNothing);
 
     await _disposeTree(tester);

@@ -19,6 +19,12 @@ Aşağıdaki maddeler **teste/yayına çıkma önceliğine** göre sıralı. Her
 oturumda (`/clear` sonrası) yapılabilecek şekilde bağımsız yazıldı: sırayla git,
 her maddenin sonunda `flutter analyze` + `flutter test` + tek commit.
 
+Madde 11 ve 14-17 bu dosyaya yazılmadan yapıldı (ilk Android derlemesi, ana
+ekran widget'ları, emülatör doğrulaması, açık tema + uygulama simgesi);
+kayıtları `DECISIONS.md`de. **Madde 18-20** yayın engelleyicisi değil, cila:
+uygulamanın eksik kalan hareket katmanı — dosyanın sonundaki ayrı bölümde.
+**Madde 18 bitti**, 19 ve 20 kaldı.
+
 ---
 
 ## 1. Ekran 07 — Ayarlar (SPEC Faz 12) ✅ bitti
@@ -347,6 +353,238 @@ değil (değer etiketin kendi metninde); "Reklamları kaldır / YAKINDA" satır�
 
 ---
 
+---
+
+# Hareket geçişi (madde 18-20) — yapılacak
+
+Uygulamanın tipografisi, paleti ve düzeni prototiple birebir; eksik olan tek
+katman **hareket**. Şu an var olanlar: `RiseIn` (600ms giriş, 60ms basamak),
+geri sayım halkasının 40sn dönen kesikleri, alevin 1.7sn titreşimi, onboarding
+shimmer/spin, `AppToast`, odak ipucu satırının fade'i. Eksik olanlar üç kümede
+toplanıyor ve üç madde tam olarak o kümeler.
+
+**Yön kararı — sürekli değil olay bazlı.** SPEC §6 sürekli blur'u, sürekli
+dekoratif animasyonu ve odak seansında her tür süslemeyi yasaklıyor; hedef
+sürekli 60 fps. Bu bir kısıt gibi görünüyor ama aslında doğru yönü işaret
+ediyor: pahalı görünen hareket *sürekli parlayan* değil, *olaya tepki veren*
+harekettir. Aşağıdaki üç maddenin hiçbiri boşta kare üretmiyor — hepsi bir
+değer değişince, bir dokunuşta ya da bir rota geçişinde bir kez çalışıp duruyor.
+Bu yüzden §6.4 ile çatışmıyorlar ve odak ekranının fps bütçesine dokunmuyorlar.
+
+**Üçünde de ortak kural:** `MediaQuery.disableAnimationsOf(context)` açıkken
+hiçbir hareket çalışmaz, içerik doğrudan son hâlinde çizilir — `RiseIn`in
+zaten uyguladığı desen (`lib/core/widgets/rise_in.dart:68`). Madde 18 bu
+kontrolü tek bir yardımcıya topluyor, 19 ve 20 onu kullanıyor.
+
+---
+
+## 18. Hareket token'ları + sayı ve oran geçişleri ✅ bitti
+
+238 test geçiyor (+9). Kararlar: `DECISIONS.md` "Madde 18".
+
+- **`AppMotion`** kuruldu (altı süre, dört eğri, `respectingMotion`); `RiseIn`in
+  600ms/60ms'i oraya taşındı, eğrisi (CSS `ease-out`) bilinçli olarak yerinde kaldı.
+- **`RollingNumber`** karakter bazlı odometre: yalnızca değişen hane kayıyor, yuva
+  anahtarları sağdan sayılıyor, hane sayısı değişince `AnimatedSize`, taşmaya karşı
+  `FittedBox(scaleDown)`, ekran okuyucuya tek `Semantics` etiketi.
+  Uygulandığı yerler: Ekran 02 gün sayısı + bugünkü saat/dakika + seri rozeti,
+  Ekran 06 kümülatif odak / en uzun seri / tamamlanma oranı, Ekran 04 rozet sayacı.
+- **Dışarıda bırakılanlar:** `hh:mm:ss` saniye sayacı (boşta 60 fps) ve Ekran 06'nın
+  günlük ortalama **cümlesi** (bir cümleyi karaktere bölmek satır kırmayı kaybettirir,
+  sayı da yalnız ekran kapalıyken değişiyor).
+- **Oran geçişleri:** Ekran 02'nin halkası `TweenAnimationBuilder`; odak/mola halkası
+  `SettlingProgress` ile **yalnızca ilk yerleşmede** akıyor — her saniye tikini
+  tween'lemek §6.4'ün yasakladığı sürekli kare üretimi olurdu.
+- **Testler:** `test/core/rolling_number_test.dart` + `test/core/settling_progress_test.dart`;
+  `stats_screen_test` sayıları artık `findRollingNumber` ile arıyor,
+  `focus_session_screen_test`in iki halka ölçümü yerleşmeyi bekliyor.
+- **Cihazda bakılmadı** — hareketin son hâli emülatörde görülmedi (madde 16 gibi bir tur).
+
+**Neden ilk buydu:** uygulamanın en görünür açığı. Bir geri sayım uygulamasında
+ekranın ortasındaki 100px'lik gün sayısı (`countdown_screen.dart:385`) gece
+yarısı bir kareden diğerine zıplıyor; bugünkü odak saati bir seans bitince
+zıplıyor; halkanın oranı sınav değişince tween'siz sıçrıyor. Yüzey küçük,
+etki büyük, SPEC §6 ile hiç sürtünmesi yok.
+
+**Yapılacaklar:**
+
+1. **`lib/core/theme/app_motion.dart`** — `app_spacing.dart` / `app_shadows.dart`
+   ile aynı desen (`abstract final class`, `const` alanlar). İçinde:
+   - Süreler: `instant` 120ms, `fast` 180ms, `base` 260ms, `slow` 420ms,
+     `entrance` 600ms, `step` 60ms. Son ikisi `RiseIn`in bugün kendi içinde
+     tuttuğu değerler — `RiseIn` de bu token'lara taşınsın, iki kaynak kalmasın.
+   - Eğriler: `enter` = `Curves.easeOutCubic`, `exit` = `Curves.easeInCubic`,
+     `standard` = `Curves.easeInOutCubic`, `pop` = `Curves.easeOutBack`.
+   - `static Duration respectingMotion(BuildContext, Duration)` → "hareketi
+     azalt" açıkken `Duration.zero`. Erişilebilirlik kontrolü bundan sonra
+     tek yerde; her çağıran `if (disableAnimationsOf)` yazmasın.
+
+2. **`lib/core/widgets/rolling_number.dart`** — basamak bazlı sayaç. Değer
+   değişince yalnızca **değişen** basamaklar dikey olarak kayar (odometre),
+   sabit kalanlar yerinde durur; 132 → 131'de yalnızca son hane hareket eder.
+   - Basamak genişliği zıplamasın diye
+     `FontFeature.tabularFigures()` — saat metninde zaten kullanılan çözüm
+     (`countdown_screen.dart:397`).
+   - Yön: azalan sayıda basamak yukarıdan aşağı, artan sayıda aşağıdan yukarı.
+     Geri sayım azalır, odak süresi artar; ikisi de doğru yöne aksın.
+   - Hane sayısı değişince (100 → 99) düzenin genişliği değişir; `AnimatedSize`
+     ya da sabit genişlik — hangisi seçilirse gerekçesi `DECISIONS.md`ye.
+   - `TextStyle` dışarıdan verilir: `AppTypography.counter` ve `display`in
+     ikisiyle de çalışmalı, `ShaderMask` içinde de doğru çizilmeli (gün sayısı
+     krom gradyanın altında).
+
+3. **Uygulama yerleri:**
+   - Ekran 02 gün sayısı (`countdown_screen.dart:385`, `ShaderMask` içinde).
+   - Ekran 02 "bugün" kartının saat/dakikası (`todayParts.hours/minutes`,
+     satır 454-462) ve seri rozetinin sayısı (satır 440).
+   - Ekran 06 istatistik sayıları (`stats_screen.dart` — kümülatif odak, günlük
+     ortalama, en uzun seri, tamamlanma oranı).
+   - Ekran 04 rozet sayacı (`$unlockedCount/7`).
+   - `hh:mm:ss` saniye sayacına **uygulanmayacak**: saniyede bir kayan üç hane
+     odak vaadine aykırı ve boşta 60 fps demek. Bu bilinçli bir dışarıda
+     bırakma, `DECISIONS.md`ye gerekçesiyle yazılsın.
+
+4. **Oran geçişleri:** `CountdownRingPainter.progressRatio` ve
+   `SessionRingPainter.progress` `TweenAnimationBuilder<double>` ile
+   (`AppMotion.slow`, `AppMotion.standard`). Odak halkası saniyede bir zaten
+   ilerliyor — orada tween **yok**, yalnızca seans başında 0'a/ilk değere
+   yerleşirken. Geri sayım halkası sınav değişiminde ve gün dönümünde akar.
+
+**DoD / testler** (`test/core/rolling_number_test.dart`,
+`test/features/countdown/`):
+- Değer değişince ara karede eski ve yeni basamak **birlikte** ağaçta; animasyon
+  bitince yalnızca yeni değer.
+- Değişmeyen basamaklar hiç hareket etmiyor (132 → 131'de ilk iki hane sabit).
+- `disableAnimations: true` (`MediaQueryData(disableAnimations: true)`) altında
+  ara kare yok, ilk karede son değer.
+- `AppMotion.respectingMotion` reduce-motion'da `Duration.zero` döndürüyor.
+- `RiseIn`in mevcut testi (`test/core/rise_in_test.dart`) token taşımasından
+  sonra da geçiyor.
+
+Kapanış: `flutter analyze` + `flutter test`, `DECISIONS.md`ye "Madde 18" başlığı,
+tek commit.
+
+---
+
+## 19. Tamamlama anı — seans bitişi, rozet açılışı, seri artışı
+
+**Neden:** uygulamanın en duygusal üç anı şu an tamamen sessiz. 25 dakika odak
+bitiyor ve ekran öylece mola ekranına geçiyor; yedi rozetten biri açılıyor ve
+dialog hiçbir şey söylemeden beliriyor; seri 6'dan 7'ye çıkıyor ve rozet aynı
+karede yeni sayıyı gösteriyor. Kullanıcının uygulamaya dönme sebebi tam olarak
+bu üç an; hiçbirinin karşılığı yok.
+
+**Madde 18'e bağımlı** (`AppMotion` token'ları ve `respectingMotion`).
+
+**Yapılacaklar:**
+
+1. **Seans bitişi** (`focus_session_screen.dart`, `PomodoroController`'ın odak →
+   mola geçişi): halka son %5'i doldurup tamamlandığında bir kez
+   `HapticFeedback.mediumImpact()` (`package:flutter/services.dart`, yeni
+   bağımlılık yok) + halkanın renk geçişi (`ember` → `mint`, `AppMotion.slow`).
+   Mola ekranına geçiş bu animasyon bittikten sonra.
+   - **§6.4 çatışması yok:** bu hareket seans **bittiği anda** çalışıyor, yani
+     odak süresi dolmuşken. Süren seans boyunca hiçbir yeni kare üretilmiyor.
+     Bu gerekçe `DECISIONS.md`ye yazılsın; §6.4 taraması (`test/performance/`)
+     yanlış alarm veriyorsa taramanın kapsamı netleştirilsin.
+   - Duraklatılmış seansta ya da iptalde **çalışmaz** — yalnızca doğal bitişte.
+
+2. **Rozet açılışı** (`badges_screen.dart`'ın dialogu +
+   `BadgeUnlockService.evaluateAfterFocusCompletion()`'ın döndürdüğü anahtarlar):
+   dialog kartı `AppMotion.pop` eğrisiyle 0.92 → 1.0 ölçekte gelsin, rozet
+   ikonunun arkasında **tek seferlik** bir halo (opaklık 0.45 → 0, 600ms).
+   `HapticFeedback.heavyImpact()` bir kez.
+   - Halo sürekli nabız **atmayacak** — bir kez sönüp bitecek. Sürekli olan her
+     şey SPEC §6.4'ün yasakladığı sınıfa girer.
+   - Aynı çağrıda birden fazla rozet açılabiliyor (interstitial bastırma mantığı
+     bunu varsayıyor, madde 6); dialoglar sırayla mı, tek dialogda mı — karar
+     `DECISIONS.md`ye.
+
+3. **Seri artışı** (Ekran 02'nin `streak > 0` rozeti, `countdown_screen.dart:430`):
+   sayı büyüdüğünde alev ikonu `AppMotion.pop` ile 1.0 → 1.25 → 1.0. Madde 18'in
+   `RollingNumber`ı sayıyı zaten çeviriyor; bu yalnızca ikonun eşlik etmesi.
+   Yalnızca **artışta**; ekran her açıldığında değil (`didUpdateWidget` ile
+   önceki değere bak, ilk build'de çalışma).
+
+4. **Haptic ayarı:** ayarlar ekranında haptic anahtarı yok. Üç seçenek —
+   (a) `AppSettings`e yeni bir `hapticsEnabled` kolonu + göç, (b) sistemin kendi
+   dokunsal geri bildirim ayarına güven (`HapticFeedback` zaten ona saygı
+   duyuyor), (c) hiç haptic ekleme. **(b) öneriliyor**: yeni kolon + göç +
+   ARB dizesi, kullanıcının işletim sisteminde zaten verdiği bir karar için
+   fazla maliyet. Seçim gerekçesiyle `DECISIONS.md`ye.
+
+**DoD / testler** (`test/features/focus_session/`, `test/features/badges/`,
+`test/features/countdown/`):
+- Odak doğal bitişinde tamamlama animasyonu bir kez çalışıyor; **iptalde ve
+  duraklatmada çalışmıyor** (karşı kontrol).
+- Seans **sürerken** hiçbir yeni animasyon denetleyicisi tik atmıyor — §6.4
+  regresyonu.
+- Rozet halosu bitiyor: animasyon süresinden sonra `pumpAndSettle` takılmıyor
+  (sonsuz animasyon testi kilitler, bu testin asıl değeri bu).
+- Seri rozeti ilk build'de pop yapmıyor, yalnızca değer arttığında yapıyor.
+- Reduce-motion altında üçü de anında son hâlinde.
+
+Kapanış: `flutter analyze` + `flutter test`, `DECISIONS.md`ye "Madde 19",
+tek commit.
+
+---
+
+## 20. Rota geçişleri + dokunma geri bildirimi
+
+**Neden:** beş sekme arasında geçiş Material'ın varsayılan sayfa animasyonuyla
+oluyor — uygulamanın kendi kimliği yok. Alt çubuğun aktif hapı sekme değişince
+bir yerden diğerine ışınlanıyor. Birincil CTA'da (`countdown_screen.dart:533`)
+yalnızca jenerik `InkWell` dalgası var; basıldığını hissettiren bir şey yok.
+
+**Madde 18'e bağımlı** (`AppMotion`).
+
+**Yapılacaklar:**
+
+1. **Rota geçişleri** (`lib/core/router/app_router.dart` — şu an hiç
+   `pageBuilder` yok, hepsi varsayılan): `CustomTransitionPage` ile
+   - Sekmeler arası (yatay kardeşler): fade-through — çıkan opaklıkla gider,
+     giren opaklık + 1.02 → 1.0 ölçekle gelir. `AppMotion.base`.
+   - Üste `push` edilenler (odak seansı, sınav ekleme, başarı kartı): aşağıdan
+     yukarı kayma + fade. `AppMotion.base`, `AppMotion.enter`.
+   - Reduce-motion'da ikisi de `NoTransitionPage`.
+
+2. **Alt çubuk hapının kayması** (`bottom_nav_bar.dart`) — **dikkat, burada bir
+   yapısal engel var:** beş sekmenin her biri ayrı bir rota ve çubuk her rotada
+   sıfırdan kuruluyor. Hap bu yüzden basit bir `AnimatedPositioned` ile
+   kayamaz; iki yol var:
+   - **(a) `Hero`** — hapa ortak bir tag ver, sekmeden sekmeye uçsun.
+     Hapın içeriği sekmeye göre değiştiği için (`_PillStyle`: etiket, ikon,
+     gradyan) `flightShuttleBuilder` gerekiyor; genişlik de değişiyor
+     (`flex: 16` ↔ `flex: 10`), `Hero` onu kendi enterpole eder. **Önerilen.**
+   - **(b) Yapmamak** — fade-through geçişte çubuğun tamamı zaten çapraz
+     soluyor, hap onunla birlikte yerini alıyor. Sıfır risk, daha az etki.
+   - Hangisi seçilirse `DECISIONS.md`ye gerekçesiyle; (a) denenip çalışmazsa
+     (b)'ye düşmek meşru bir sonuç, yarım bırakılmış bir `Hero` değil.
+
+3. **`lib/core/widgets/app_pressable.dart`** — basılı tutulduğunda çocuğu
+   0.97'ye küçültüp bırakınca `AppMotion.pop` ile geri getiren sarmalayıcı
+   (`AppMotion.instant`). Uygulanacağı yerler: Ekran 02'nin "… DAKİKA ODAKLAN"
+   butonu, `AppPillButton`, sınav seçim sheet'inin satırları, Ekran 05'in
+   PAYLAŞ/Kaydet/Kopyala üçlüsü.
+   - Mevcut `InkWell` dalgaları **kaldırılmıyor**; ölçek onların üstüne biniyor.
+     Dalga "nereye bastım"ı, ölçek "bastım"ı söyler.
+   - Dokunma hedefi küçülmemeli: ölçek `Transform`la, düzenle değil.
+
+**DoD / testler** (`test/core/`, `test/features/`):
+- Sekme geçişinde ara karede iki ekran birlikte ağaçta; `pumpAndSettle`
+  sonrası yalnızca hedef ekran.
+- Reduce-motion'da geçiş yok — ilk karede hedef ekran.
+- Madde 13'ün gezinme yığını testi ("dört sekme arasında dolaşmak yığını
+  büyütmüyor") `CustomTransitionPage`e geçtikten sonra da geçiyor.
+- `AppPressable` basılıyken ölçek < 1, bırakınca 1'e dönüyor; sardığı butonun
+  `onTap`i hâlâ tetikleniyor (ölçek jesti yutmamalı).
+- Madde 12'nin 48px dokunma hedefi testleri hâlâ geçiyor.
+
+Kapanış: `flutter analyze` + `flutter test`, `DECISIONS.md`ye "Madde 20",
+tek commit.
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı
@@ -372,7 +610,7 @@ değil (değer etiketin kendi metninde); "Reklamları kaldır / YAKINDA" satır�
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(171 test, `flutter test`)*
+- [x] Testler geçiyor *(238 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

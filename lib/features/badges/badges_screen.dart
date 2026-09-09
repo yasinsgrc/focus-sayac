@@ -8,6 +8,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_pill_button.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
 import '../../core/widgets/rise_in.dart';
+import '../../core/widgets/rolling_number.dart';
 import '../../domain/badges/badge_definition.dart';
 import '../../domain/badges/badge_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
@@ -93,13 +94,15 @@ class BadgesScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Text(
-                          '$unlockedCount/${kBadgeCatalog.length}',
+                        RollingNumber(
+                          value: unlockedCount,
+                          text: '$unlockedCount/${kBadgeCatalog.length}',
+                          // `tabularFigures` artık `RollingNumber`ın garantisi.
                           style: AppTypography.display(
                             fontSize: 12,
                             weight: FontWeight.w600,
                             color: colors.neutral400,
-                          ).copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]),
+                          ),
                         ),
                       ],
                     ),

@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
 import '../../core/widgets/rise_in.dart';
+import '../../core/widgets/rolling_number.dart';
 import '../../domain/stats/focus_stats.dart';
 import '../../domain/stats/stats_providers.dart';
 import '../../domain/time/duration_formatter.dart';
@@ -72,8 +73,12 @@ class StatsScreen extends ConsumerWidget {
                           colors: colors.chromeGradient,
                           stops: AppColors.chromeGradientStops,
                         ).createShader(bounds),
-                        child: Text(
-                          _cumulativeText(l10n, stats.cumulativeSeconds),
+                        child: RollingNumber(
+                          // Yön kaynağı ham saniye: metin `3 SAAT` ↔ `180
+                          // DAKİKA` arasında birim değiştirse de toplam odak
+                          // hep artıyor.
+                          value: stats.cumulativeSeconds,
+                          text: _cumulativeText(l10n, stats.cumulativeSeconds),
                           style: AppTypography.counter(
                             fontSize: 46,
                             color: Colors.white,
@@ -112,7 +117,8 @@ class StatsScreen extends ConsumerWidget {
                         Expanded(
                           child: _MetricCard(
                             label: l10n.statsLongestStreak,
-                            value: '${stats.longestStreak}',
+                            value: stats.longestStreak,
+                            valueText: '${stats.longestStreak}',
                             unit: l10n.statsDaysUnit,
                             valueColor: colors.ember,
                           ),
@@ -121,7 +127,8 @@ class StatsScreen extends ConsumerWidget {
                         Expanded(
                           child: _MetricCard(
                             label: l10n.statsCompletion,
-                            value: stats.completionPercent == null
+                            value: stats.completionPercent ?? 0,
+                            valueText: stats.completionPercent == null
                                 ? l10n.commonEmptyValue
                                 : l10n.statsCompletionPercent(stats.completionPercent!),
                             valueColor: colors.mint,
@@ -200,12 +207,16 @@ class _MetricCard extends StatelessWidget {
   const _MetricCard({
     required this.label,
     required this.value,
+    required this.valueText,
     required this.valueColor,
     this.unit,
   });
 
   final String label;
-  final String value;
+
+  /// Kayma yönünün kaynağı; çizilen metin [valueText] (oran tanımsızken `—`).
+  final int value;
+  final String valueText;
   final String? unit;
   final Color valueColor;
 
@@ -220,20 +231,18 @@ class _MetricCard extends StatelessWidget {
         children: <Widget>[
           Text(label, style: AppTypography.kicker(fontSize: 8, color: colors.neutral600, letterSpacingEm: 0.22)),
           const SizedBox(height: 10),
-          Text.rich(
-            TextSpan(
-              children: <InlineSpan>[
-                TextSpan(
-                  text: value,
-                  style: AppTypography.counter(fontSize: 30, color: valueColor, letterSpacingEm: -0.05),
-                ),
-                if (unit != null)
-                  TextSpan(
-                    text: unit,
-                    style: AppTypography.display(fontSize: 14, color: colors.neutral500),
-                  ),
-              ],
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: <Widget>[
+              RollingNumber(
+                value: value,
+                text: valueText,
+                style: AppTypography.counter(fontSize: 30, color: valueColor, letterSpacingEm: -0.05),
+              ),
+              if (unit != null) Text(unit!, style: AppTypography.display(fontSize: 14, color: colors.neutral500)),
+            ],
           ),
         ],
       ),

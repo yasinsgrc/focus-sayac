@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
+import 'package:focussayac/core/theme/app_motion.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_controller.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_phase.dart';
 import 'package:focussayac/features/focus_session/focus_session_screen.dart';
@@ -151,6 +152,10 @@ void main() {
       ),
     );
 
+    // Halka ilk değerine bir kez akıyor (`SettlingProgress`); ölçüm o geçiş
+    // bittikten sonra. Saniye tikleyicisi 1sn'de bir kez çalıştığı için bu
+    // bekleme ilerlemeyi kayda değer biçimde büyütmüyor.
+    await tester.pump(AppMotion.slow);
     expect(_ringPainter(tester).progress, closeTo(0.5, 0.01));
 
     await _disposeTree(tester);
@@ -172,6 +177,7 @@ void main() {
       ),
     );
 
+    await tester.pump(AppMotion.slow);
     final SessionRingPainter painter = _ringPainter(tester);
     expect(painter.progress, closeTo(0.8, 0.001));
     // Duraklatılmışken halka gradyan değil, düz renk (Ekran 03 "meşale soldu").

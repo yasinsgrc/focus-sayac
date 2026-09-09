@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_motion.dart';
+
 /// Prototipin `@keyframes rise` girişi (v2 satır 27):
 /// `0%{opacity:0;transform:translateY(14px)} 100%{opacity:1;transform:none}`.
 ///
@@ -17,12 +19,13 @@ class RiseIn extends StatefulWidget {
     required this.child,
     super.key,
     this.delay = Duration.zero,
-    this.duration = const Duration(milliseconds: 600),
+    this.duration = AppMotion.entrance,
   });
 
   /// Prototipin basamak aralığı: `.06s`. Sıra numarasını gecikmeye çeviren
-  /// çarpan burada duruyor ki çağıran taraf `delay: RiseIn.step * 3` yazsın.
-  static const Duration step = Duration(milliseconds: 60);
+  /// çarpan burada duruyor ki çağıran taraf `delay: RiseIn.step * 3` yazsın;
+  /// değerin kendisi `AppMotion`da, iki kaynak kalmasın.
+  static const Duration step = AppMotion.step;
 
   final Widget child;
   final Duration delay;

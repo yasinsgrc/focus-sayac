@@ -1273,3 +1273,66 @@ başlığı) nötr bir bindirme için doğru, bir ışık kaynağı için değil
 - **Cihazda bakılmadı.** Dördü de kod ve token seviyesinde doğrulandı (`flutter analyze`
   temiz, 229 test geçiyor). Seçicinin ve alevin açık temadaki son hâli emülatörde
   görülmedi — madde 16'daki gibi bir tur gerekiyor.
+
+## Madde 18 — Hareket token'ları + sayı ve oran geçişleri
+
+Hareket geçişinin ilk maddesi (ROADMAP madde 18-20). Uygulamanın tipografisi, paleti ve
+düzeni prototiple birebirdi; eksik olan katman hareketti. Bu madde token'ları kuruyor ve
+en görünür açığı kapatıyor: ekranın ortasındaki sayılar bir kareden diğerine zıplıyordu.
+238 test geçiyor (+9), `flutter analyze` temiz.
+
+- **`AppMotion` (`core/theme/app_motion.dart`)** `app_spacing`/`app_shadows` deseninde:
+  altı süre, dört eğri ve `respectingMotion(context, duration)`. Erişilebilirlik kontrolü
+  artık tek yerde — her çağıran `if (disableAnimationsOf)` yazmıyor. `RiseIn`in kendi
+  içinde tuttuğu 600ms/60ms bu token'lara taşındı, iki kaynak kalmadı.
+  `RiseIn`in `Curves.easeOut`u **taşınmadı**: o CSS'in `ease-out`u, `AppMotion.enter`
+  (`easeOutCubic`) başka bir eğri; prototiple birebirliği bozmamak için yerinde kaldı.
+- **`RollingNumber` (`core/widgets/rolling_number.dart`)** — karakter bazlı odometre.
+  Yalnızca **değişen** karakter kayıyor, sabit kalanlar yerinde duruyor (132 → 131'de
+  yalnızca son hane). Kural bir eşik kontrolünden değil yapının kendisinden geliyor:
+  her karakter kendi yuvasında ayrı bir widget ve karakteri değişmeyen yuva animasyon
+  denetleyicisi bile kurmuyor. Yuva anahtarları **sağdan** sayılıyor, böylece hane
+  eklendiğinde birler basamağı yerinde kalıyor.
+  - **Yön:** artan sayı aşağıdan yukarı, azalan sayı yukarıdan aşağı. Geri sayım azalır,
+    odak süresi artar.
+  - **Hane sayısı değişince `AnimatedSize`** (sabit genişlik değil): sabit genişlik en
+    fazla haneye göre yer ayırmak demekti ve gün sayacı ömrü boyunca dört hanelik bir
+    kutunun içinde merkezden kaçardı. "Hareketi azalt" açıkken `AnimatedSize` ağaca hiç
+    girmiyor — sıfır süreli denetleyici `performLayout` içinde kendini bitirip aynı düzen
+    geçişinde yeniden kirletiyor ve çerçeve bunu hata sayıyor.
+  - **`FittedBox(scaleDown)`** taşma emniyeti. Tek bir `Text` sığmadığında satır kırıyordu;
+    karakter yuvalarından kurulu bir `Row` ise taşma hatası veriyor (`stats_screen_test`
+    bunu ilk koşuda yakaladı — test fontunun glifleri Space Grotesk'ten geniş). Beklenen
+    genişliklerde ölçek hiç devreye girmiyor.
+  - **`Semantics(label:)` + `excludeSemantics`**: ekran okuyucu karakterleri tek tek
+    okumasın. Testlerin `find.text('3 SAAT')`i bu yüzden artık tutmuyor; aranan şey
+    widget'ın etiketi (`test/support/rolling_number_finder.dart`).
+  - `tabularFigures` widget'ın garantisi, çağıranın değil.
+- **Uygulandığı yerler:** Ekran 02 gün sayısı (`ShaderMask` içinde), "bugün" kartının
+  saat/dakikası ve seri rozeti; Ekran 06 kümülatif odak, en uzun seri, tamamlanma oranı;
+  Ekran 04 rozet sayacı. `RichText`/`Text.rich` iki yerde tabana hizalı `Row`a açıldı —
+  span'ların verdiği hizalamanın aynısı.
+- **Uygulanmayan iki yer, gerekçesiyle:**
+  - `hh:mm:ss` saniye sayacı. Saniyede bir kayan üç hane odak vaadine aykırı ve boşta
+    60 fps demek (SPEC §6.4).
+  - Ekran 06'nın "Son 7 gün · günlük ortalama 25 dk" **cümlesi**. `RollingNumber` kısa bir
+    değer etiketi için; bir cümleyi karakterlere bölmek satır kırmayı ve kerning'i
+    kaybettirir. Sayı yalnızca ekran kapalıyken değiştiği için kazanç da yok.
+- **Oran geçişleri iki farklı desende:**
+  - Ekran 02'nin halkası düz `TweenAnimationBuilder` (`slow` + `standard`). Oran yalnızca
+    sınav değişince ve gün dönümünde değişiyor, saniye tikleri `days`i kımıldatmıyor.
+  - Odak/mola halkası `SettlingProgress` (`core/widgets/settling_progress.dart`): geçiş
+    **yalnızca ilk yerleşmede** var. Saniyede bir gelen her adımı tween'lemek 420ms'lik
+    bir animasyonu saniyede bir yeniden başlatmak, yani süren seans boyunca kesintisiz
+    kare üretmek olurdu — §6.4'ün tam olarak yasakladığı şey. Kazanç kurtarılan seansta:
+    ekran %40 dolu bir halkayla açılmak yerine oraya akıyor.
+  - `SettlingProgress` bayrağını `setState`siz kuruyor: "hareketi azalt" açıkken
+    `TweenAnimationBuilder` sıfır süreli animasyonu daha `initState`indeyken bitiriyor ve
+    geri arama bu widget'ın `build`ı sürerken geliyor.
+- **Testler (+9):** `test/core/rolling_number_test.dart` (ara karede iki basamak birlikte,
+  değişmeyen basamak kımıldamıyor, iki yönde akış, reduce-motion'da ara kare yok, sabit
+  ekli metin, `respectingMotion` iki yönde) ve `test/core/settling_progress_test.dart`
+  (bir kez akıyor, sonrası aynı karede — §6.4 regresyonu).
+  `focus_session_screen_test`in iki halka ölçümü artık yerleşmeyi bekliyor.
+- **Cihazda bakılmadı.** Hareketin son hâli emülatörde görülmedi; madde 16'daki gibi bir
+  tur gerekiyor.

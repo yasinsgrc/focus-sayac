@@ -10,6 +10,7 @@ import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_pill_button.dart';
+import '../../core/widgets/settling_progress.dart';
 import '../../domain/pomodoro/break_tips.dart';
 import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_math.dart';
@@ -281,20 +282,26 @@ class _FocusBody extends ConsumerWidget {
                 alignment: Alignment.center,
                 children: <Widget>[
                   RepaintBoundary(
-                    child: CustomPaint(
-                      size: const Size(330, 330),
-                      painter: running
-                          ? SessionRingPainter(
-                              progress: progress,
-                              colors: colors,
-                              gradientColors: _focusRingGradient(colors),
-                              gradientStops: const <double>[0, 0.62, 1],
-                            )
-                          : SessionRingPainter(
-                              progress: progress,
-                              colors: colors,
-                              solidColor: colors.neutral700,
-                            ),
+                    // Halka ilk değerine bir kez akıyor (kurtarılan seans yarı
+                    // dolu bir halkayla açılmasın); sonraki saniye tikleri
+                    // doğrudan geçiyor — bkz. `SettlingProgress`.
+                    child: SettlingProgress(
+                      progress: progress,
+                      builder: (BuildContext context, double ringProgress, Widget? _) => CustomPaint(
+                        size: const Size(330, 330),
+                        painter: running
+                            ? SessionRingPainter(
+                                progress: ringProgress,
+                                colors: colors,
+                                gradientColors: _focusRingGradient(colors),
+                                gradientStops: const <double>[0, 0.62, 1],
+                              )
+                            : SessionRingPainter(
+                                progress: ringProgress,
+                                colors: colors,
+                                solidColor: colors.neutral700,
+                              ),
+                      ),
                     ),
                   ),
                   RepaintBoundary(
@@ -566,13 +573,16 @@ class _BreakBody extends ConsumerWidget {
                 alignment: Alignment.center,
                 children: <Widget>[
                   RepaintBoundary(
-                    child: CustomPaint(
-                      size: const Size(330, 330),
-                      painter: SessionRingPainter(
-                        progress: progress,
-                        colors: colors,
-                        gradientColors: _breakRingGradient(colors),
-                        gradientStops: const <double>[0, 0.7, 1],
+                    child: SettlingProgress(
+                      progress: progress,
+                      builder: (BuildContext context, double ringProgress, Widget? _) => CustomPaint(
+                        size: const Size(330, 330),
+                        painter: SessionRingPainter(
+                          progress: ringProgress,
+                          colors: colors,
+                          gradientColors: _breakRingGradient(colors),
+                          gradientStops: const <double>[0, 0.7, 1],
+                        ),
                       ),
                     ),
                   ),
