@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_pill_button.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
@@ -230,6 +231,11 @@ class _BadgeCard extends StatelessWidget {
   }
 }
 
+/// Rozet açılışındaki tek seferlik halo — testler bu anahtarla arıyor; ağaçta
+/// başka bir işaretçisi yok (kilitli rozette hiç çizilmiyor).
+@visibleForTesting
+const Key kBadgeUnlockHaloKey = Key('badge_unlock_halo');
+
 /// Prototip satır 200-210 — rozete tıklayınca açılan detay/açılış dialogu.
 /// Kilitli bir rozete tıklamak da bu dialogu açar ("Nasıl açılır: ..." metni).
 Future<void> showBadgeUnlockDialog(
@@ -264,85 +270,150 @@ class _BadgeUnlockDialog extends StatelessWidget {
     return Dialog(
       insetPadding: const EdgeInsets.all(30),
       backgroundColor: Colors.transparent,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(26, 34, 26, 24),
-        decoration: BoxDecoration(
-          color: colors.surfaceDialog,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: colors.borderSubtle),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            SizedBox(
-              width: 112,
-              height: 112,
-              child: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: <Color>[glow, glow.withValues(alpha: 0)],
-                        stops: const <double>[0, 0.66],
+      // Kart yerine oturarak geliyor (ROADMAP madde 19): rozet açılışı
+      // uygulamanın en duygusal anlarından biri, dialog bugüne kadar hiçbir
+      // şey söylemeden beliriyordu.
+      child: _ScaleIn(
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(26, 34, 26, 24),
+          decoration: BoxDecoration(
+            color: colors.surfaceDialog,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: colors.borderSubtle),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              SizedBox(
+                width: 112,
+                height: 112,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    // Tek seferlik halo yalnızca açılmış rozette: kilitli
+                    // kartın dialogu bir bilgi ekranı, kutlanacak bir şey yok.
+                    if (unlocked) _UnlockHalo(color: tint),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: <Color>[glow, glow.withValues(alpha: 0)],
+                          stops: const <double>[0, 0.66],
+                        ),
                       ),
                     ),
-                  ),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: unlockColor),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: unlockColor),
+                      ),
+                      child: const SizedBox(width: 112, height: 112),
                     ),
-                    child: const SizedBox(width: 112, height: 112),
-                  ),
-                  Icon(definition.icon, size: 52, color: unlockColor),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              definition.name(l10n),
-              textAlign: TextAlign.center,
-              style: AppTypography.display(fontSize: 24, weight: FontWeight.w700, color: colors.text),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              ruleText,
-              textAlign: TextAlign.center,
-              style: AppTypography.body(fontSize: 13.5, color: colors.neutral400, height: 1.55),
-            ),
-            const SizedBox(height: 26),
-            AppPillButton(
-              label: l10n.badgeCreateStoryCard,
-              roleColor: unlockColor,
-              roleDeepColor: glow,
-              // Dialog önce kapanıyor: açık kalsaydı Ekran 05'ten geri
-              // dönüldüğünde kullanıcıyı yine kendi üstünde bulurdu.
-              //
-              // Geçiş `navigateToNavTab` üzerinden: düz `push` yığını
-              // sayaç→rozetler→başarı kartı diye üç kata çıkarıyordu, oysa
-              // `bottom_nav_bar.dart`taki kural sekmelerin kökün **tek** kat
-              // üstünde durması. Çubuktan gelen geçişle aynı yolu kullanmak
-              // ikisini de tek kuralda tutuyor.
-              onPressed: () {
-                Navigator.of(context).pop();
-                navigateToNavTab(context, AppNavTab.storyCard, current: AppNavTab.badges);
-              },
-              weight: FontWeight.w600,
-            ),
-            SizedBox(
-              height: 44,
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  l10n.commonClose,
-                  style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral500),
+                    Icon(definition.icon, size: 52, color: unlockColor),
+                  ],
                 ),
               ),
+              const SizedBox(height: 20),
+              Text(
+                definition.name(l10n),
+                textAlign: TextAlign.center,
+                style: AppTypography.display(fontSize: 24, weight: FontWeight.w700, color: colors.text),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                ruleText,
+                textAlign: TextAlign.center,
+                style: AppTypography.body(fontSize: 13.5, color: colors.neutral400, height: 1.55),
+              ),
+              const SizedBox(height: 26),
+              AppPillButton(
+                label: l10n.badgeCreateStoryCard,
+                roleColor: unlockColor,
+                roleDeepColor: glow,
+                // Dialog önce kapanıyor: açık kalsaydı Ekran 05'ten geri
+                // dönüldüğünde kullanıcıyı yine kendi üstünde bulurdu.
+                //
+                // Geçiş `navigateToNavTab` üzerinden: düz `push` yığını
+                // sayaç→rozetler→başarı kartı diye üç kata çıkarıyordu, oysa
+                // `bottom_nav_bar.dart`taki kural sekmelerin kökün **tek** kat
+                // üstünde durması. Çubuktan gelen geçişle aynı yolu kullanmak
+                // ikisini de tek kuralda tutuyor.
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  navigateToNavTab(context, AppNavTab.storyCard, current: AppNavTab.badges);
+                },
+                weight: FontWeight.w600,
+              ),
+              SizedBox(
+                height: 44,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    l10n.commonClose,
+                    style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral500),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Dialog kartının girişi: 0.92 → 1.0, hedefi hafifçe aşan `pop` eğrisiyle.
+/// Bir kez çalışıp duruyor (SPEC.md §6.4) — "hareketi azalt" açıkken ilk kare
+/// zaten son hâli çiziyor, çünkü sıfır süreli `TweenAnimationBuilder` daha
+/// kurulurken bitişe atlıyor.
+class _ScaleIn extends StatelessWidget {
+  const _ScaleIn({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.92, end: 1),
+      duration: AppMotion.respectingMotion(context, AppMotion.base),
+      curve: AppMotion.pop,
+      builder: (BuildContext context, double scale, Widget? child) => Transform.scale(scale: scale, child: child),
+      child: child,
+    );
+  }
+}
+
+/// Rozet ikonunun arkasında **tek seferlik** sönen halo (0.45 → 0).
+///
+/// Nabız gibi atmıyor: sürekli bir dekoratif animasyon SPEC.md §6.4'ün
+/// yasakladığı sınıfa girer ve dialog süresiz açık kalabilir. Bir kez sönüp
+/// bittiği için `pumpAndSettle` de takılmıyor.
+class _UnlockHalo extends StatelessWidget {
+  const _UnlockHalo({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final Duration duration = AppMotion.respectingMotion(context, AppMotion.entrance);
+    if (duration == Duration.zero) return const SizedBox.shrink();
+
+    return IgnorePointer(
+      key: kBadgeUnlockHaloKey,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0.45, end: 0),
+        duration: duration,
+        curve: AppMotion.exit,
+        builder: (BuildContext context, double opacity, Widget? _) => DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: <Color>[color.withValues(alpha: opacity), color.withValues(alpha: 0)],
+              stops: const <double>[0.28, 1],
             ),
-          ],
+          ),
+          child: const SizedBox(width: 112, height: 112),
         ),
       ),
     );

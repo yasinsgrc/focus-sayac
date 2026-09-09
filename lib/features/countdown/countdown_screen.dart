@@ -13,6 +13,7 @@ import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/time/app_day.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
+import '../../core/widgets/pop_on_increase.dart';
 import '../../core/widgets/rise_in.dart';
 import '../../core/widgets/rolling_number.dart';
 import '../../domain/countdown/countdown_math.dart';
@@ -447,7 +448,14 @@ class _CountdownBody extends ConsumerWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: <Widget>[
-                              Icon(PhosphorIconsFill.flame, size: 13, color: colors.ember),
+                              // Seri büyüdüğünde alev sayıya eşlik ediyor
+                              // (ROADMAP madde 19); seri 0'dan 1'e çıkarken
+                              // rozetin kendisi ağaca yeni giriyor, o yüzden
+                              // vurgu ilk build'de çalışmıyor.
+                              PopOnIncrease(
+                                value: streak,
+                                child: Icon(PhosphorIconsFill.flame, size: 13, color: colors.ember),
+                              ),
                               const SizedBox(width: 5),
                               RollingNumber(
                                 value: streak,

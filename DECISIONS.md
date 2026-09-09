@@ -1336,3 +1336,73 @@ en görünür açığı kapatıyor: ekranın ortasındaki sayılar bir kareden d
   `focus_session_screen_test`in iki halka ölçümü artık yerleşmeyi bekliyor.
 - **Cihazda bakılmadı.** Hareketin son hâli emülatörde görülmedi; madde 16'daki gibi bir
   tur gerekiyor.
+
+---
+
+## Madde 19: Tamamlama anı — seans bitişi, rozet açılışı, seri artışı
+
+Uygulamanın en duygusal üç anı sessizdi: 25 dakika bitiyor ve ekran öylece mola gövdesine
+geçiyor, rozet dialogu hiçbir şey söylemeden beliriyor, seri 6'dan 7'ye çıkarken alev
+kımıldamıyor. 251 test geçiyor (+13).
+
+- **Haptik için yeni bir şey yapılmadı — madde 19'un 4. şıkkı güncel değildi.** ROADMAP
+  "ayarlar ekranında haptic anahtarı yok" diyor ve (a) yeni kolon + göç, (b) sisteme
+  güven, (c) hiç eklememe arasında seçim istiyordu. Gerçekte (a) çoktan yapılmış: kolon
+  Faz 2'den beri şemada (`tables.dart` `hapticEnabled`), anahtar Ekran 07'de
+  (`settings_screen.dart:194`), `PomodoroController._haptic()` her faz geçişinde
+  `mediumImpact` (seans bitişi dahil, `_completeFocus`) ve `BadgeUnlockService`
+  açılışta `heavyImpact` üretiyor — ikisi de ayara bağlı. Bu maddede kodlanan tek şey
+  **görsel** katman; titreşim zaten doğru anlarda ve doğru kapının arkasındaydı.
+- **Seans bitişi: mola gövdesi 420ms bekletiliyor.** `focusRunning → breakRunning`
+  geçişinde `FocusSessionScreen` biten odak fazını `_completingFocus`ta tutuyor ve o
+  pencere boyunca **odak gövdesini** çiziyor: sayaç 00:00, halka tam dolu ve közden
+  naneye dönüyor (`_CompletionRing`, `AppMotion.slow` + `standard`). Pencere kapanınca
+  mola gövdesi geliyor.
+  - **§6.4 ile çatışmıyor:** hareket seansın **bittiği** anda başlıyor, yani odak süresi
+    dolmuşken; süren seans boyunca tek bir fazladan kare yok. `session_completion_test`in
+    "seans sürerken halkanın rengi kıpırdamıyor" testi bunun regresyonu. Blur taraması
+    (`test/performance/runtime_blur_scan_test.dart`) yanlış alarm vermedi — taradığı şey
+    `BackdropFilter`/blur, animasyon süresi değil.
+  - **Yalnızca doğal bitişte:** iptal (`→ idle`) ve duraklatma (`→ focusPaused`) pencereyi
+    açmıyor; ikisinin de karşı kontrol testi var.
+  - **Gradyanın orta durağı sabit (0.66).** Odak halkası 0.62, mola 0.7 kullanıyor;
+    durakları da tween'lemek 420ms boyunca her karede yeni bir `LinearGradient` kurmak
+    olurdu, gözle görülür karşılığı yok. Renkler `Color.lerp` ile geçiyor.
+  - **Düğmeler `IgnorePointer` ile kapalı** (kaldırılmıyor, yerlerinde duruyorlar): seans
+    kapandığı için "X" ve oynat/duraklat artık mola fazına uygulanırdı ve ikisi de
+    sessizce düşerdi.
+  - **Bilinen sıra:** 3 pomodoroda bir açılan interstitial `_completeFocus` içinde, mola
+    başlangıcında isteniyor (SPEC §7.2) ve tam ekran reklam bu 420ms'nin üstünü örtebilir.
+    Reklamın anını kaydırmak §7.2'yi değiştirmek olurdu; rozet açılan tamamlanışlarda
+    zaten bastırılıyor (Faz 11).
+- **Rozet dialogu: `_ScaleIn` + tek seferlik halo.** Kart 0.92 → 1.0, `AppMotion.pop`
+  (hedefi hafifçe aşıyor); rozet ikonunun arkasında opaklık 0.45 → 0, 600ms.
+  - **Halo yalnızca açılmış rozette.** Kilitli karta dokunmak da aynı dialogu açıyor
+    ("Nasıl açılır: …") — orada kutlanacak bir şey yok.
+  - **Nabız atmıyor, bir kez sönüyor.** Sürekli bir dekoratif animasyon §6.4'ün yasakladığı
+    sınıfa girerdi ve dialog süresiz açık kalabiliyor. Testin `pumpAndSettle`i bunun
+    kilidi: sonsuz bir animasyon o satırda takılırdı.
+  - **Dialog kuyruğu eklenmedi.** ROADMAP "aynı çağrıda birden fazla rozet açılabiliyor;
+    sırayla mı, tek dialogda mı" diye soruyor. Soru bu maddede doğmuyor: açılış anının
+    yüzeyi **bildirim** (SPEC Ekran 12 tablosu), dialog ise Ekran 04'te rozete dokununca
+    açılan detay ekranı — otomatik açılan bir dialog hiç yok. Eklemek hareket katmanı
+    değil yeni bir akış olurdu ve tam da mola başındaki interstitial'ın üstüne binerdi.
+- **Seri artışı: `core/widgets/pop_on_increase.dart`.** Alev ikonu 1.0 → 1.25 → 1.0
+  (`pop` çıkışta, `standard` dönüşte). `RollingNumber` sayıyı zaten çeviriyordu, ikonun
+  eşlik edecek karşılığı yoktu.
+  - **Yalnızca artışta:** ilk build'de ve değer düşünce çalışmıyor — seri kırıldığında
+    zıplayan bir alev yanlış şeyi kutlar. Ölçek tam 1'ken ağaca `Transform` bile girmiyor,
+    denetleyici boşta tik atmıyor.
+  - **0 → 1 geçişi vurgusuz:** seri rozeti `if (streak > 0)` ile çiziliyor, 1'e çıkarken
+    widget ağaca yeni giriyor ve ilk build vurgu yapmıyor. Rozetin kendisinin belirmesi
+    zaten bir değişim; bunu ayrıca kutlamak için rozeti koşulsuz ağaçta tutmak gerekirdi.
+  - Vurgu ekran arkadayken tetiklenirse `TickerMode` denetleyiciyi susturuyor ve kullanıcı
+    Ekran 02'ye döndüğünde çalışıyor — istenen davranış bu (seri, odak ekranı üstteyken
+    artıyor).
+- **Testler (+13):** `test/core/pop_on_increase_test.dart` (4),
+  `test/features/badges/badge_unlock_dialog_test.dart` (4),
+  `test/features/focus_session/session_completion_test.dart` (5 — doğal bitiş, iptal ve
+  duraklatma karşı kontrolleri, §6.4 regresyonu, reduce-motion). Üç dosyada da
+  "hareketi azalt" dalı var; ekranın tamamını çizen testlerde
+  `platformDispatcher.accessibilityFeaturesTestValue` üzerinden.
+- **Cihazda bakılmadı** — madde 18 gibi; hareketin son hâli emülatörde görülmedi.

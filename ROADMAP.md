@@ -23,7 +23,7 @@ Madde 11 ve 14-17 bu dosyaya yazılmadan yapıldı (ilk Android derlemesi, ana
 ekran widget'ları, emülatör doğrulaması, açık tema + uygulama simgesi);
 kayıtları `DECISIONS.md`de. **Madde 18-20** yayın engelleyicisi değil, cila:
 uygulamanın eksik kalan hareket katmanı — dosyanın sonundaki ayrı bölümde.
-**Madde 18 bitti**, 19 ve 20 kaldı.
+**Madde 18 ve 19 bitti**, 20 kaldı.
 
 ---
 
@@ -466,66 +466,32 @@ tek commit.
 
 ---
 
-## 19. Tamamlama anı — seans bitişi, rozet açılışı, seri artışı
+## 19. Tamamlama anı — seans bitişi, rozet açılışı, seri artışı ✅ bitti
 
-**Neden:** uygulamanın en duygusal üç anı şu an tamamen sessiz. 25 dakika odak
-bitiyor ve ekran öylece mola ekranına geçiyor; yedi rozetten biri açılıyor ve
-dialog hiçbir şey söylemeden beliriyor; seri 6'dan 7'ye çıkıyor ve rozet aynı
-karede yeni sayıyı gösteriyor. Kullanıcının uygulamaya dönme sebebi tam olarak
-bu üç an; hiçbirinin karşılığı yok.
+251 test geçiyor (+13). Kararlar: `DECISIONS.md` "Madde 19".
 
-**Madde 18'e bağımlı** (`AppMotion` token'ları ve `respectingMotion`).
-
-**Yapılacaklar:**
-
-1. **Seans bitişi** (`focus_session_screen.dart`, `PomodoroController`'ın odak →
-   mola geçişi): halka son %5'i doldurup tamamlandığında bir kez
-   `HapticFeedback.mediumImpact()` (`package:flutter/services.dart`, yeni
-   bağımlılık yok) + halkanın renk geçişi (`ember` → `mint`, `AppMotion.slow`).
-   Mola ekranına geçiş bu animasyon bittikten sonra.
-   - **§6.4 çatışması yok:** bu hareket seans **bittiği anda** çalışıyor, yani
-     odak süresi dolmuşken. Süren seans boyunca hiçbir yeni kare üretilmiyor.
-     Bu gerekçe `DECISIONS.md`ye yazılsın; §6.4 taraması (`test/performance/`)
-     yanlış alarm veriyorsa taramanın kapsamı netleştirilsin.
-   - Duraklatılmış seansta ya da iptalde **çalışmaz** — yalnızca doğal bitişte.
-
-2. **Rozet açılışı** (`badges_screen.dart`'ın dialogu +
-   `BadgeUnlockService.evaluateAfterFocusCompletion()`'ın döndürdüğü anahtarlar):
-   dialog kartı `AppMotion.pop` eğrisiyle 0.92 → 1.0 ölçekte gelsin, rozet
-   ikonunun arkasında **tek seferlik** bir halo (opaklık 0.45 → 0, 600ms).
-   `HapticFeedback.heavyImpact()` bir kez.
-   - Halo sürekli nabız **atmayacak** — bir kez sönüp bitecek. Sürekli olan her
-     şey SPEC §6.4'ün yasakladığı sınıfa girer.
-   - Aynı çağrıda birden fazla rozet açılabiliyor (interstitial bastırma mantığı
-     bunu varsayıyor, madde 6); dialoglar sırayla mı, tek dialogda mı — karar
-     `DECISIONS.md`ye.
-
-3. **Seri artışı** (Ekran 02'nin `streak > 0` rozeti, `countdown_screen.dart:430`):
-   sayı büyüdüğünde alev ikonu `AppMotion.pop` ile 1.0 → 1.25 → 1.0. Madde 18'in
-   `RollingNumber`ı sayıyı zaten çeviriyor; bu yalnızca ikonun eşlik etmesi.
-   Yalnızca **artışta**; ekran her açıldığında değil (`didUpdateWidget` ile
-   önceki değere bak, ilk build'de çalışma).
-
-4. **Haptic ayarı:** ayarlar ekranında haptic anahtarı yok. Üç seçenek —
-   (a) `AppSettings`e yeni bir `hapticsEnabled` kolonu + göç, (b) sistemin kendi
-   dokunsal geri bildirim ayarına güven (`HapticFeedback` zaten ona saygı
-   duyuyor), (c) hiç haptic ekleme. **(b) öneriliyor**: yeni kolon + göç +
-   ARB dizesi, kullanıcının işletim sisteminde zaten verdiği bir karar için
-   fazla maliyet. Seçim gerekçesiyle `DECISIONS.md`ye.
-
-**DoD / testler** (`test/features/focus_session/`, `test/features/badges/`,
-`test/features/countdown/`):
-- Odak doğal bitişinde tamamlama animasyonu bir kez çalışıyor; **iptalde ve
-  duraklatmada çalışmıyor** (karşı kontrol).
-- Seans **sürerken** hiçbir yeni animasyon denetleyicisi tik atmıyor — §6.4
-  regresyonu.
-- Rozet halosu bitiyor: animasyon süresinden sonra `pumpAndSettle` takılmıyor
-  (sonsuz animasyon testi kilitler, bu testin asıl değeri bu).
-- Seri rozeti ilk build'de pop yapmıyor, yalnızca değer arttığında yapıyor.
-- Reduce-motion altında üçü de anında son hâlinde.
-
-Kapanış: `flutter analyze` + `flutter test`, `DECISIONS.md`ye "Madde 19",
-tek commit.
+- **Seans bitişi:** `focusRunning → breakRunning` geçişinde mola gövdesi 420ms
+  bekliyor; o pencerede odak gövdesi duruyor, sayaç 00:00'da ve dolu halka
+  közden naneye dönüyor (`_CompletionRing`, `AppMotion.slow` + `standard`).
+  Denetim düğmeleri `IgnorePointer` ile kapalı. **Yalnızca doğal bitişte** —
+  iptal (`→ idle`) ve duraklatma (`→ focusPaused`) pencereyi açmıyor, ikisinin
+  de karşı kontrol testi var. §6.4 çatışması yok: hareket seans **bittiği anda**
+  başlıyor, süren seans boyunca fazladan kare üretmiyor.
+- **Rozet dialogu:** kart `AppMotion.pop` ile 0.92 → 1.0; rozet ikonunun
+  arkasında tek seferlik halo (0.45 → 0, 600ms), yalnızca **açılmış** rozette.
+  Halo nabız atmıyor, bir kez sönüyor — testin `pumpAndSettle`i bunun kilidi.
+  Otomatik açılan bir rozet dialogu **eklenmedi**: açılış anının yüzeyi bildirim
+  (SPEC Ekran 12), o yüzden "birden fazla rozet: sırayla mı, tek dialogda mı"
+  sorusu bu maddede doğmuyor.
+- **Seri artışı:** `core/widgets/pop_on_increase.dart` — alev ikonu 1.0 → 1.25 →
+  1.0, yalnızca değer **arttığında**. İlk build'de ve değer düşünce çalışmıyor;
+  ölçek tam 1'ken ağaca `Transform` bile girmiyor.
+- **Haptik zaten vardı** — maddenin 4. şıkkı güncel değildi. `hapticEnabled`
+  kolonu Faz 2'den beri şemada, anahtar Ekran 07'de, `mediumImpact` her faz
+  geçişinde (seans bitişi dahil) ve `heavyImpact` rozet açılışında, ikisi de
+  ayara bağlı. Bu maddede yalnızca görsel katman kodlandı.
+- **Cihazda bakılmadı** — madde 18 gibi, hareketin son hâli emülatörde
+  görülmedi.
 
 ---
 
@@ -610,7 +576,7 @@ tek commit.
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(238 test, `flutter test`)*
+- [x] Testler geçiyor *(251 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

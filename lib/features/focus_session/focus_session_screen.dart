@@ -8,6 +8,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_pill_button.dart';
 import '../../core/widgets/settling_progress.dart';
@@ -50,6 +51,24 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
   Timer? _ticker;
   DateTime _nowUtc = DateTime.now().toUtc();
   bool _leftForIdle = false;
+
+  /// Odak seansı **doğal bitişle** molaya geçtiğinde, mola gövdesi çizilmeden
+  /// önce dolu halkanın közden naneye döndüğü kısa pencere (ROADMAP madde 19).
+  /// Bitmiş odak fazı burada tutuluyor: durum çoktan molaya geçti, ama ekranda
+  /// hâlâ biten seansın gövdesi var.
+  ///
+  /// Yalnızca `focusRunning → breakRunning` geçişinde doluyor — iptalde
+  /// (`→ idle`) ve duraklatmada (`→ focusPaused`) değil.
+  PomodoroFocusRunning? _completingFocus;
+  Timer? _completionTimer;
+
+  void _startCompletion(PomodoroFocusRunning finished, Duration duration) {
+    _completionTimer?.cancel();
+    setState(() => _completingFocus = finished);
+    _completionTimer = Timer(duration, () {
+      if (mounted) setState(() => _completingFocus = null);
+    });
+  }
 
   @override
   void initState() {
@@ -104,6 +123,7 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _ticker?.cancel();
+    _completionTimer?.cancel();
     unawaited(WakelockPlus.disable());
     super.dispose();
   }
@@ -114,6 +134,12 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
     final PomodoroPhase phase = ref.watch(pomodoroControllerProvider);
 
     ref.listen<PomodoroPhase>(pomodoroControllerProvider, (PomodoroPhase? previous, PomodoroPhase next) {
+      if (previous is PomodoroFocusRunning && next is PomodoroBreakRunning) {
+        // "Hareketi azalt" açıkken pencere hiç açılmıyor: mola gövdesi ilk
+        // karede geliyor, atlanacak bir ara hâl yok.
+        final Duration duration = AppMotion.respectingMotion(context, AppMotion.slow);
+        if (duration > Duration.zero) _startCompletion(previous, duration);
+      }
       if (next is PomodoroIdle && !_leftForIdle) {
         _leftForIdle = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -141,30 +167,41 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
       },
       child: Scaffold(
         backgroundColor: colors.bg,
-        body: switch (phase) {
-          PomodoroIdle _ => const SizedBox.shrink(),
-          final PomodoroFocusRunning r => _FocusBody(
-              phase: r,
-              remaining: phaseRemaining(startedAtUtc: r.startedAtUtc, plannedDurationSec: r.plannedDurationSec, nowUtc: _nowUtc),
-              progress: phaseProgress(startedAtUtc: r.startedAtUtc, plannedDurationSec: r.plannedDurationSec, nowUtc: _nowUtc),
-              running: true,
-            ),
-          final PomodoroFocusPaused p => _FocusBody(
-              phase: p,
-              remaining: p.remainingAtPause,
-              progress: phaseProgress(
-                startedAtUtc: p.startedAtUtc,
-                plannedDurationSec: p.plannedDurationSec,
-                nowUtc: p.startedAtUtc.add(Duration(seconds: p.plannedDurationSec) - p.remainingAtPause),
-              ),
-              running: false,
-            ),
-          final PomodoroBreakRunning b => _BreakBody(
-              phase: b,
-              remaining: phaseRemaining(startedAtUtc: b.startedAtUtc, plannedDurationSec: b.plannedDurationSec, nowUtc: _nowUtc),
-              progress: phaseProgress(startedAtUtc: b.startedAtUtc, plannedDurationSec: b.plannedDurationSec, nowUtc: _nowUtc),
-            ),
-        },
+        // Tamamlanma penceresi açıkken durum artık mola, ekran hâlâ biten
+        // seansın gövdesi: sayaç 00:00'da, halka dolu ve közden naneye
+        // dönüyor. Pencere kapanınca mola gövdesi geliyor.
+        body: _completingFocus != null
+            ? _FocusBody(
+                phase: _completingFocus!,
+                remaining: Duration.zero,
+                progress: 1,
+                running: true,
+                completing: true,
+              )
+            : switch (phase) {
+                PomodoroIdle _ => const SizedBox.shrink(),
+                final PomodoroFocusRunning r => _FocusBody(
+                    phase: r,
+                    remaining: phaseRemaining(startedAtUtc: r.startedAtUtc, plannedDurationSec: r.plannedDurationSec, nowUtc: _nowUtc),
+                    progress: phaseProgress(startedAtUtc: r.startedAtUtc, plannedDurationSec: r.plannedDurationSec, nowUtc: _nowUtc),
+                    running: true,
+                  ),
+                final PomodoroFocusPaused p => _FocusBody(
+                    phase: p,
+                    remaining: p.remainingAtPause,
+                    progress: phaseProgress(
+                      startedAtUtc: p.startedAtUtc,
+                      plannedDurationSec: p.plannedDurationSec,
+                      nowUtc: p.startedAtUtc.add(Duration(seconds: p.plannedDurationSec) - p.remainingAtPause),
+                    ),
+                    running: false,
+                  ),
+                final PomodoroBreakRunning b => _BreakBody(
+                    phase: b,
+                    remaining: phaseRemaining(startedAtUtc: b.startedAtUtc, plannedDurationSec: b.plannedDurationSec, nowUtc: _nowUtc),
+                    progress: phaseProgress(startedAtUtc: b.startedAtUtc, plannedDurationSec: b.plannedDurationSec, nowUtc: _nowUtc),
+                  ),
+              },
       ),
     );
   }
@@ -209,13 +246,23 @@ void _confirmCancel(BuildContext context, WidgetRef ref, PomodoroPhase phase) {
 
 /// Ekran 03 — prototip satır 137-180.
 class _FocusBody extends ConsumerWidget {
-  const _FocusBody({required this.phase, required this.remaining, required this.progress, required this.running});
+  const _FocusBody({
+    required this.phase,
+    required this.remaining,
+    required this.progress,
+    required this.running,
+    this.completing = false,
+  });
 
   /// [PomodoroFocusRunning] ya da [PomodoroFocusPaused].
   final PomodoroPhase phase;
   final Duration remaining;
   final double progress;
   final bool running;
+
+  /// Seans doğal bitişle kapandı: halka dolu ve közden naneye dönüyor, denetim
+  /// düğmeleri artık bir şey yapamayacağı için dokunuşa kapalı.
+  final bool completing;
 
   int get _cyclePosition => switch (phase) {
         final PomodoroFocusRunning r => r.cyclePosition,
@@ -285,24 +332,26 @@ class _FocusBody extends ConsumerWidget {
                     // Halka ilk değerine bir kez akıyor (kurtarılan seans yarı
                     // dolu bir halkayla açılmasın); sonraki saniye tikleri
                     // doğrudan geçiyor — bkz. `SettlingProgress`.
-                    child: SettlingProgress(
-                      progress: progress,
-                      builder: (BuildContext context, double ringProgress, Widget? _) => CustomPaint(
-                        size: const Size(330, 330),
-                        painter: running
-                            ? SessionRingPainter(
-                                progress: ringProgress,
-                                colors: colors,
-                                gradientColors: _focusRingGradient(colors),
-                                gradientStops: const <double>[0, 0.62, 1],
-                              )
-                            : SessionRingPainter(
-                                progress: ringProgress,
-                                colors: colors,
-                                solidColor: colors.neutral700,
-                              ),
-                      ),
-                    ),
+                    child: completing
+                        ? _CompletionRing(colors: colors)
+                        : SettlingProgress(
+                            progress: progress,
+                            builder: (BuildContext context, double ringProgress, Widget? _) => CustomPaint(
+                              size: const Size(330, 330),
+                              painter: running
+                                  ? SessionRingPainter(
+                                      progress: ringProgress,
+                                      colors: colors,
+                                      gradientColors: _focusRingGradient(colors),
+                                      gradientStops: const <double>[0, 0.62, 1],
+                                    )
+                                  : SessionRingPainter(
+                                      progress: ringProgress,
+                                      colors: colors,
+                                      solidColor: colors.neutral700,
+                                    ),
+                            ),
+                          ),
                   ),
                   RepaintBoundary(
                     child: Column(
@@ -323,26 +372,32 @@ class _FocusBody extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 34),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                _RingIconButton(
-                  icon: PhosphorIconsRegular.x,
-                  color: colors.neutral500,
-                  onTap: () => _confirmCancel(context, ref, phase),
-                ),
-                const SizedBox(width: 22),
-                _PlayPauseButton(
-                  running: running,
-                  colors: colors,
-                  onTap: () => ref.read(pomodoroControllerProvider.notifier).togglePause(),
-                ),
-                // Prototipin üçüncü düğmesi ("skip-forward") kaldırıldı; yeri
-                // aynı genişlikte boş bırakılıyor ki oynat/duraklat düğmesi
-                // halkanın merkezinde kalsın (ROADMAP madde 5 kararı,
-                // gerekçesi `DECISIONS.md`).
-                const SizedBox(width: 22 + 58),
-              ],
+            // Tamamlanma penceresinde seans çoktan kapandı: iptal onayı da
+            // oynat/duraklat da artık molaya uygulanırdı (ikisi de sessizce
+            // düşer). Düğmeler yerinde duruyor ama dokunuşa kapalı.
+            IgnorePointer(
+              ignoring: completing,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  _RingIconButton(
+                    icon: PhosphorIconsRegular.x,
+                    color: colors.neutral500,
+                    onTap: () => _confirmCancel(context, ref, phase),
+                  ),
+                  const SizedBox(width: 22),
+                  _PlayPauseButton(
+                    running: running,
+                    colors: colors,
+                    onTap: () => ref.read(pomodoroControllerProvider.notifier).togglePause(),
+                  ),
+                  // Prototipin üçüncü düğmesi ("skip-forward") kaldırıldı; yeri
+                  // aynı genişlikte boş bırakılıyor ki oynat/duraklat düğmesi
+                  // halkanın merkezinde kalsın (ROADMAP madde 5 kararı,
+                  // gerekçesi `DECISIONS.md`).
+                  const SizedBox(width: 22 + 58),
+                ],
+              ),
             ),
             const Spacer(),
             _FocusHintLine(text: hintLine, iconColor: hintIconColor),
@@ -352,6 +407,47 @@ class _FocusBody extends ConsumerWidget {
     );
   }
 
+}
+
+/// Odak seansının doğal bitişi: dolu halka bir kez közden naneye dönüyor
+/// (ROADMAP madde 19). 25 dakika bitip ekranın öylece mola gövdesine geçmesi
+/// uygulamanın en duygusal anını sessiz bırakıyordu.
+///
+/// **SPEC.md §6.4 ile çatışmıyor:** bu hareket seansın **bittiği anda**
+/// başlıyor, yani odak süresi dolmuşken; süren seans boyunca tek bir fazladan
+/// kare üretmiyor ve bir kez çalışıp duruyor.
+class _CompletionRing extends StatelessWidget {
+  const _CompletionRing({required this.colors});
+
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Color> from = _focusRingGradient(colors);
+    final List<Color> to = _breakRingGradient(colors);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: AppMotion.respectingMotion(context, AppMotion.slow),
+      curve: AppMotion.standard,
+      builder: (BuildContext context, double t, Widget? _) => CustomPaint(
+        size: const Size(330, 330),
+        painter: SessionRingPainter(
+          // Halka tanım gereği dolu: geçişin anlattığı şey oranın değişmesi
+          // değil, biten seansın renginin molaya devredilmesi.
+          progress: 1,
+          colors: colors,
+          gradientColors: <Color>[
+            for (int i = 0; i < from.length; i++) Color.lerp(from[i], to[i], t)!,
+          ],
+          // İki gradyanın orta durağı (0.62 ve 0.7) arasında sabit bir orta
+          // nokta: duraklar da tween'lenseydi 420ms boyunca her karede yeni
+          // bir `LinearGradient` kurulurdu, gözle görülür bir karşılığı yok.
+          gradientStops: const <double>[0, 0.66, 1],
+        ),
+      ),
+    );
+  }
 }
 
 /// Ekran 03'ün alt ipucu kutusu. Prototipteki gibi hep ekranda durmuyor:
