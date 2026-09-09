@@ -234,9 +234,9 @@ Future<void> showBadgeUnlockDialog(
   required BadgeDefinition definition,
   required bool unlocked,
 }) {
+  // Perde rengi `dialogTheme.barrierColor`dan geliyor (bkz. `app_theme.dart`).
   return showDialog<void>(
     context: context,
-    barrierColor: Theme.of(context).extension<AppColors>()!.scrim,
     builder: (BuildContext context) => _BadgeUnlockDialog(definition: definition, unlocked: unlocked),
   );
 }

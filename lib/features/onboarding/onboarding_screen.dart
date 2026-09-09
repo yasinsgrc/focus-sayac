@@ -175,23 +175,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                             children: <Widget>[
                               // Prototipin akan `sheen` parlamasının durağan
                               // hâli: üstten aşağı sönen beyaz gradient.
-                              Positioned(
-                                left: 0,
-                                right: 0,
-                                top: 0,
-                                height: 23,
-                                child: IgnorePointer(
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: <Color>[colors.fillStrong, Colors.transparent],
+                              // Yalnızca koyu temada çiziliyor: `fillStrong`
+                              // nötr bir bindirme, yani açık temada **siyaha**
+                              // dönüyor ve "üstten gelen ışık" olan bu efekt
+                              // birincil düğmenin tepesinde gri bir lekeye
+                              // dönüşüyordu. Işığın yönü çevrilemeyeceği için
+                              // açık temada efekt hiç yok.
+                              if (colors.brightness == Brightness.dark)
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  top: 0,
+                                  height: 23,
+                                  child: IgnorePointer(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: <Color>[colors.fillStrong, Colors.transparent],
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
                               Center(
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,

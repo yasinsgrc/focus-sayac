@@ -112,8 +112,19 @@ class _FlameWidgetState extends State<FlameWidget> with SingleTickerProviderStat
 class _FlameShape extends StatelessWidget {
   const _FlameShape();
 
+  /// Gövdenin közden aleve giden gradyanı. Koyu temada prototipin değerleri
+  /// birebir: en üstteki durak neredeyse beyaz, gece zemininde alevin ucu orada
+  /// parlıyor. Açık temada o krem uç (#FFF3D8) zeminle 1.02:1 kontrasta düşüyor
+  /// — meşalenin tepesi sayfaya karışıyor, alev kesilmiş gibi duruyordu. Uç bu
+  /// yüzden ember'ın kendisine çekiliyor: halkanın gradyanına uygulanan
+  /// düzeltmeyle (`_focusRingGradient`) aynı gerekçe, aynı varış noktası.
+  /// İçteki beyaz çekirdek gövdenin **içinde** kaldığı için iki temada da aynı.
+  static const List<Color> _darkBody = <Color>[Color(0xFF7A2F0C), Color(0xFFFFB03A), Color(0xFFFFF3D8)];
+  static const List<Color> _lightBody = <Color>[Color(0xFF7A2F0C), Color(0xFFE8880F), Color(0xFFFFB03A)];
+
   @override
   Widget build(BuildContext context) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
       width: 64,
       height: 98,
@@ -123,14 +134,14 @@ class _FlameShape extends StatelessWidget {
           Container(
             width: 44,
             height: 86,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
-                colors: <Color>[Color(0xFF7A2F0C), Color(0xFFFFB03A), Color(0xFFFFF3D8)],
-                stops: <double>[0, 0.56, 1],
+                colors: isDark ? _darkBody : _lightBody,
+                stops: const <double>[0, 0.56, 1],
               ),
-              borderRadius: BorderRadius.only(
+              borderRadius: const BorderRadius.only(
                 topLeft: Radius.elliptical(22, 58),
                 topRight: Radius.elliptical(22, 58),
                 bottomLeft: Radius.elliptical(20, 27),

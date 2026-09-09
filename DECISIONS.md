@@ -1240,3 +1240,36 @@ başlatmayla geçildi.
 - **Bilinen açık uç:** başarı kartının "Gece Meşalesi" şablonu açık temada açık bir kart çiziyor;
   adı artık içeriğini anlatmıyor. Ya şablon yeniden adlandırılmalı ya da açık varyantı ayrı bir
   şablon olarak sunulmalı — ürün kararı.
+
+### Faz 17 sonrası — temanın gözden kaçan dört ucu
+
+Faz 17 uygulamanın **kendi** widget'larını iki temaya taşıdı. Kalan açıklar paletin
+ulaşmadığı yerlerdeydi: Material'ın kendi çizdiği yüzeyler ve "ışık yönü" taşıyan iki
+dekoratif efekt. Sonuncu ikisi aynı sınıftan hata: anlamsal aynalama kuralı (`AppColors`
+başlığı) nötr bir bindirme için doğru, bir ışık kaynağı için değil.
+
+- **`ColorScheme` dokuz rolle kuruluyordu, gerisi sessizce `onSurface`e düşüyordu.**
+  Verilmeyen roller `ColorScheme` içinde en yakın zorunlu role zincirleniyor ve zincir
+  çoğunlukla `onSurface`te bitiyor: `outline`/`outlineVariant` tam kontrastlı yazı rengine,
+  `surfaceContainerHigh` sayfa zeminine eşitlenmişti. Ekran 11'in `showDatePicker`/
+  `showTimePicker` çağrıları uygulamanın tek "yabancı" ekranı — seçici bu yüzden sert
+  kenarlıklarla ve perdenin üstünde kendi düzlemi olmadan açılıyordu. Roller tokenlara
+  bağlandı (`primaryContainer` = `emberDeep`, kutular = `surfaceSunken`, gövde =
+  `surfaceDialog`), `surfaceTint` kapatıldı — yükselti bu tasarımda tintle değil yüzey
+  opaklığıyla anlatılıyor. `material_role_mapping_test.dart` boş bırakılan her rolde düşer.
+- **Perde rengi çağrı yerlerine bırakılmıştı ve biri atlanmıştı.** Üç diyalog `barrierColor`ı
+  elle veriyordu, Ekran 02'nin sınav seçici alt sayfası vermiyordu: Material'ın varsayılan
+  `black54`'ü uygulamanın kendi perdesinden (açıkta %40, koyuda %68) hem daha koyu hem başka
+  tondaydı. Karar `dialogTheme`/`bottomSheetTheme`e taşındı, üç kopya silindi.
+- **Meşalenin ucu açık zeminde kayboluyordu.** Gövde gradyanının en üst durağı prototipin
+  krem `#FFF3D8`i; açık zeminle kontrastı 1.02:1, yani alev tepesinden kesilmiş gibi
+  duruyordu. Halkanın gradyanı Faz 17'de aynı sebeple zaten düzeltilmişti
+  (`_focusRingGradient`), alev atlanmıştı — uç artık ember'ın kendisine iniyor. İçteki beyaz
+  çekirdek gövdenin içinde kaldığı için iki temada da aynı.
+- **Onboarding'in `sheen` parlaması açık temada lekeye dönüyordu.** Efekt `fillStrong` ile
+  çiziliyor, o da nötr bir bindirme: açık temada siyaha dönüyor ve "üstten gelen ışık"
+  birincil düğmenin tepesinde gri bir banda dönüşüyordu. Işığın yönü çevrilemeyeceği için
+  açık temada efekt hiç çizilmiyor.
+- **Cihazda bakılmadı.** Dördü de kod ve token seviyesinde doğrulandı (`flutter analyze`
+  temiz, 229 test geçiyor). Seçicinin ve alevin açık temadaki son hâli emülatörde
+  görülmedi — madde 16'daki gibi bir tur gerekiyor.

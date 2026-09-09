@@ -335,9 +335,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _showInfoDialog({required String title, required String body}) {
+    // Perde rengi `dialogTheme.barrierColor`dan geliyor (bkz. `app_theme.dart`).
     return showDialog<void>(
       context: context,
-      barrierColor: Theme.of(context).extension<AppColors>()!.scrim,
       builder: (BuildContext context) => _InfoDialog(title: title, body: body),
     );
   }
@@ -345,7 +345,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _confirmReset() async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
-      barrierColor: Theme.of(context).extension<AppColors>()!.scrim,
       builder: (BuildContext context) => const _ResetConfirmDialog(),
     );
     if (confirmed != true) return;

@@ -187,9 +187,9 @@ void _confirmCancel(BuildContext context, WidgetRef ref, PomodoroPhase phase) {
   final bool showStreakRisk = stats.completedCount == 0 && streak >= 1;
   final AppLocalizations l10n = AppLocalizations.of(context);
 
+  // Perde rengi `dialogTheme.barrierColor`dan geliyor (bkz. `app_theme.dart`).
   showDialog<void>(
     context: context,
-    barrierColor: Theme.of(context).extension<AppColors>()!.scrim,
     builder: (BuildContext dialogContext) {
       return _CancelConfirmDialog(
         l10n: l10n,
