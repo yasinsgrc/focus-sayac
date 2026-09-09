@@ -7,6 +7,14 @@ import 'package:timezone/timezone.dart' as tz;
 import '../../core/l10n/l10n_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
 
+/// Durum çubuğu ikonunun Android kaynak adı (`res/drawable-*/ic_notification.png`).
+///
+/// Eklenti bunu `Resources.getIdentifier(name, "drawable", paket)` ile çözüyor,
+/// yani **çıplak** ad bekliyor — `@drawable/...` XML söz dizimidir, aramada `0`
+/// döner ve `invalid_icon` fırlatır. Sabit `notification_icon_sync_test`
+/// tarafından kaynak ağacıyla karşılaştırılıyor.
+const String kNotificationIconResource = 'ic_notification';
+
 /// SPEC.md §3 Ekran 12'nin tek sahibi olan Riverpod sağlayıcı. `main.dart`
 /// gerçek [NotificationService] örneğiyle geçersiz kılar; SPEC §1'in
 /// "singleton servisler yasak" kuralı gereği elle yazılmış statik bir
@@ -181,7 +189,7 @@ class NotificationService {
     // lekeye indirgiyordu; `ic_notification` işaretin siluetini taşıyor.
     // Buradaki değer varsayılan: `AndroidNotificationDetails`lerin hiçbiri
     // `icon:` geçmiyor, hepsi bunu miras alıyor.
-    const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@drawable/ic_notification');
+    const AndroidInitializationSettings androidInit = AndroidInitializationSettings(kNotificationIconResource);
     await plugin.initialize(settings: const InitializationSettings(android: androidInit));
   }
 

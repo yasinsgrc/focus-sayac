@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Release derlemesinde R8 + kaynak kucultme acik (`build/app/outputs/mapping/
+  release/mapping.txt` ve `resources.txt` bunun ciktisi). Kucultucu bir kaynagi
+  yalnizca STATIK basvurulardan izliyor; asagidaki ikisini "erisilemez" sayip
+  APK'dan tamamen cikariyordu:
+
+      @com.focussayac.focussayac:drawable/ic_notification : reachable=false
+      @com.focussayac.focussayac:drawable/ic_splash_logo  : reachable=false
+
+  `ic_notification` yalnizca calisma zamaninda ada gore araniyor -
+  `flutter_local_notifications` durum cubugu ikonunu
+  `Resources.getIdentifier(ad, "drawable", paket)` ile coziyor
+  (FlutterLocalNotificationsPlugin.java:855). Statik bir basvuru olmadigi icin
+  kucultucunun bunu gormesi mumkun degil. Kaynak atilinca arama 0 donuyor,
+  eklenti `invalid_icon` firlatiyor ve istisna `runApp()` oncesi `main()`i
+  kopardigi icin uygulama kuruldugu halde HIC ACILMIYORDU.
+
+  `ic_splash_logo` `drawable/launch_background.xml` icinden `<bitmap>` ile
+  basvuruluyor ama kucultucu o zinciri de izlemedi; korunmazsa acilis ekrani
+  zeminiyle kaliyor, ortadaki isaret kayboluyordu.
+
+  Ikisi de yalnizca release'te dusuyordu: debug APK kucultmeden gectigi icin
+  emulator kosularinda hic gorunmedi. `notification_icon_sync_test` Dart
+  tarafindaki adin kaynak agacindan ayrismasini ayrica denetliyor.
+-->
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification,@drawable/ic_splash_logo" />

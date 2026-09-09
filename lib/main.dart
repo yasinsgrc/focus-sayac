@@ -48,7 +48,21 @@ Future<void> main() async {
   // dokunuşuyla isteniyor: açılışta bağlamsız bir sistem diyaloğu açmak
   // SPEC.md Ekran 01'in anlattığı gerekçeyi atlıyordu. Ekran 01 aynı servisi
   // tekrar kullanıyor (Faz 6 kararı, DECISIONS.md).
-  await notificationService.initialize();
+  // Bildirim kanalı açılamazsa uygulama YİNE de açılmalı. Bu `await`
+  // korumasızken `@drawable/` önekli ikon adı `invalid_icon` fırlatmış,
+  // istisna `runApp()`tan önce `main()`i kopardığı için uygulama kurulduğu
+  // hâlde hiç açılmamıştı. İkon adı düzeltildi (`kNotificationIconResource`,
+  // `notification_icon_sync_test`); koruma, aynı sınıftan başka bir platform
+  // hatasının (OEM kısıtı, saat dilimi verisi) tek başına açılışı
+  // engellememesi için duruyor. Bildirim SPEC.md Ekran 12'de zaten isteğe
+  // bağlı: izinler reddedilse de "uygulama tam çalışmaya devam" ediyor.
+  // Yutulmuyor, günlüğe yazılıyor — sessiz başarısızlık değil.
+  try {
+    await notificationService.initialize();
+  } catch (error, stackTrace) {
+    debugPrint('NotificationService.initialize başarısız: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
   unawaited(_rescheduleStreakRiskReminder(database, notificationService));
   // SPEC.md §7: UMP onayı Ekran 01'de toplanıyor, reklam isteğinin kapısı
   // `AdService.canRequestAds` (onay + `isPremium`). SDK'nın başlatılması
