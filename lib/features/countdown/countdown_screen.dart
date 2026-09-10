@@ -150,23 +150,6 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
       backgroundColor: colors.bg,
       body: Stack(
         children: <Widget>[
-          Positioned(
-            top: 60,
-            left: -90,
-            child: IgnorePointer(
-              child: Container(
-                width: 580,
-                height: 520,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: <Color>[colors.glowViolet.withValues(alpha: 0.34), Colors.transparent],
-                    stops: const <double>[0, 0.6],
-                  ),
-                ),
-              ),
-            ),
-          ),
           SafeArea(
             child: activeExamAsync.when(
               data: (Exam? exam) {
@@ -192,6 +175,58 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Testler parıltının halkayla eş merkezli olduğunu bu anahtarla doğruluyor.
+const Key kCountdownGlowKey = Key('countdown_ambient_glow');
+
+/// Ekran 02'nin geniş mor aurora'sı (prototip satır 72: 580×520, `.34` → %60'ta
+/// saydam).
+///
+/// Prototipte ekrana `top:60;left:-90` ile çakılıydı; ama o değerler 390px'lik
+/// mockup çerçevesine — ve onun **çizilmeyen** 52px'lik sahte durum çubuğuna —
+/// göre ölçülmüştü. Ekrana sabitlenen her değer bu yüzden gerçek cihazda
+/// halkanın altına kayıyor: durum çubuğu her cihazda farklı, ekran genişliği de
+/// 390 değil. Parıltı artık odak dairesinin kendi `Stack`inde duruyor, yani
+/// merkezi hesapla değil **tanım gereği** halkanınkiyle aynı.
+///
+/// Düzende **sıfır** yer kaplıyor: `SizedBox`ın 0×0'ına oturan [OverflowBox],
+/// 580×520'lik boyayı o noktanın çevresine ortalıyor. Böylece parıltı ne
+/// `Stack`in boyunu büyütüyor ne de `_NoExamBody`nin sınırsız yükseklikteki
+/// `Column`unda ölçüsüz kalıyor; `Stack(alignment: center)` içinde konumu
+/// doğrudan yığının merkezi oluyor. Taşan alanın kırpılmaması için yığında
+/// `clipBehavior: Clip.none` gerekiyor — ama gradyan zaten r=156'da (0.6 × 260)
+/// saydama düştüğü için boya halkanın 14px ötesinde bitiyor, üstteki başlığa
+/// hiç değmiyor.
+class AmbientGlow extends StatelessWidget {
+  const AmbientGlow({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    return IgnorePointer(
+      child: SizedBox(
+        width: 0,
+        height: 0,
+        child: OverflowBox(
+          minWidth: 580,
+          maxWidth: 580,
+          minHeight: 520,
+          maxHeight: 520,
+          child: DecoratedBox(
+            key: kCountdownGlowKey,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: <Color>[colors.glowViolet.withValues(alpha: 0.34), Colors.transparent],
+                stops: const <double>[0, 0.6],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -226,14 +261,23 @@ class _NoExamBody extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: colors.borderStrong),
-              ),
-              child: Icon(PhosphorIconsDuotone.calendarBlank, size: 46, color: colors.neutral600),
+            // Aurora bu dalda da ekranda kalıyor (eskiden `Scaffold`
+            // seviyesindeydi), yalnızca odağı bu durumun kendi dairesi.
+            Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: <Widget>[
+                const AmbientGlow(),
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: colors.borderStrong),
+                  ),
+                  child: Icon(PhosphorIconsDuotone.calendarBlank, size: 46, color: colors.neutral600),
+                ),
+              ],
             ),
             const SizedBox(height: 26),
             Text(titleText,
@@ -367,7 +411,33 @@ class _CountdownBody extends ConsumerWidget {
                 height: 316,
                 child: Stack(
                   alignment: Alignment.center,
+                  // Aurora 316'lık kutudan taşıyor; kırpılmaması gerekiyor.
+                  // Taşan kısım zaten saydam (bkz. [kCountdownGlowKey]).
+                  clipBehavior: Clip.none,
                   children: <Widget>[
+                    // Geniş aurora — prototip satır 72.
+                    const AmbientGlow(),
+                    // Prototip satır 81: halkanın **içinde**, sayının arkasında
+                    // duran çekirdek (`inset:56px` → 204px, `.42` → %68'de
+                    // saydam). Prototipin `glow 6s` nabzı, SPEC.md §6'nın
+                    // dekoratif animasyon kuralı gereği statik gradyana
+                    // sadeleştirildi (DECISIONS.md'deki diğer nabızlar gibi).
+                    IgnorePointer(
+                      child: Container(
+                        width: 204,
+                        height: 204,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: <Color>[
+                              colors.glowViolet.withValues(alpha: 0.42),
+                              Colors.transparent,
+                            ],
+                            stops: const <double>[0, 0.68],
+                          ),
+                        ),
+                      ),
+                    ),
                     RepaintBoundary(
                       // Oran yalnızca sınav değişince ve gün dönümünde
                       // değişiyor; saniye tikleri `days`i kımıldatmadığı için
