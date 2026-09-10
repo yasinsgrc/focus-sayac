@@ -63,7 +63,8 @@ class BadgesScreen extends ConsumerWidget {
                   RiseIn(
                     child: Text(
                       AppLocalizations.of(context).badgesTitle,
-                      style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text),
+                      style: AppTypography.display(
+                          fontSize: AppTextSize.hero, weight: FontWeight.w700, color: colors.text),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -99,8 +100,8 @@ class BadgesScreen extends ConsumerWidget {
                           value: unlockedCount,
                           text: '$unlockedCount/${kBadgeCatalog.length}',
                           // `tabularFigures` artık `RollingNumber`ın garantisi.
-                          style: AppTypography.display(
-                            fontSize: 12,
+                          style: AppTypography.label(
+                            fontSize: AppTextSize.sm,
                             weight: FontWeight.w600,
                             color: colors.neutral400,
                           ),
@@ -216,12 +217,13 @@ class _BadgeCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 definition.name(l10n),
-                style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w600, color: titleColor),
+                style: AppTypography.label(
+                    fontSize: AppTextSize.lg, weight: FontWeight.w600, color: titleColor),
               ),
               const SizedBox(height: 12),
               Text(
                 definition.rule(l10n),
-                style: AppTypography.body(fontSize: 11.5, color: colors.neutral600, height: 1.45),
+                style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.neutral600, height: 1.45),
               ),
             ],
           ),
@@ -318,13 +320,14 @@ class _BadgeUnlockDialog extends StatelessWidget {
               Text(
                 definition.name(l10n),
                 textAlign: TextAlign.center,
-                style: AppTypography.display(fontSize: 24, weight: FontWeight.w700, color: colors.text),
+                style: AppTypography.display(
+                    fontSize: AppTextSize.heading, weight: FontWeight.w700, color: colors.text),
               ),
               const SizedBox(height: 10),
               Text(
                 ruleText,
                 textAlign: TextAlign.center,
-                style: AppTypography.body(fontSize: 13.5, color: colors.neutral400, height: 1.55),
+                style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral400),
               ),
               const SizedBox(height: 26),
               AppPillButton(
@@ -351,7 +354,8 @@ class _BadgeUnlockDialog extends StatelessWidget {
                   onPressed: () => Navigator.of(context).pop(),
                   child: Text(
                     l10n.commonClose,
-                    style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral500),
+                    style: AppTypography.label(
+                        fontSize: AppTextSize.md, weight: FontWeight.w500, color: colors.neutral500),
                   ),
                 ),
               ),

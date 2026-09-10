@@ -120,25 +120,37 @@ void main() {
         reason: 'krom gradyanının durakları prototiple uyuşmuyor');
   });
 
-  test('yazı tipi aileleri prototipin --disp/--mono tanımları', () {
+  test('gösterim ailesi prototipin --disp tanımı', () {
     final RegExpMatch? disp = RegExp(r'--disp:"([^"]+)"').firstMatch(css);
-    final RegExpMatch? mono = RegExp(r'--mono:"([^"]+)"').firstMatch(css);
     expect(disp, isNotNull, reason: 'prototipte --disp bulunamadı');
-    expect(mono, isNotNull, reason: 'prototipte --mono bulunamadı');
-
     expect(AppFonts.display, disp!.group(1));
-    expect(AppFonts.mono, mono!.group(1));
   });
 
-  test('tipografi kuralları prototipin letter-spacing değerleri', () {
-    // Prototipin başlıkları `letter-spacing:-.045em`, kicker'ları `.26em`.
+  test('kicker ailesi prototipin --mono tanımından bilinçli olarak ayrılıyor', () {
+    // SPEC §0 kural 1 yazı tipini donduruyor; bu tek sapma kullanıcı kararıyla
+    // alındı ve DECISIONS.md'de gerekçesiyle duruyor. Michroma'nın subset'inde
+    // küçük harflerin tamamı, virgül, uzun tire, kesme işareti ve `Î` yoktu —
+    // kicker'a giren böyle bir karakter kelimenin ortasında sistem fontuna
+    // düşüyordu. Test, sapmanın *kasıtlı* olduğunu sabitliyor: prototipin
+    // `--mono`su hâlâ Michroma, uygulamanınki artık gösterim ailesi.
+    final RegExpMatch? mono = RegExp(r'--mono:"([^"]+)"').firstMatch(css);
+    expect(mono, isNotNull, reason: 'prototipte --mono bulunamadı');
+    expect(mono!.group(1), 'Michroma');
+    expect(AppTypography.kicker(fontSize: 10).fontFamily, AppFonts.display);
+  });
+
+  test('başlık letter-spacing kuralı prototiple aynı', () {
+    // Prototipin başlıkları `letter-spacing:-.045em`.
     expect(css.contains('letter-spacing:-.045em'), isTrue,
         reason: 'prototipin başlık letter-spacing kuralı değişmiş');
-    expect(css.contains('letter-spacing:.26em'), isTrue,
-        reason: 'prototipin kicker letter-spacing kuralı değişmiş');
 
     // `em` oranı fontSize ile çarpılarak uygulanıyor.
     expect(AppTypography.display(fontSize: 100).letterSpacing, closeTo(-4.5, 1e-9));
-    expect(AppTypography.kicker(fontSize: 100).letterSpacing, closeTo(26, 1e-9));
+
+    // Kicker'ın tracking'i prototipin `.26em`'inden `.2em`'e indi: `.26`
+    // Michroma'nın zaten geniş gövdesi için ölçülmüştü.
+    expect(css.contains('letter-spacing:.26em'), isTrue,
+        reason: 'prototipin kicker letter-spacing kuralı değişmiş');
+    expect(AppTypography.kicker(fontSize: 100).letterSpacing, closeTo(20, 1e-9));
   });
 }

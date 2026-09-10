@@ -307,7 +307,9 @@ class _FocusBody extends ConsumerWidget {
                     children: <Widget>[
                       Container(width: 6, height: 6, decoration: BoxDecoration(color: colors.ember, shape: BoxShape.circle)),
                       const SizedBox(width: 8),
-                      Text(l10n.focusCycleBadge(_cyclePosition), style: AppTypography.kicker(fontSize: 9, color: colors.ember)),
+                      Text(l10n.focusCycleBadge(_cyclePosition),
+                          style: AppTypography.kicker(
+                              fontSize: AppTextSize.kicker, color: colors.ember)),
                     ],
                   ),
                 ),
@@ -316,7 +318,8 @@ class _FocusBody extends ConsumerWidget {
                   children: <Widget>[
                     Icon(PhosphorIconsRegular.eyeSlash, size: 14, color: colors.neutral600),
                     const SizedBox(width: 6),
-                    Text(l10n.focusAdHidden, style: AppTypography.body(fontSize: 11.5, color: colors.neutral600)),
+                    Text(l10n.focusAdHidden,
+                        style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.neutral600)),
                   ],
                 ),
               ],
@@ -362,9 +365,13 @@ class _FocusBody extends ConsumerWidget {
                           child: Align(alignment: Alignment.bottomCenter, child: FlameWidget(running: running, progress: progress)),
                         ),
                         const SizedBox(height: 6),
-                        Text(formatClock(remaining), style: AppTypography.counter(fontSize: 72, color: clockColor, height: 1)),
+                        Text(formatClock(remaining),
+                            style: AppTypography.counter(
+                                fontSize: AppTextSize.counterXl, color: clockColor, height: 1)),
                         const SizedBox(height: 6),
-                        Text(phaseLabel, style: AppTypography.kicker(fontSize: 9, color: phaseColor)),
+                        Text(phaseLabel,
+                            style: AppTypography.kicker(
+                                fontSize: AppTextSize.kicker, color: phaseColor)),
                       ],
                     ),
                   ),
@@ -523,7 +530,9 @@ class _FocusHintLineState extends State<_FocusHintLine> {
           children: <Widget>[
             Icon(PhosphorIconsDuotone.deviceMobileSlash, size: 21, color: widget.iconColor),
             const SizedBox(width: 12),
-            Expanded(child: Text(widget.text, style: AppTypography.body(fontSize: 12.5, color: colors.neutral400))),
+            Expanded(
+                child: Text(widget.text,
+                    style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral400))),
           ],
         ),
       ),
@@ -638,7 +647,9 @@ class _BreakBody extends ConsumerWidget {
                     children: <Widget>[
                       Container(width: 6, height: 6, decoration: BoxDecoration(color: colors.mint, shape: BoxShape.circle)),
                       const SizedBox(width: 8),
-                      Text(breakLabel, style: AppTypography.kicker(fontSize: 9, color: colors.mint)),
+                      Text(breakLabel,
+                          style: AppTypography.kicker(
+                              fontSize: AppTextSize.kicker, color: colors.mint)),
                     ],
                   ),
                 ),
@@ -654,7 +665,9 @@ class _BreakBody extends ConsumerWidget {
                       children: <Widget>[
                         Icon(PhosphorIconsRegular.checkCircle, size: 14, color: colors.mint),
                         const SizedBox(width: 6),
-                        Text(l10n.breakPomodoroDone(phase.cyclePosition), style: AppTypography.body(fontSize: 11.5, color: colors.neutral500)),
+                        Text(l10n.breakPomodoroDone(phase.cyclePosition),
+                            style: AppTypography.body(
+                                fontSize: AppTextSize.sm, color: colors.neutral500)),
                       ],
                     ),
                   ),
@@ -693,13 +706,15 @@ class _BreakBody extends ConsumerWidget {
                       Text(
                         formatClock(remaining),
                         style: AppTypography.counter(
-                          fontSize: 72,
+                          fontSize: AppTextSize.counterXl,
                           color: colors.brightness == Brightness.dark ? const Color(0xFFE7FFF8) : colors.text,
                           height: 1,
                         ),
                       ),
                       const SizedBox(height: 6),
-                      Text(l10n.breakRunning, style: AppTypography.kicker(fontSize: 9, color: colors.mint)),
+                      Text(l10n.breakRunning,
+                          style: AppTypography.kicker(
+                              fontSize: AppTextSize.kicker, color: colors.mint)),
                     ],
                   ),
                 ],
@@ -717,7 +732,9 @@ class _BreakBody extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(l10n.breakTipsHeading, style: AppTypography.kicker(fontSize: 8, color: colors.neutral600)),
+                  Text(l10n.breakTipsHeading,
+                      style: AppTypography.kicker(
+                          fontSize: AppTextSize.kicker, color: colors.neutral600)),
                   const SizedBox(height: 10),
                   for (final BreakTip tip in tips)
                     Padding(
@@ -726,7 +743,10 @@ class _BreakBody extends ConsumerWidget {
                         children: <Widget>[
                           Icon(tip.icon, size: 16, color: tip.tint == BreakTipTint.mint ? colors.mint : colors.sky),
                           const SizedBox(width: 10),
-                          Expanded(child: Text(tip.text(l10n), style: AppTypography.body(fontSize: 13, color: colors.neutral300))),
+                          Expanded(
+                              child: Text(tip.text(l10n),
+                                  style: AppTypography.body(
+                                      fontSize: AppTextSize.md, color: colors.neutral300))),
                         ],
                       ),
                     ),
@@ -817,9 +837,13 @@ class _CancelConfirmDialog extends StatelessWidget {
             // renkle taşıyor (Faz 5 kararı).
             Icon(PhosphorIconsDuotone.flame, size: 46, color: colors.rose),
             const SizedBox(height: 18),
-            Text(l10n.cancelDialogTitle, style: AppTypography.display(fontSize: 23, weight: FontWeight.w700, color: colors.text)),
+            Text(l10n.cancelDialogTitle,
+                style: AppTypography.display(
+                    fontSize: AppTextSize.heading, weight: FontWeight.w700, color: colors.text)),
             const SizedBox(height: 10),
-            Text(bodyText, textAlign: TextAlign.center, style: AppTypography.body(fontSize: 13.5, color: colors.neutral400)),
+            Text(bodyText,
+                textAlign: TextAlign.center,
+                style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral400)),
             const SizedBox(height: 18),
             Container(
               width: double.infinity,
@@ -832,7 +856,7 @@ class _CancelConfirmDialog extends StatelessWidget {
                   Expanded(
                     child: Text(
                       l10n.cancelDialogRemaining(_words(remaining)),
-                      style: AppTypography.body(fontSize: 12.5, color: colors.neutral300),
+                      style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral300),
                     ),
                   ),
                 ],
@@ -860,7 +884,11 @@ class _CancelConfirmDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(18),
                     onTap: onConfirmCancel,
                     child: Center(
-                      child: Text(l10n.cancelDialogConfirm, style: AppTypography.display(fontSize: 13.5, weight: FontWeight.w500, color: colors.rose)),
+                      child: Text(l10n.cancelDialogConfirm,
+                          style: AppTypography.label(
+                              fontSize: AppTextSize.md,
+                              weight: FontWeight.w500,
+                              color: colors.rose)),
                     ),
                   ),
                 ),

@@ -127,7 +127,7 @@ class _AppToastState extends State<_AppToast> with SingleTickerProviderStateMixi
           Text(
             widget.message,
             textAlign: TextAlign.center,
-            style: AppTypography.body(fontSize: 13.5, color: colors.text),
+            style: AppTypography.body(fontSize: AppTextSize.md, color: colors.text),
           ),
         ],
       ),

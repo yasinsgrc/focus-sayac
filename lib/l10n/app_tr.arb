@@ -82,8 +82,8 @@
   "@focusCycleBadge": {
     "placeholders": { "position": { "type": "int" } }
   },
-  "focusRunning": "odak sürüyor",
-  "focusPaused": "duraklatıldı",
+  "focusRunning": "ODAK SÜRÜYOR",
+  "focusPaused": "DURAKLATILDI",
   "focusHintRunning": "Ekran açık kalır · bitişte bildirim kurulu",
   "focusHintRunningNoNotification": "Ekran açık kalır · bildirimler kapalı, bitişte uyarı yok",
   "focusHintPaused": "Meşale soldu — devam etmek için oynat",
@@ -95,8 +95,8 @@
   "@breakPomodoroDone": {
     "placeholders": { "position": { "type": "int" } }
   },
-  "breakRunning": "mola sürüyor",
-  "breakTipsHeading": "molada dene",
+  "breakRunning": "MOLA SÜRÜYOR",
+  "breakTipsHeading": "MOLADA DENE",
   "breakExtend": "5 dk ekle",
   "breakReturnToFocus": "ODAĞA DÖN",
   "breakTipLookAway": "Ekrana bakma — 20 saniye uzağa odaklan",

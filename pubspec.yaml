@@ -125,10 +125,6 @@ flutter:
           weight: 600
         - asset: assets/fonts/SpaceGrotesk-700.ttf
           weight: 700
-    - family: Michroma
-      fonts:
-        - asset: assets/fonts/Michroma-Regular.ttf
-          weight: 400
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter-400.ttf

@@ -67,7 +67,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 error: (Object error, StackTrace stackTrace) => Center(
                   child: Text(
                     AppLocalizations.of(context).settingsLoadError,
-                    style: AppTypography.body(fontSize: 14, color: colors.neutral500),
+                    style: AppTypography.body(fontSize: AppTextSize.lg, color: colors.neutral500),
                   ),
                 ),
               ),
@@ -103,7 +103,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           RiseIn(
             child: Text(
               l10n.settingsTitle,
-              style: AppTypography.display(fontSize: 34, weight: FontWeight.w700, color: colors.text),
+              style: AppTypography.display(
+                  fontSize: AppTextSize.hero, weight: FontWeight.w700, color: colors.text),
             ),
           ),
           const SizedBox(height: 16),
@@ -121,7 +122,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: <Widget>[
                   Text(
                     l10n.settingsDurationsSection,
-                    style: AppTypography.kicker(fontSize: 8, color: colors.neutral600, letterSpacingEm: 0.24),
+                    style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600),
                   ),
                   const SizedBox(height: 14),
                   _DurationSlider(
@@ -293,7 +294,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               padding: const EdgeInsets.only(bottom: kBottomNavReservedSpace),
               child: Text(
                 l10n.settingsDisclaimer,
-                style: AppTypography.body(fontSize: 11.5, color: colors.neutral600, height: 1.5),
+                style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.neutral600),
               ),
             ),
           ),
@@ -391,11 +392,11 @@ class _DurationSlider extends StatelessWidget {
           textBaseline: TextBaseline.alphabetic,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
-            Text(label, style: AppTypography.body(fontSize: 13.5, color: colors.text)),
+            Text(label, style: AppTypography.label(fontSize: AppTextSize.md, color: colors.text)),
             Text(
               AppLocalizations.of(context).settingsMinutesValue(minutes),
               style: AppTypography.display(
-                fontSize: 16,
+                fontSize: AppTextSize.title,
                 weight: FontWeight.w700,
                 color: tint,
               ).copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]),
@@ -472,9 +473,10 @@ class _SettingsRow extends StatelessWidget {
               Icon(icon, size: 20, color: iconColor),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(label, style: AppTypography.body(fontSize: 13.5, color: colors.text)),
+                child: Text(label, style: AppTypography.label(fontSize: AppTextSize.md, color: colors.text)),
               ),
-              if (value.isNotEmpty) Text(value, style: AppTypography.body(fontSize: 12.5, color: valueColor)),
+              if (value.isNotEmpty)
+                Text(value, style: AppTypography.label(fontSize: AppTextSize.md, color: valueColor)),
               if (showCaret) ...<Widget>[
                 const SizedBox(width: 10),
                 Icon(PhosphorIconsRegular.caretRight, size: 13, color: colors.neutral700),
@@ -509,7 +511,7 @@ class _RemoveAdsRow extends StatelessWidget {
           Expanded(
             child: Text(
               AppLocalizations.of(context).settingsRemoveAds,
-              style: AppTypography.body(fontSize: 13.5, color: colors.neutral400),
+              style: AppTypography.label(fontSize: AppTextSize.md, color: colors.neutral400),
             ),
           ),
           Container(
@@ -517,7 +519,7 @@ class _RemoveAdsRow extends StatelessWidget {
             decoration: BoxDecoration(color: colors.fillFaint, borderRadius: BorderRadius.circular(999)),
             child: Text(
               AppLocalizations.of(context).settingsComingSoon,
-              style: AppTypography.kicker(fontSize: 8, color: colors.neutral500, letterSpacingEm: 0.16),
+              style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral500),
             ),
           ),
         ],
@@ -550,7 +552,7 @@ class _InfoDialog extends StatelessWidget {
           children: <Widget>[
             Text(
               title,
-              style: AppTypography.display(fontSize: 20, weight: FontWeight.w700, color: colors.text),
+              style: AppTypography.display(fontSize: AppTextSize.titleLg, color: colors.text),
             ),
             const SizedBox(height: 12),
             // Gizlilik metni reklam/UMP bölümüyle birlikte kısa ekranlara
@@ -558,7 +560,7 @@ class _InfoDialog extends StatelessWidget {
             // taşardı; kısa metinlerde ("Hakkında") davranış değişmiyor.
             Flexible(
               child: SingleChildScrollView(
-                child: Text(body, style: AppTypography.body(fontSize: 13, color: colors.neutral400)),
+                child: Text(body, style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral400)),
               ),
             ),
             const SizedBox(height: 12),
@@ -568,7 +570,8 @@ class _InfoDialog extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
                   AppLocalizations.of(context).commonClose,
-                  style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral500),
+                  style: AppTypography.label(
+                      fontSize: AppTextSize.md, weight: FontWeight.w500, color: colors.neutral500),
                 ),
               ),
             ),
@@ -604,13 +607,14 @@ class _ResetConfirmDialog extends StatelessWidget {
             const SizedBox(height: 18),
             Text(
               l10n.settingsResetDialogTitle,
-              style: AppTypography.display(fontSize: 23, weight: FontWeight.w700, color: colors.text),
+              style: AppTypography.display(
+                  fontSize: AppTextSize.heading, weight: FontWeight.w700, color: colors.text),
             ),
             const SizedBox(height: 10),
             Text(
               l10n.settingsResetDialogBody,
               textAlign: TextAlign.center,
-              style: AppTypography.body(fontSize: 13.5, color: colors.neutral400),
+              style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral400),
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -633,7 +637,8 @@ class _ResetConfirmDialog extends StatelessWidget {
                     child: Center(
                       child: Text(
                         l10n.settingsResetDialogCancel,
-                        style: AppTypography.display(fontSize: 13.5, weight: FontWeight.w600, color: colors.mint),
+                        style: AppTypography.label(
+                            fontSize: AppTextSize.md, weight: FontWeight.w600, color: colors.mint),
                       ),
                     ),
                   ),
@@ -657,7 +662,8 @@ class _ResetConfirmDialog extends StatelessWidget {
                     child: Center(
                       child: Text(
                         l10n.settingsResetData,
-                        style: AppTypography.display(fontSize: 13.5, weight: FontWeight.w500, color: colors.rose),
+                        style: AppTypography.label(
+                            fontSize: AppTextSize.md, weight: FontWeight.w500, color: colors.rose),
                       ),
                     ),
                   ),

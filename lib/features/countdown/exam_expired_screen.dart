@@ -67,14 +67,16 @@ class ExamExpiredScreen extends ConsumerWidget {
                       child: Icon(PhosphorIconsDuotone.calendarX, size: 46, color: colors.neutral600),
                     ),
                     const SizedBox(height: 26),
-                    Text(l10n.examExpiredTitle, style: AppTypography.display(fontSize: 28, weight: FontWeight.w700, color: colors.text)),
+                    Text(l10n.examExpiredTitle,
+                        style: AppTypography.display(
+                            fontSize: AppTextSize.headingLg, weight: FontWeight.w700, color: colors.text)),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: 262,
                       child: Text(
                         subtitle,
                         textAlign: TextAlign.center,
-                        style: AppTypography.body(fontSize: 14, color: colors.neutral500),
+                        style: AppTypography.body(fontSize: AppTextSize.lg, color: colors.neutral500),
                       ),
                     ),
                     const SizedBox(height: 30),
@@ -104,14 +106,15 @@ class ExamExpiredScreen extends ConsumerWidget {
                         },
                         child: Text(
                           l10n.examExpiredPickNew,
-                          style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w600, color: colors.accent200),
+                          style: AppTypography.label(
+                              fontSize: AppTextSize.lg, weight: FontWeight.w600, color: colors.accent200),
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       l10n.examExpiredDataKept,
-                      style: AppTypography.body(fontSize: 12.5, color: colors.neutral600),
+                      style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral600),
                     ),
                   ],
                 ),

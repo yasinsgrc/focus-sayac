@@ -1515,3 +1515,107 @@ istisnası, `RenderFlex` taşması ya da çerçeve hatası yok. 259 test geçiyo
   seans bitince Ekran 02 odak ekranının altında duruyor ve dönüşte ilk build oluyor
   (tasarım gereği ilk build'de animasyon yok). Bu ikisi widget testlerinde ara kare
   iddialarıyla duruyor.
+
+## Tipografi — 16px eşiği ve Michroma'nın küçük harf boşluğu
+
+"Yazı tipleri tutarsız" geri bildiriminden çıkan tarama. Kodda başıboş `fontFamily`
+yoktu: her stil `AppTypography`den akıyordu. Tutarsızlık iki ayrı yerden geliyordu.
+
+- **Michroma'ya küçük harf giriyordu — asıl kaynak buydu.** Subset bilinçli olarak
+  yalnız büyük harf + rakam (49 glif); Türkçe **büyük** harfler tam (Ğ İ Ş Ö Ü Ç),
+  küçükler hiç yok. Buna rağmen beş metin kicker olarak küçük harfle çiziliyordu:
+  `focusRunning` ("odak sürüyor"), `focusPaused` ("duraklatıldı"), `breakRunning`,
+  `breakTipsHeading` ve `storyCardBrandFooter`. Flutter eksik glifte sessizce sistem
+  fontuna düşüyor — yani odak ve mola ekranlarının etiketi Michroma değil **Roboto**
+  çiziliyordu. Kullanıcının gördüğü "farklı font" tam olarak buydu.
+  - İlk dördü ARB'de büyük harfe alındı; dosyanın kendi konvansiyonu zaten öyleydi
+    (`breakLong: "UZUN MOLA"`, `breakReturnToFocus: "ODAĞA DÖN"`) — bu dördü ondan
+    sapmıştı, yani düzeltme tasarımı değiştirmiyor, **onarıyor**.
+  - Marka altbilgisi ayrı tutuldu: "focussayaç" küçük harfli yazılıyor, büyütmek marka
+    adını değiştirirdi. O satır kicker'dan çıkarılıp Inter'e alındı, tracking kicker'la
+    aynı bırakıldı. Önemi: bu satır export edilen 1080×1920 PNG'ye gömülüyor, yani font
+    düşüşü paylaşılan her kartta kalıcı oluyordu.
+  - **Genel ders:** `AppTypography.kicker` çağıran her yerin metni büyük harf olmak
+    zorunda ve bunu tip sistemi zorlamıyor. `KickerLabel` kendisi `toUpperCase()`
+    yapıyor; doğrudan `kicker(...)` kullanan çağrı yerleri bu güvenceden yoksun.
+
+- **Space Grotesk ile Inter aynı boyutta çarpışıyordu.** `display` çağrılarının 38'inden
+  20'si ≤15.5px'ti, `body` ise tamamen 11.5–15px bandındaydı. Ayarlar'da satır etiketi
+  Inter 13.5 iken diyalog aksiyonu Space Grotesk 13.5'ti — aynı boy, farklı yüz, ayırt
+  edici kural yok. Space Grotesk'i okunur kılan sıkı negatif tracking'i ancak başlık
+  ölçeğinde işe yarıyor; altında "başlık" diye değil yalnızca "başka font" diye okunuyor.
+  - Kural `AppTypography` doküman yorumuna yazıldı: **≥16px → Space Grotesk**
+    (`display`/`counter`), **<16px → Inter** (yeni `label` rolü). 24 çağrı yeri taşındı.
+  - `label`ın `height`i 1.12, yani `display`inkiyle birebir — devralma dikey kayma
+    üretmiyor. `display`in `fontSize * -0.045` tracking'i **taşınmadı**; o sıkışma Space
+    Grotesk'in geniş gövdesi için var, Inter bu boyutlarda nötr tracking'de okunuyor.
+  - **SPEC §0'dan bilinçli sapma.** Kural 1 "yazı tipini değiştirme" diyor. Değişen font
+    değil, hangi fontun hangi ölçekte kullanıldığı; üç aile de duruyor ve 16px üstündeki
+    her şey prototipteki gibi. Sapmanın nedeni prototipin kendi kuralını netleştirmek.
+
+- **Doğrulama.** `flutter analyze` 0/0, 259 test geçiyor. Emülatörde (API 36, Impeller)
+  geri sayım, odak seansı, iptal diyaloğu ve ayarlar açık temada tarandı: "ODAK SÜRÜYOR"
+  artık üstündeki "ODAK 1/4" ile aynı yüz; iptal diyaloğunda "DEVAM ET" ve "Seansı iptal
+  et" ikisi de Inter; hiçbir yerde `RenderFlex` taşması yok — genişleyen etiketler
+  (nav hapı, odak CTA'sı, sınav adı) kutularına sığıyor.
+  - **Ölçüm tuzağı:** genişlik farkını `flutter test` içinde `TextPainter` ile ölçmek
+    yanıltıcı. Test ortamı gerçek fontları yüklemiyor, sabit genişlikli test fontu
+    kullanıyor — çıkan sabit +4.7% yalnız tracking kaybını gösteriyor, gerçek
+    Inter/Space Grotesk metrik farkını değil. Taşma sorusu ancak cihazda cevaplanıyor.
+
+## Tipografi ikinci tur — Michroma çıktı, boyut ölçeği geldi
+
+Aynı geri bildirim ("yazı tipleri farklı farklı kullanılmış") bir tur sonra tekrar
+geldi. Yukarıdaki tur küçük harf düşüşünü onarmıştı ama his geçmemişti; ikinci tarama
+sebebi ailelerde değil **ölçekte** buldu.
+
+- **33 farklı `fontSize` vardı, 107 çağrı yerinde.** 20 başlık için 12 ayrı boyut
+  (16/17/19/20/21/22/23/24/26/28/34/42), etiketlerde 15.5/14.5/13.5, gövdede
+  12.5/11.5, kicker'da 9.5/8.5/7.5. Hiçbiri bir adımın parçası değildi — her ekran
+  kendi boyutunu elle seçmişti. Aileler tutarlıyken bile arayüzün "farklı fontlar"
+  gibi okunmasının asıl sebebi buydu. `AppTextSize` ile **17 adıma** indi; 106 çağrının
+  104'ü artık sabit kullanıyor (kalan ikisi parametre geçişi: `KickerLabel.fontSize`
+  ve story kartının `style.bigFontSize`'ı).
+- **16px eşiği yerini rol eksenine bıraktı.** Eşik, aynı boyutta iki aile yan yana
+  gelince hangisinin seçileceğini söyleyemiyordu. Yeni kural tek eksen:
+  **Space Grotesk → gösterim** (`display`/`counter`/`kicker`),
+  **Inter → okuma** (`label`/`body`). `label` ile `body` ayrımı da netleşti: satır
+  sarabilen düzyazı `body`, tek satırlık arayüz metni `label`. Ayarlar'ın satır
+  başlığı/değeri ve `add_exam`'ın elips'li satırı `body`den `label`a taşındı.
+
+- **SPEC §0 kural 1'den sapma — Michroma paketten çıkarıldı.** Kural yazı tipini
+  donduruyor; bu sapma kullanıcı kararıyla alındı. İki gerekçe:
+  1. *Stilistik:* Michroma geniş, sci-fi bir gösterim yüzü. Space Grotesk zaten
+     karakterli bir geometrik grotesk, Inter nötr UI grotesk'i — Michroma ikisiyle
+     aynı sistemin parçası gibi okunmuyordu, 8–10px'te `.26em` tracking'le "üçüncü
+     ve alakasız font" oluyordu.
+  2. *Teknik:* subset'i 49 glifti — `cmap`'i okunduğunda kapsam
+     `%-./0-9:A-Z·ÇÖÜĞİŞ` çıktı. Küçük harflerin **tamamı**, virgül, uzun tire,
+     kesme işareti ve `Î` yok. Kicker'a giren böyle bir karakter kelimenin ortasında
+     sessizce sistem fontuna düşüyordu. Bir önceki tur bunu tek tek onarmıştı;
+     kural tip sistemiyle zorlanamadığı için mayın yerinde duruyordu
+     (ör. `examPickerVerifyOfficial` = "RESMÎ TAKVİMDEN DOĞRULA" kicker'a taşınsa
+     `Î` düşerdi).
+  - Kicker artık Space Grotesk. Tracking `.26em` → `.2em`: `.26` Michroma'nın zaten
+    geniş gövdesi için ölçülmüştü, Space Grotesk'in dar kapitallerinde harfleri
+    dağıtıyordu. Bundle 15.3 KB küçüldü; `Michroma-Regular.ttf` ve OFL metni silindi.
+  - Story kartının marka altbilgisi (`focussayaç`, küçük harfli) bir önceki turda
+    Michroma'nın küçük harf boşluğu yüzünden `label`a alınmıştı — o kısıt kalktığı
+    için `kicker` rolüne döndü.
+  - `prototype_palette_test.dart` sapmayı **sabitliyor**: prototipin `--mono`su hâlâ
+    Michroma, uygulamanın kicker ailesi ise `AppFonts.display`. Test artık eşitlik
+    değil, kasıtlı ayrışma iddia ediyor.
+
+- **Doğrulama.** `flutter analyze` 0/0, **260 test geçiyor**. Ölçek uygulanırken
+  `widget_test` dahil 15 test kırıldı: geri sayım kahramanının altındaki
+  `saat:dakika:saniye · sınav tarihi` satırı (yatay `Row`, `mainAxisSize.min`, 316px)
+  9.8px taştı, çünkü o satır 12.5 → 13'e çıkmıştı. `git stash` ile temel ölçüm
+  alınarak taşmanın bu turdan geldiği doğrulandı. Satır `sm`ye (12) indirildi —
+  kahramanın altındaki meta bilgi için doğru basamak zaten oydu ve "beraberlikte
+  aşağı yuvarla" kuralına uyuyor.
+  - **Bilinçli olarak dokunulmadı:** `height` override'ları (1.28/1.45/0.88/0.95).
+    Bunlar da dağınık ama satır yüksekliğini değiştirmek yükseklik kısıtlı
+    kartlarda taşma riski taşıyor ve kullanıcının şikâyeti boyut/aile eksenindeydi.
+    Ayrı bir tur konusu.
+  - Emülatör taraması yapılmadı: test fontu gerçek metrikleri yansıtmadığı için
+    (yukarıdaki "ölçüm tuzağı") cihazda görsel doğrulama hâlâ açık iş.

@@ -215,7 +215,7 @@ class _CardBody extends StatelessWidget {
                 text.tag.toUpperCase(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.kicker(fontSize: 8 * _s, color: style.textMuted),
+                style: AppTypography.kicker(fontSize: AppTextSize.kicker * _s, color: style.textMuted),
               ),
             ),
           ],
@@ -249,11 +249,11 @@ class _CardBody extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: AppTypography.display(
-            fontSize: 16 * _s,
+            fontSize: AppTextSize.title * _s,
             weight: FontWeight.w600,
             color: style.textPrimary,
             height: 1.28,
-          ).copyWith(letterSpacing: 16 * _s * -0.02),
+          ).copyWith(letterSpacing: AppTextSize.title * _s * -0.02),
         ),
         if (text.line2.isNotEmpty) ...<Widget>[
           const SizedBox(height: 7 * _s),
@@ -262,7 +262,7 @@ class _CardBody extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AppTypography.body(
-              fontSize: 12.5 * _s,
+              fontSize: AppTextSize.md * _s,
               color: style.textMuted,
               height: 1.45,
             ),
@@ -277,8 +277,13 @@ class _CardBody extends StatelessWidget {
           AppLocalizations.of(context).storyCardBrandFooter,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+          // Marka adı küçük harfli ("focussayaç"). Kicker Michroma iken bu satır
+          // `label`a alınmıştı: o subset'te küçük harf glifi yoktu ve satır
+          // sessizce sistem fontuna düşerek export edilen 1080×1920 PNG'ye öyle
+          // gömülüyordu. Kicker Space Grotesk'e geçtiğinden küçük harfler artık
+          // ailenin kendi glifleriyle çiziliyor, satır rolüne dönebildi.
           style: AppTypography.kicker(
-            fontSize: 7.5 * _s,
+            fontSize: AppTextSize.kickerSm * _s,
             color: style.accent.withValues(alpha: 0.7),
             letterSpacingEm: 0.18,
           ),

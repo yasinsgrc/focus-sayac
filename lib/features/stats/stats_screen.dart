@@ -60,7 +60,7 @@ class StatsScreen extends ConsumerWidget {
                   RiseIn(
                     child: Text(
                       l10n.statsTotalFocus,
-                      style: AppTypography.kicker(fontSize: 9, color: colors.neutral600),
+                      style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -80,9 +80,8 @@ class StatsScreen extends ConsumerWidget {
                           value: stats.cumulativeSeconds,
                           text: _cumulativeText(l10n, stats.cumulativeSeconds),
                           style: AppTypography.counter(
-                            fontSize: 46,
+                            fontSize: AppTextSize.counterLg,
                             color: Colors.white,
-                            letterSpacingEm: -0.055,
                           ),
                         ),
                       ),
@@ -93,7 +92,7 @@ class StatsScreen extends ConsumerWidget {
                     delay: RiseIn.step * 2,
                     child: Text(
                       l10n.statsWeeklyAverage(_averageText(l10n, stats.dailyAverageSeconds)),
-                      style: AppTypography.body(fontSize: 12.5, color: colors.neutral500),
+                      style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral500),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -229,7 +228,8 @@ class _MetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(label, style: AppTypography.kicker(fontSize: 8, color: colors.neutral600, letterSpacingEm: 0.22)),
+          Text(label,
+              style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600)),
           const SizedBox(height: 10),
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -239,9 +239,10 @@ class _MetricCard extends StatelessWidget {
               RollingNumber(
                 value: value,
                 text: valueText,
-                style: AppTypography.counter(fontSize: 30, color: valueColor, letterSpacingEm: -0.05),
+                style: AppTypography.counter(fontSize: AppTextSize.counterSm, color: valueColor),
               ),
-              if (unit != null) Text(unit!, style: AppTypography.display(fontSize: 14, color: colors.neutral500)),
+              if (unit != null)
+                Text(unit!, style: AppTypography.label(fontSize: AppTextSize.lg, color: colors.neutral500)),
             ],
           ),
         ],
@@ -272,7 +273,7 @@ class _ProductiveWindowCard extends StatelessWidget {
           Expanded(
             child: Text.rich(
               TextSpan(
-                style: AppTypography.body(fontSize: 12.5, color: colors.neutral300, height: 1.5),
+                style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral300),
                 children: <InlineSpan>[
                   TextSpan(text: AppLocalizations.of(context).statsProductiveWindowPrefix),
                   TextSpan(text: _windowText, style: TextStyle(color: colors.sky)),

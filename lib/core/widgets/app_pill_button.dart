@@ -64,8 +64,8 @@ class AppPillButton extends StatelessWidget {
                         ],
                         Text(
                           label,
-                          style: AppTypography.display(
-                            fontSize: 13.5,
+                          style: AppTypography.label(
+                            fontSize: AppTextSize.md,
                             weight: weight,
                             color: roleColor,
                           ),

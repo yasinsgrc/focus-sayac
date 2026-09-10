@@ -60,10 +60,11 @@ class _ExamPickerSheet extends ConsumerWidget {
               textBaseline: TextBaseline.alphabetic,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Text(l10n.examPickerTitle, style: AppTypography.display(fontSize: 21, weight: FontWeight.w600, color: colors.text)),
+                Text(l10n.examPickerTitle,
+                    style: AppTypography.display(fontSize: AppTextSize.titleLg, color: colors.text)),
                 Text(
                   l10n.examPickerVerifyOfficial,
-                  style: AppTypography.kicker(fontSize: 8.5, color: colors.neutral600),
+                  style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600),
                 ),
               ],
             ),
@@ -92,7 +93,8 @@ class _ExamPickerSheet extends ConsumerWidget {
                 icon: Icon(Icons.add, size: 15, color: colors.neutral300),
                 label: Text(
                   l10n.examPickerAddOwn,
-                  style: AppTypography.display(fontSize: 14, weight: FontWeight.w500, color: colors.neutral300),
+                  style: AppTypography.label(
+                      fontSize: AppTextSize.lg, weight: FontWeight.w500, color: colors.neutral300),
                 ),
               ),
             ),
@@ -167,10 +169,13 @@ class _ExamRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(exam.name, style: AppTypography.display(fontSize: 15, weight: FontWeight.w500, color: colors.text)),
+                    Text(exam.name,
+                        style: AppTypography.label(
+                            fontSize: AppTextSize.lg, weight: FontWeight.w500, color: colors.text)),
                     if (exam.subtitle != null && exam.subtitle!.isNotEmpty) ...<Widget>[
                       const SizedBox(height: 2),
-                      Text(exam.subtitle!, style: AppTypography.body(fontSize: 12, color: colors.neutral500)),
+                      Text(exam.subtitle!,
+                          style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.neutral500)),
                     ],
                   ],
                 ),
@@ -180,13 +185,16 @@ class _ExamRow extends StatelessWidget {
                   children: <InlineSpan>[
                     TextSpan(
                       text: '$days',
-                      style: AppTypography.display(fontSize: 17, weight: FontWeight.w700, color: tint).copyWith(
+                      style: AppTypography.display(fontSize: AppTextSize.title, color: tint).copyWith(
                         fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
                       ),
                     ),
                     TextSpan(
                       text: AppLocalizations.of(context).examPickerDaysSuffix,
-                      style: AppTypography.display(fontSize: 11, weight: FontWeight.w700, color: tint.withValues(alpha: 0.7)),
+                      style: AppTypography.label(
+                          fontSize: AppTextSize.xs,
+                          weight: FontWeight.w600,
+                          color: tint.withValues(alpha: 0.7)),
                     ),
                   ],
                 ),

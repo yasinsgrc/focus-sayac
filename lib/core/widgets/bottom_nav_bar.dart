@@ -211,7 +211,7 @@ Widget _pillFlightShuttle(
       ? animation
       : ReverseAnimation(animation);
   // Mekik uçuş boyunca `Navigator`ın `Overlay`inde çiziliyor — çubuğun kendi
-  // `Material`ı ağacın o dalında yok. `AppTypography.display` `decoration`
+  // `Material`ı ağacın o dalında yok. `AppTypography.label` `decoration`
   // vermediği için hapın etiketi `DefaultTextStyle`den miras alıyor ve orada
   // `WidgetsApp`in "bu metni bir Material'a koyun" geri düşüş biçimi duruyordu:
   // her sekme geçişinde etiket uçuş boyunca **sarı çift alt çizgiyle**
@@ -314,7 +314,8 @@ class _ActiveTabPill extends StatelessWidget {
             const SizedBox(width: 7),
             Text(
               style.label,
-              style: AppTypography.display(fontSize: 12, weight: FontWeight.w600, color: style.foreground),
+              style: AppTypography.label(
+                  fontSize: AppTextSize.sm, weight: FontWeight.w600, color: style.foreground),
             ),
           ],
         ),

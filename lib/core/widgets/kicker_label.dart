@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_typography.dart';
 
-/// Michroma ile yazılan, otomatik büyük harfe çevrilen etiket/kicker metni.
+/// Space Grotesk ile yazılan, otomatik büyük harfe çevrilen etiket/kicker metni.
 /// Örn. "ODAK 3/4", "İZİN VER VE BAŞLA".
 class KickerLabel extends StatelessWidget {
   const KickerLabel(
     this.text, {
     required this.color,
     super.key,
-    this.fontSize = 9.5,
+    this.fontSize = AppTextSize.kicker,
   });
 
   final String text;

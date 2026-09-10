@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Gorsel Kimlik 02 · ADAPTIVE: "108x108 dp katmanlar, isaret 72 dp guvenli
-  alanda - sistem hangi maskeyi uygularsa uygulasin halka kesilmiyor."
+  Gorsel Kimlik 02 · ADAPTIVE: "108x108 dp katmanlar, isaret 66 dp keyline
+  dairesinde - sistem hangi maskeyi uygularsa uygulasin halka kesilmiyor."
+
+  Isaret onceden 72 dp cizilmisti; gorunen alan da 72 dp oldugu icin maske
+  halkaya tam tegetti ve One UI'da (Galaxy S24) ust/alt/sag/sol dort ana yonde
+  sac teli kadar kirpiyordu. Material keyline'i (192 dp tuvalde 176 dp daire)
+  72 dp'ye 66 dp olarak dusuyor; her kenarda 3 dp pay birakiyor.
 
   `monochrome` (Gorsel Kimlik 03) Android 13+ temali simgeler icin; sistem
   duvar kagidindan renk cekip tek renk siluete uyguluyor. Eski surumler bu

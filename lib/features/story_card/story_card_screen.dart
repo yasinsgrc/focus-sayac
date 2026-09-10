@@ -105,7 +105,7 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         l10n.storyCardTitle,
-                        style: AppTypography.display(fontSize: 19, weight: FontWeight.w600, color: colors.text),
+                        style: AppTypography.display(fontSize: AppTextSize.titleLg, color: colors.text),
                       ),
                     ),
                   ),
@@ -179,7 +179,7 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
                     child: Text(
                       l10n.storyCardExportSize,
                       textAlign: TextAlign.center,
-                      style: AppTypography.kicker(fontSize: 8.5, color: colors.neutral700, letterSpacingEm: 0.2),
+                      style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral700),
                     ),
                   ),
                 ],
@@ -263,8 +263,8 @@ class _TemplatePicker extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       child: Text(
                         template.label(AppLocalizations.of(context)),
-                        style: AppTypography.display(
-                          fontSize: 11,
+                        style: AppTypography.label(
+                          fontSize: AppTextSize.xs,
                           weight: FontWeight.w600,
                           color: template == selected
                               ? (colors.brightness == Brightness.dark ? const Color(0xFFF5F4FF) : colors.accent200)
@@ -320,7 +320,8 @@ class _ShareButton extends StatelessWidget {
                     const SizedBox(width: 10),
                     Text(
                       AppLocalizations.of(context).storyCardShare,
-                      style: AppTypography.display(fontSize: 15, weight: FontWeight.w600, color: colors.accent200),
+                      style: AppTypography.label(
+                          fontSize: AppTextSize.lg, weight: FontWeight.w600, color: colors.accent200),
                     ),
                   ],
                 ),
@@ -377,7 +378,8 @@ class _SecondaryButton extends StatelessWidget {
                     const SizedBox(width: 7),
                     Text(
                       label,
-                      style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral300),
+                      style: AppTypography.label(
+                          fontSize: AppTextSize.md, weight: FontWeight.w500, color: colors.neutral300),
                     ),
                   ],
                 ),

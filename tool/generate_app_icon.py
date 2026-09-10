@@ -75,7 +75,11 @@ GLOW_ALPHA = 0.18
 
 # İşaretin tuval içindeki oranı (Görsel Kimlik 01/02/03).
 LEGACY_MARK = 0.76  # eski kare simge
-ADAPTIVE_MARK = 72.0 / 108.0  # 108 dp katmanda 72 dp güvenli alan
+# 108 dp katmanın görünen alanı 72 dp; maske (daire ya da One UI squircle) tam
+# oraya teğet geçtiğinden 72 dp'lik halka dört ana yönde kırpılıyordu. Material
+# keyline'ı (192 dp tuvalde 176 dp daire) aynı oranı 72 dp için 66 dp veriyor:
+# her kenarda 3 dp pay.
+ADAPTIVE_MARK = 66.0 / 108.0
 NOTIFICATION_MARK = 0.92
 PLAY_MARK = 0.76
 

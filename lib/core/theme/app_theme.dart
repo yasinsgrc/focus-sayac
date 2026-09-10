@@ -79,16 +79,19 @@ ThemeData _themeFrom(AppColors colors) {
     dialogTheme: DialogThemeData(barrierColor: colors.scrim),
     bottomSheetTheme: BottomSheetThemeData(modalBarrierColor: colors.scrim),
     textTheme: TextTheme(
-      displayLarge: AppTypography.display(fontSize: 42, color: colors.text),
-      headlineMedium: AppTypography.display(fontSize: 32, color: colors.text),
-      headlineSmall: AppTypography.display(fontSize: 25, color: colors.text),
-      titleLarge: AppTypography.display(fontSize: 20, color: colors.text),
-      titleMedium: AppTypography.display(fontSize: 16, color: colors.text),
-      titleSmall: AppTypography.kicker(fontSize: 13, color: colors.text),
-      bodyLarge: AppTypography.body(fontSize: 15, color: colors.text),
-      bodyMedium: AppTypography.body(fontSize: 14, color: colors.text),
-      bodySmall: AppTypography.body(fontSize: 13, color: colors.neutral400),
-      labelSmall: AppTypography.kicker(fontSize: 10, color: colors.neutral600),
+      displayLarge: AppTypography.display(
+          fontSize: AppTextSize.heroLg, weight: FontWeight.w700, color: colors.text),
+      headlineMedium: AppTypography.display(
+          fontSize: AppTextSize.hero, weight: FontWeight.w700, color: colors.text),
+      headlineSmall: AppTypography.display(
+          fontSize: AppTextSize.heading, weight: FontWeight.w700, color: colors.text),
+      titleLarge: AppTypography.display(fontSize: AppTextSize.titleLg, color: colors.text),
+      titleMedium: AppTypography.display(fontSize: AppTextSize.title, color: colors.text),
+      titleSmall: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.text),
+      bodyLarge: AppTypography.body(fontSize: AppTextSize.lg, color: colors.text),
+      bodyMedium: AppTypography.body(fontSize: AppTextSize.md, color: colors.text),
+      bodySmall: AppTypography.body(fontSize: AppTextSize.sm, color: colors.neutral400),
+      labelSmall: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600),
     ),
     // Durum çubuğu ikonları zeminin tersi olmalı. Ekranların hiçbirinde
     // `AppBar` yok ama `AppBarTheme.systemOverlayStyle` uygulama genelindeki

@@ -123,11 +123,13 @@ class WeeklyFocusBarPainter extends CustomPainter {
     }
   }
 
+  // Yedi sütun yan yana sığmak zorunda: bu iki stil ölçeğin en küçük kicker
+  // adımını, varsayılandan dar bir tracking'le kullanıyor.
   TextStyle _valueStyle(Color color) =>
-      AppTypography.kicker(fontSize: 7.5, color: color, letterSpacingEm: 0.1);
+      AppTypography.kicker(fontSize: AppTextSize.kickerSm, color: color, letterSpacingEm: 0.1);
 
   TextStyle _dayStyle(Color color) =>
-      AppTypography.kicker(fontSize: 8, color: color, letterSpacingEm: 0.12);
+      AppTypography.kicker(fontSize: AppTextSize.kickerSm, color: color, letterSpacingEm: 0.12);
 
   @override
   bool shouldRepaint(covariant WeeklyFocusBarPainter oldDelegate) {

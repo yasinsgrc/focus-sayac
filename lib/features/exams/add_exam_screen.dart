@@ -105,7 +105,8 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  Text(l10n.addExamTitle, style: AppTypography.display(fontSize: 19, weight: FontWeight.w600, color: colors.text)),
+                  Text(l10n.addExamTitle,
+                      style: AppTypography.display(fontSize: AppTextSize.titleLg, color: colors.text)),
                 ],
               ),
               const SizedBox(height: 22),
@@ -196,7 +197,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                             Expanded(
                               child: Text(
                                 l10n.addExamPriorityNote,
-                                style: AppTypography.body(fontSize: 12, color: colors.neutral300),
+                                style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.neutral300),
                               ),
                             ),
                           ],
@@ -215,12 +216,15 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                     const SizedBox(width: 12),
                     Text.rich(
                       TextSpan(
-                        style: AppTypography.body(fontSize: 12.5, color: colors.neutral300),
+                        style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral300),
                         children: <InlineSpan>[
                           TextSpan(text: l10n.addExamPreviewPrefix),
                           TextSpan(
                             text: l10n.addExamPreviewDays(previewDays),
-                            style: AppTypography.display(fontSize: 15, weight: FontWeight.w700, color: colors.text),
+                            // Akan bir `TextSpan` içinde: rol `label` değil `body`,
+                            // yoksa satır kutusu gövdenin 1.55'inden kopuyor.
+                            style: AppTypography.body(
+                                fontSize: AppTextSize.lg, weight: FontWeight.w600, color: colors.text),
                           ),
                           TextSpan(text: l10n.addExamPreviewSuffix),
                         ],
@@ -255,8 +259,8 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                             const SizedBox(width: 9),
                             Text(
                               l10n.addExamSave,
-                              style: AppTypography.display(
-                                fontSize: 15,
+                              style: AppTypography.label(
+                                fontSize: AppTextSize.lg,
                                 weight: FontWeight.w600,
                                 color: canSave ? colors.mint : colors.neutral600,
                               ),
@@ -284,7 +288,8 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: AppTypography.kicker(fontSize: 8, color: colors.neutral600));
+    return Text(text,
+        style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600));
   }
 }
 
@@ -302,10 +307,11 @@ class _TextField extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: onChanged,
-      style: AppTypography.body(fontSize: 15, weight: FontWeight.w500, color: colors.text),
+      style: AppTypography.body(
+          fontSize: AppTextSize.lg, weight: FontWeight.w500, color: colors.text),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: AppTypography.body(fontSize: 15, color: colors.neutral600),
+        hintStyle: AppTypography.body(fontSize: AppTextSize.lg, color: colors.neutral600),
         filled: true,
         fillColor: colors.surfaceCard,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -354,7 +360,8 @@ class _PickerField extends StatelessWidget {
               child: Text(
                 text,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.body(fontSize: 15, weight: FontWeight.w500, color: colors.text),
+                style: AppTypography.label(
+                    fontSize: AppTextSize.lg, weight: FontWeight.w500, color: colors.text),
               ),
             ),
             Icon(icon, size: 18, color: colors.sky),

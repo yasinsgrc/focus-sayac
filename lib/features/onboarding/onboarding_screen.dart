@@ -114,14 +114,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                   const SizedBox(height: 30),
                   Text(
                     l10n.onboardingKicker,
-                    style: AppTypography.kicker(fontSize: 9, color: colors.neutral600),
+                    style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600),
                   ),
                   const SizedBox(height: 12),
                   _ShimmerTitle(shimmer: _shimmer),
                   const SizedBox(height: 16),
                   Text(
                     l10n.onboardingDescription,
-                    style: AppTypography.body(fontSize: 15, color: colors.neutral400, height: 1.6),
+                    style: AppTypography.body(fontSize: AppTextSize.lg, color: colors.neutral400),
                   ),
                   const SizedBox(height: 32),
                   ClipRRect(
@@ -205,8 +205,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                                   children: <Widget>[
                                     Text(
                                       l10n.onboardingGrantAndStart,
-                                      style: AppTypography.display(
-                                        fontSize: 15.5,
+                                      style: AppTypography.label(
+                                        fontSize: AppTextSize.lg,
                                         weight: FontWeight.w600,
                                         color: colors.ember,
                                       ),
@@ -233,8 +233,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                             },
                       child: Text(
                         l10n.onboardingNotNow,
-                        style: AppTypography.display(
-                          fontSize: 13.5,
+                        style: AppTypography.label(
+                          fontSize: AppTextSize.md,
                           weight: FontWeight.w500,
                           color: colors.neutral500,
                         ),
@@ -315,7 +315,7 @@ class _ShimmerTitle extends StatelessWidget {
       child: Text(
         AppLocalizations.of(context).onboardingTitle,
         style: AppTypography.display(
-          fontSize: 42,
+          fontSize: AppTextSize.heroLg,
           weight: FontWeight.w700,
           color: Colors.white,
           height: 0.95,
@@ -443,10 +443,12 @@ class _PermissionRow extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     title,
-                    style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w500, color: colors.text),
+                    style: AppTypography.label(
+                        fontSize: AppTextSize.lg, weight: FontWeight.w500, color: colors.text),
                   ),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: AppTypography.body(fontSize: 12.5, color: colors.neutral500)),
+                  Text(subtitle,
+                      style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral500)),
                 ],
               ),
             ),

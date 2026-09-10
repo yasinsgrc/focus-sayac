@@ -236,14 +236,16 @@ class _NoExamBody extends StatelessWidget {
               child: Icon(PhosphorIconsDuotone.calendarBlank, size: 46, color: colors.neutral600),
             ),
             const SizedBox(height: 26),
-            Text(titleText, style: AppTypography.display(fontSize: 26, weight: FontWeight.w700, color: colors.text)),
+            Text(titleText,
+                style: AppTypography.display(
+                    fontSize: AppTextSize.headingLg, weight: FontWeight.w700, color: colors.text)),
             const SizedBox(height: 12),
             SizedBox(
               width: 262,
               child: Text(
                 messageText,
                 textAlign: TextAlign.center,
-                style: AppTypography.body(fontSize: 14, color: colors.neutral500),
+                style: AppTypography.body(fontSize: AppTextSize.lg, color: colors.neutral500),
               ),
             ),
             const SizedBox(height: 30),
@@ -259,7 +261,8 @@ class _NoExamBody extends StatelessWidget {
                 onPressed: () => showExamPickerSheet(context),
                 child: Text(
                   l10n.countdownPickExam,
-                  style: AppTypography.display(fontSize: 14.5, weight: FontWeight.w600, color: colors.ember),
+                  style: AppTypography.label(
+                      fontSize: AppTextSize.lg, weight: FontWeight.w600, color: colors.ember),
                 ),
               ),
             ),
@@ -320,14 +323,17 @@ class _CountdownBody extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(l10n.countdownTarget, style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
+                      Text(l10n.countdownTarget,
+                          style: AppTypography.kicker(
+                              fontSize: AppTextSize.kicker, color: colors.neutral600)),
                       const SizedBox(height: 4),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
                           Text(
                             exam.name,
-                            style: AppTypography.display(fontSize: 22, weight: FontWeight.w600, color: colors.text),
+                            style: AppTypography.display(
+                                fontSize: AppTextSize.titleLg, color: colors.text),
                           ),
                           const SizedBox(width: 8),
                           Icon(PhosphorIconsRegular.caretDown, size: 14, color: colors.ember),
@@ -397,24 +403,38 @@ class _CountdownBody extends ConsumerWidget {
                           ).createShader(bounds),
                           child: RollingNumber(
                             value: days,
-                            style: AppTypography.counter(fontSize: 100, weight: FontWeight.w700, color: Colors.white, height: 1),
+                            style: AppTypography.counter(
+                                fontSize: AppTextSize.counterHero,
+                                weight: FontWeight.w700,
+                                color: Colors.white,
+                                height: 1),
                           ),
                         ),
-                        Text(l10n.countdownDaysLeft, style: AppTypography.kicker(fontSize: 9.5, color: colors.neutral500)),
+                        Text(l10n.countdownDaysLeft,
+                            style: AppTypography.kicker(
+                                fontSize: AppTextSize.kicker, color: colors.neutral500)),
                         const SizedBox(height: 16),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             Text(
                               '$hh:$mm:$ss',
-                              style: AppTypography.body(fontSize: 12.5, weight: FontWeight.w500, color: colors.neutral400).copyWith(
+                              style: AppTypography.body(
+                                      fontSize: AppTextSize.sm,
+                                      weight: FontWeight.w500,
+                                      color: colors.neutral400)
+                                  .copyWith(
                                 fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
                               ),
                             ),
                             const SizedBox(width: 9),
                             Container(width: 3, height: 3, decoration: BoxDecoration(color: colors.ember, shape: BoxShape.circle)),
                             const SizedBox(width: 9),
-                            Text(examDateText, style: AppTypography.body(fontSize: 12.5, weight: FontWeight.w500, color: colors.neutral400)),
+                            Text(examDateText,
+                                style: AppTypography.body(
+                                    fontSize: AppTextSize.sm,
+                                    weight: FontWeight.w500,
+                                    color: colors.neutral400)),
                           ],
                         ),
                       ],
@@ -440,7 +460,9 @@ class _CountdownBody extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
-                      Text(l10n.countdownToday, style: AppTypography.kicker(fontSize: 9, color: colors.neutral600)),
+                      Text(l10n.countdownToday,
+                          style: AppTypography.kicker(
+                              fontSize: AppTextSize.kicker, color: colors.neutral600)),
                       if (streak > 0)
                         Container(
                           height: 25,
@@ -461,7 +483,10 @@ class _CountdownBody extends ConsumerWidget {
                               RollingNumber(
                                 value: streak,
                                 text: l10n.countdownStreakBadge(streak),
-                                style: AppTypography.body(fontSize: 11.5, weight: FontWeight.w500, color: colors.ember),
+                                style: AppTypography.body(
+                                    fontSize: AppTextSize.sm,
+                                    weight: FontWeight.w500,
+                                    color: colors.ember),
                               ),
                             ],
                           ),
@@ -482,14 +507,24 @@ class _CountdownBody extends ConsumerWidget {
                         children: <Widget>[
                           RollingNumber(
                             value: todayParts.hours,
-                            style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
+                            style: AppTypography.counter(
+                                fontSize: AppTextSize.counterMd, color: colors.text, height: 1),
                           ),
-                          Text(l10n.countdownHoursUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
+                          Text(l10n.countdownHoursUnit,
+                              style: AppTypography.display(
+                                  fontSize: AppTextSize.title,
+                                  weight: FontWeight.w500,
+                                  color: colors.neutral500)),
                           RollingNumber(
                             value: todayParts.minutes,
-                            style: AppTypography.counter(fontSize: 38, color: colors.text, height: 1),
+                            style: AppTypography.counter(
+                                fontSize: AppTextSize.counterMd, color: colors.text, height: 1),
                           ),
-                          Text(l10n.countdownMinutesUnit, style: AppTypography.display(fontSize: 17, color: colors.neutral500)),
+                          Text(l10n.countdownMinutesUnit,
+                              style: AppTypography.display(
+                                  fontSize: AppTextSize.title,
+                                  weight: FontWeight.w500,
+                                  color: colors.neutral500)),
                         ],
                       ),
                       const Spacer(),
@@ -529,7 +564,7 @@ class _CountdownBody extends ConsumerWidget {
                     const SizedBox(height: 9),
                     Text.rich(
                       TextSpan(
-                        style: AppTypography.body(fontSize: 12, color: colors.neutral500),
+                        style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.neutral500),
                         children: <InlineSpan>[
                           TextSpan(text: l10n.countdownStreakHintPrefix),
                           TextSpan(text: l10n.countdownStreakHintValue(streak + 1), style: TextStyle(color: colors.ember)),
@@ -574,7 +609,11 @@ class _CountdownBody extends ConsumerWidget {
                           children: <Widget>[
                             Icon(PhosphorIconsFill.play, size: 16, color: colors.ember),
                             const SizedBox(width: 10),
-                            Text(focusButtonLabel, style: AppTypography.display(fontSize: 15.5, weight: FontWeight.w600, color: colors.ember)),
+                            Text(focusButtonLabel,
+                                style: AppTypography.label(
+                                    fontSize: AppTextSize.lg,
+                                    weight: FontWeight.w600,
+                                    color: colors.ember)),
                           ],
                         ),
                       ),
