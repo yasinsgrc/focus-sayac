@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_typography.dart';
+import 'app_pressable.dart';
 
 /// Prototipte tekrar eden hap buton: `border:1px solid <role>` +
 /// `background:linear-gradient(<role-deep>, transparent)` + `color:<role>`.
@@ -27,47 +28,50 @@ class AppPillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: height,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: roleColor),
-          borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[roleDeepColor, roleDeepColor.withValues(alpha: 0)],
-          ),
-        ),
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
+    return AppPressable(
+      enabled: onPressed != null,
+      child: SizedBox(
+        height: height,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(color: roleColor),
             borderRadius: BorderRadius.circular(18),
-            onTap: onPressed,
-            // Uzun etiketler (ör. "BAŞARI KARTINI OLUŞTUR") dar ekranda ya da
-            // büyük yazı tipi ölçeğinde butona sığmıyor; kırpmak yerine
-            // küçültülüyor — `scaleDown` yalnızca taşma varsa devreye giriyor.
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      if (icon != null) ...<Widget>[
-                        Icon(icon, size: 14, color: roleColor),
-                        const SizedBox(width: 8),
-                      ],
-                      Text(
-                        label,
-                        style: AppTypography.display(
-                          fontSize: 13.5,
-                          weight: weight,
-                          color: roleColor,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: <Color>[roleDeepColor, roleDeepColor.withValues(alpha: 0)],
+            ),
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: onPressed,
+              // Uzun etiketler (ör. "BAŞARI KARTINI OLUŞTUR") dar ekranda ya da
+              // büyük yazı tipi ölçeğinde butona sığmıyor; kırpmak yerine
+              // küçültülüyor — `scaleDown` yalnızca taşma varsa devreye giriyor.
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        if (icon != null) ...<Widget>[
+                          Icon(icon, size: 14, color: roleColor),
+                          const SizedBox(width: 8),
+                        ],
+                        Text(
+                          label,
+                          style: AppTypography.display(
+                            fontSize: 13.5,
+                            weight: weight,
+                            color: roleColor,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

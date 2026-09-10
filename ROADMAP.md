@@ -23,7 +23,7 @@ Madde 11 ve 14-17 bu dosyaya yazılmadan yapıldı (ilk Android derlemesi, ana
 ekran widget'ları, emülatör doğrulaması, açık tema + uygulama simgesi);
 kayıtları `DECISIONS.md`de. **Madde 18-20** yayın engelleyicisi değil, cila:
 uygulamanın eksik kalan hareket katmanı — dosyanın sonundaki ayrı bölümde.
-**Madde 18 ve 19 bitti**, 20 kaldı.
+**Madde 18, 19 ve 20 bitti**; hareket katmanı tamam.
 
 ---
 
@@ -355,7 +355,7 @@ değil (değer etiketin kendi metninde); "Reklamları kaldır / YAKINDA" satır�
 
 ---
 
-# Hareket geçişi (madde 18-20) — yapılacak
+# Hareket geçişi (madde 18-20) ✅ bitti
 
 Uygulamanın tipografisi, paleti ve düzeni prototiple birebir; eksik olan tek
 katman **hareket**. Şu an var olanlar: `RiseIn` (600ms giriş, 60ms basamak),
@@ -495,59 +495,37 @@ tek commit.
 
 ---
 
-## 20. Rota geçişleri + dokunma geri bildirimi
+## 20. Rota geçişleri + dokunma geri bildirimi ✅ bitti
 
-**Neden:** beş sekme arasında geçiş Material'ın varsayılan sayfa animasyonuyla
-oluyor — uygulamanın kendi kimliği yok. Alt çubuğun aktif hapı sekme değişince
-bir yerden diğerine ışınlanıyor. Birincil CTA'da (`countdown_screen.dart:533`)
-yalnızca jenerik `InkWell` dalgası var; basıldığını hissettiren bir şey yok.
+258 test geçiyor (+7). Kararlar: `DECISIONS.md` "Madde 20".
 
-**Madde 18'e bağımlı** (`AppMotion`).
-
-**Yapılacaklar:**
-
-1. **Rota geçişleri** (`lib/core/router/app_router.dart` — şu an hiç
-   `pageBuilder` yok, hepsi varsayılan): `CustomTransitionPage` ile
-   - Sekmeler arası (yatay kardeşler): fade-through — çıkan opaklıkla gider,
-     giren opaklık + 1.02 → 1.0 ölçekle gelir. `AppMotion.base`.
-   - Üste `push` edilenler (odak seansı, sınav ekleme, başarı kartı): aşağıdan
-     yukarı kayma + fade. `AppMotion.base`, `AppMotion.enter`.
-   - Reduce-motion'da ikisi de `NoTransitionPage`.
-
-2. **Alt çubuk hapının kayması** (`bottom_nav_bar.dart`) — **dikkat, burada bir
-   yapısal engel var:** beş sekmenin her biri ayrı bir rota ve çubuk her rotada
-   sıfırdan kuruluyor. Hap bu yüzden basit bir `AnimatedPositioned` ile
-   kayamaz; iki yol var:
-   - **(a) `Hero`** — hapa ortak bir tag ver, sekmeden sekmeye uçsun.
-     Hapın içeriği sekmeye göre değiştiği için (`_PillStyle`: etiket, ikon,
-     gradyan) `flightShuttleBuilder` gerekiyor; genişlik de değişiyor
-     (`flex: 16` ↔ `flex: 10`), `Hero` onu kendi enterpole eder. **Önerilen.**
-   - **(b) Yapmamak** — fade-through geçişte çubuğun tamamı zaten çapraz
-     soluyor, hap onunla birlikte yerini alıyor. Sıfır risk, daha az etki.
-   - Hangisi seçilirse `DECISIONS.md`ye gerekçesiyle; (a) denenip çalışmazsa
-     (b)'ye düşmek meşru bir sonuç, yarım bırakılmış bir `Hero` değil.
-
-3. **`lib/core/widgets/app_pressable.dart`** — basılı tutulduğunda çocuğu
-   0.97'ye küçültüp bırakınca `AppMotion.pop` ile geri getiren sarmalayıcı
-   (`AppMotion.instant`). Uygulanacağı yerler: Ekran 02'nin "… DAKİKA ODAKLAN"
-   butonu, `AppPillButton`, sınav seçim sheet'inin satırları, Ekran 05'in
-   PAYLAŞ/Kaydet/Kopyala üçlüsü.
-   - Mevcut `InkWell` dalgaları **kaldırılmıyor**; ölçek onların üstüne biniyor.
-     Dalga "nereye bastım"ı, ölçek "bastım"ı söyler.
-   - Dokunma hedefi küçülmemeli: ölçek `Transform`la, düzenle değil.
-
-**DoD / testler** (`test/core/`, `test/features/`):
-- Sekme geçişinde ara karede iki ekran birlikte ağaçta; `pumpAndSettle`
-  sonrası yalnızca hedef ekran.
-- Reduce-motion'da geçiş yok — ilk karede hedef ekran.
-- Madde 13'ün gezinme yığını testi ("dört sekme arasında dolaşmak yığını
-  büyütmüyor") `CustomTransitionPage`e geçtikten sonra da geçiyor.
-- `AppPressable` basılıyken ölçek < 1, bırakınca 1'e dönüyor; sardığı butonun
-  `onTap`i hâlâ tetikleniyor (ölçek jesti yutmamalı).
-- Madde 12'nin 48px dokunma hedefi testleri hâlâ geçiyor.
-
-Kapanış: `flutter analyze` + `flutter test`, `DECISIONS.md`ye "Madde 20",
-tek commit.
+- **Rota geçişleri:** dokuz rotanın hepsi `pageBuilder` (`CustomTransitionPage`),
+  iki dil. Sekmeler arası fade-through (opaklık + 1.02 → 1.0 ölçek,
+  `AppMotion.base` + `enter`); üste `push` edilenler (odak seansı, sınav ekleme)
+  aşağıdan yukarı 0.04 kayma + opaklık. Ekran 08 de sekme dilinde: oraya da
+  Ekran 02'nin **yerine** gidiliyor. Çıkan ekranın ayrı animasyonu yok — alttaki
+  rota olduğu yerde duruyor, ikisini birden soldurmak çubuğun opak zeminini
+  yarı saydam gösterirdi. Reduce-motion `NoTransitionPage` yerine **sıfır süre**:
+  gözlemlenebilir olarak aynı, kapı tek yerde (`AppMotion.respectingMotion`).
+- **Alt çubuk hapı: (a) şıkkı tuttu — `Hero`.** Ortak etiket + `flightShuttleBuilder`
+  (hapın içeriği sekmeye göre değiştiği için iki hap çapraz soluyor, dikdörtgeni
+  `Hero` taşıyor). Şıkkın tek riski `pushReplacement`ti; bugünkü Flutter'da
+  `HeroController`ın kancası `didChangeTop`, üstteki rota nasıl değişirse değişsin
+  tetikleniyor. (b)'ye düşmek gerekmedi. Reduce-motion'da `Hero` hiç kurulmuyor.
+- **`core/widgets/app_pressable.dart`:** basılıyken 0.97, bırakınca
+  `AppMotion.pop.flipped` ile 1'e. CTA, `AppPillButton`, sınav seçim satırları
+  (orada 0.99 — satır geniş ve alçak), Ekran 05'in üç butonu. `Listener` ile,
+  `GestureDetector` değil: jest arenasına hiç girmiyor, `onTap` yine `InkWell`in.
+  Dalgalar kaldırılmadı, ölçek üstlerine biniyor.
+- **Yolda çıkan gerçek hata:** `PopOnIncrease`in "ölçek 1'ken `Transform`u ağaca
+  sokma" deseni buraya kopyalanınca **birincil CTA tamamen ölü kaldı** —
+  `Transform`u basış anında araya sokmak `InkWell`in alt ağacını yeniden kuruyor
+  ve tanıyıcıyı jestin ortasında iptal ediyor. `Transform` artık her zaman ağaçta;
+  testin `expect(taps, 1)` satırı bunun kilidi.
+- **Madde 12 ve 13'ün testleri değişmeden geçiyor** (48px dokunma hedefi, gezinme
+  yığını büyümüyor).
+- **Cihazda bakılmadı** — madde 18 ve 19 gibi; hareketin son hâli emülatörde
+  görülmedi.
 
 ---
 
@@ -576,7 +554,7 @@ tek commit.
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(251 test, `flutter test`)*
+- [x] Testler geçiyor *(258 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

@@ -9,6 +9,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/time/app_day.dart';
+import '../../core/widgets/app_pressable.dart';
 import '../../core/widgets/app_toast.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
 import '../../core/widgets/rise_in.dart';
@@ -292,34 +293,37 @@ class _ShareButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
-    return SizedBox(
-      height: 58,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: colors.accent300),
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[colors.accent900, colors.accent900.withValues(alpha: 0)],
-          ),
-        ),
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
+    return AppPressable(
+      enabled: enabled,
+      child: SizedBox(
+        height: 58,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(color: colors.accent300),
             borderRadius: BorderRadius.circular(20),
-            onTap: enabled ? onPressed : null,
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(PhosphorIconsRegular.shareNetwork, size: 19, color: colors.accent200),
-                  const SizedBox(width: 10),
-                  Text(
-                    AppLocalizations.of(context).storyCardShare,
-                    style: AppTypography.display(fontSize: 15, weight: FontWeight.w600, color: colors.accent200),
-                  ),
-                ],
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: <Color>[colors.accent900, colors.accent900.withValues(alpha: 0)],
+            ),
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: enabled ? onPressed : null,
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(PhosphorIconsRegular.shareNetwork, size: 19, color: colors.accent200),
+                    const SizedBox(width: 10),
+                    Text(
+                      AppLocalizations.of(context).storyCardShare,
+                      style: AppTypography.display(fontSize: 15, weight: FontWeight.w600, color: colors.accent200),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -351,29 +355,32 @@ class _SecondaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
-    return SizedBox(
-      height: 50,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: colors.fillMedium),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
+    return AppPressable(
+      enabled: enabled,
+      child: SizedBox(
+        height: 50,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(color: colors.fillMedium),
             borderRadius: BorderRadius.circular(16),
-            onTap: enabled ? onPressed : null,
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(icon, size: 17, color: roleColor),
-                  const SizedBox(width: 7),
-                  Text(
-                    label,
-                    style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral300),
-                  ),
-                ],
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: enabled ? onPressed : null,
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(icon, size: 17, color: roleColor),
+                    const SizedBox(width: 7),
+                    Text(
+                      label,
+                      style: AppTypography.display(fontSize: 13, weight: FontWeight.w500, color: colors.neutral300),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

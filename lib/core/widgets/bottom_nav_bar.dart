@@ -5,9 +5,18 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../router/route_paths.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_typography.dart';
 
 enum AppNavTab { countdown, storyCard, badges, stats, settings }
+
+/// Aktif hapı rota geçişinde bir yuvadan diğerine uçuran ortak `Hero` etiketi.
+///
+/// Beş sekmenin her biri **ayrı bir rota** ve çubuk her rotada sıfırdan
+/// kuruluyor; hap bu yüzden basit bir `AnimatedPositioned` ile kayamıyor.
+/// `Hero` iki rotadaki hapı eşleştirip aradaki dikdörtgeni kendisi
+/// enterpole ediyor — yuvaların genişliği de değişiyor (`flex: 16` ↔ `flex: 10`).
+const String _kActivePillHeroTag = 'app-nav-active-pill';
 
 /// Yüzen çubuğun ekranın altında kapladığı alan: 64px yükseklik + 18px alt
 /// konum + nefes payı. Çubuğu gösteren ekranlar içeriklerinin altında bu
@@ -159,7 +168,7 @@ class BottomNavBar extends StatelessWidget {
           children: <Widget>[
             for (final _NavSlot slot in slots)
               if (slot.tab == active)
-                Expanded(flex: 16, child: _ActiveTabPill(style: slot.pill))
+                Expanded(flex: 16, child: _heroPill(context, slot.pill))
               else
                 Expanded(
                   flex: 10,
@@ -175,6 +184,45 @@ class BottomNavBar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Aktif hapı uçuşa hazırlar. "Hareketi azalt" açıkken `Hero` hiç kurulmuyor:
+/// uçuş rota animasyonuna bağlı ve o animasyon sıfır süreli olsa bile
+/// erişilebilirlik kapısının tek yerde ve okunur durması `AppMotion`ın kuralı.
+Widget _heroPill(BuildContext context, _PillStyle style) {
+  final Widget pill = _ActiveTabPill(style: style);
+  if (AppMotion.respectingMotion(context, AppMotion.base) == Duration.zero) return pill;
+  return Hero(tag: _kActivePillHeroTag, flightShuttleBuilder: _pillFlightShuttle, child: pill);
+}
+
+/// Uçuş sırasında hapın içeriği de değişiyor (etiket, ikon, gradyan), bu yüzden
+/// varsayılan mekik yetmiyor: iki hap çapraz soluyor, dikdörtgeni `Hero` taşıyor.
+///
+/// `pop` uçuşlarında `animation` 1'den 0'a gidiyor; ilerleme her iki yönde de
+/// 0 → 1 okunsun diye ters çevriliyor, yoksa geri dönüşte solma yönü şaşardı.
+Widget _pillFlightShuttle(
+  BuildContext flightContext,
+  Animation<double> animation,
+  HeroFlightDirection direction,
+  BuildContext fromHeroContext,
+  BuildContext toHeroContext,
+) {
+  final Animation<double> progress = direction == HeroFlightDirection.push
+      ? animation
+      : ReverseAnimation(animation);
+  return Stack(
+    fit: StackFit.expand,
+    children: <Widget>[
+      FadeTransition(
+        opacity: progress.drive(Tween<double>(begin: 1, end: 0).chain(CurveTween(curve: AppMotion.exit))),
+        child: (fromHeroContext.widget as Hero).child,
+      ),
+      FadeTransition(
+        opacity: progress.drive(CurveTween(curve: AppMotion.enter)),
+        child: (toHeroContext.widget as Hero).child,
+      ),
+    ],
+  );
 }
 
 class _NavSlot {

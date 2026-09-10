@@ -9,6 +9,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
+import 'package:focussayac/core/theme/app_motion.dart';
 import 'package:focussayac/core/widgets/bottom_nav_bar.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_controller.dart';
 import 'package:focussayac/features/badges/badges_screen.dart';
@@ -74,6 +75,14 @@ Future<void> _pumpApp(WidgetTester tester, {Map<String, Object> initialPrefs = c
   await tester.pump();
   for (int i = 0; i < 3; i++) {
     await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
+/// Rota geçişinin (madde 20, `AppMotion.base`) bitmesini bekler. `pumpAndSettle`
+/// kullanılamıyor: geri sayım halkasının `repeat()` animasyonu hiç durmuyor.
+Future<void> _settleTransition(WidgetTester tester) async {
+  for (int i = 0; i < 8; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
   }
 }
 
@@ -236,6 +245,105 @@ void main() {
     for (final Type screen in <Type>[BadgesScreen, SettingsScreen, StatsScreen]) {
       expect(find.byType(screen, skipOffstage: false), findsNothing, reason: '$screen');
     }
+
+    await _disposeTree(tester);
+    handle.dispose();
+  });
+
+  // ROADMAP madde 20: sekmeler arası geçiş artık Material'ın varsayılan sayfa
+  // animasyonu değil, uygulamanın kendi fade-through'u (`CustomTransitionPage`).
+  testWidgets('sekme geçişinde iki ekran ara karede birlikte, sonunda yalnızca hedef', (WidgetTester tester) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await _pumpApp(tester);
+
+    // Ölçüm ikinci hoptan alınıyor: Ekran 02 kök olduğu için oradan çıkış
+    // `push`, yani geçiş bitince de yığında kalıyor (madde 13). "Yalnızca
+    // hedef" iddiası ancak sekmeden sekmeye (`pushReplacement`) geçerli.
+    await tester.tap(find.bySemanticsLabel('ROZETLER'));
+    await _settleTransition(tester);
+
+    await tester.tap(
+      find.descendant(of: find.byType(BadgesScreen), matching: find.bySemanticsLabel('AYARLAR')),
+    );
+    await tester.pump();
+    await tester.pump(AppMotion.base ~/ 2);
+
+    expect(find.byType(BadgesScreen, skipOffstage: false), findsOneWidget);
+    expect(find.byType(SettingsScreen, skipOffstage: false), findsOneWidget);
+    final FadeTransition fade = tester.widget<FadeTransition>(
+      find.ancestor(of: find.byType(SettingsScreen), matching: find.byType(FadeTransition)).first,
+    );
+    expect(fade.opacity.value, greaterThan(0.0));
+    expect(fade.opacity.value, lessThan(1.0), reason: 'giren ekran ara karede yarı saydam');
+
+    await _settleTransition(tester);
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(find.byType(BadgesScreen, skipOffstage: false), findsNothing);
+
+    await _disposeTree(tester);
+    handle.dispose();
+  });
+
+  testWidgets('hareketi azalt açıkken geçiş yok, hedef ilk karede', (WidgetTester tester) async {
+    tester.binding.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.binding.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await _pumpApp(tester);
+    expect(
+      find.descendant(of: find.byType(BottomNavBar), matching: find.byType(Hero)),
+      findsNothing,
+      reason: 'hap uçmuyor, Hero hiç kurulmuyor',
+    );
+
+    await tester.tap(find.bySemanticsLabel('ROZETLER'));
+    await tester.pump();
+
+    expect(find.byType(BadgesScreen), findsOneWidget);
+    final FadeTransition fade = tester.widget<FadeTransition>(
+      find.ancestor(of: find.byType(BadgesScreen), matching: find.byType(FadeTransition)).first,
+    );
+    expect(fade.opacity.value, 1.0, reason: 'ilk karede hedef ekran son hâlinde');
+
+    await _disposeTree(tester);
+    handle.dispose();
+  });
+
+  // Beş sekmenin her biri ayrı bir rota ve çubuk her rotada sıfırdan kuruluyor;
+  // hap bu yüzden `AnimatedPositioned` ile kayamıyor, `Hero` ile uçuyor.
+  testWidgets('aktif hap rota geçişinde yuvadan yuvaya uçuyor', (WidgetTester tester) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await _pumpApp(tester);
+
+    // "SAYAÇ" yalnızca aktif hapın etiketi olarak **metin** olarak çiziliyor;
+    // pasif dört yuva ikon + ekran okuyucu adı, o yüzden bu dize hapın izi.
+    expect(find.descendant(of: find.byType(CountdownScreen), matching: find.text('SAYAÇ')), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('ROZETLER'));
+    await tester.pump();
+    await tester.pump(AppMotion.base ~/ 2);
+
+    // Uçuş sırasında `Hero` hem kaynağı hem hedefi yer tutucuya çeviriyor: hap
+    // artık iki rotanın da içinde değil, `Overlay`de.
+    expect(find.text('SAYAÇ'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(CountdownScreen), matching: find.text('SAYAÇ')),
+      findsNothing,
+      reason: 'hap uçarken kaynağın çubuğunda durmuyor',
+    );
+
+    await _settleTransition(tester);
+    // Uçuş bitti: mekik söküldü. Kaynağın hapı kendi çubuğuna geri yerleşiyor
+    // ama o rota artık opak bir rotanın altında, yani çizilmiyor — `skipOffstage`
+    // açıkken hiç bulunmaması aranan şey. `skipOffstage: false` ile hâlâ orada;
+    // bu satırın iddiası "ekranda değil", "ağaçta değil" değil.
+    expect(find.text('SAYAÇ'), findsNothing);
+    expect(
+      find.descendant(of: find.byType(BottomNavBar), matching: find.text('ROZETLER')),
+      findsOneWidget,
+      reason: 'uçan hap hedefin yuvasına indi',
+    );
 
     await _disposeTree(tester);
     handle.dispose();

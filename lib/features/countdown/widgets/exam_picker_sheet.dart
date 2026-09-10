@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/route_paths.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/app_pressable.dart';
 import '../../../domain/countdown/countdown_math.dart';
 import '../../../domain/exams/exam_accent.dart';
 import '../../../domain/exams/exam_providers.dart';
@@ -147,44 +148,51 @@ class _ExamRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color tint = examAccentColor(exam.accentRole, colors);
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        color: exam.isActive ? examAccentDeepColor(exam.accentRole, colors).withValues(alpha: 0.35) : Colors.transparent,
-        child: Row(
-          children: <Widget>[
-            Icon(examAccentIcon(), size: 23, color: tint),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(exam.name, style: AppTypography.display(fontSize: 15, weight: FontWeight.w500, color: colors.text)),
-                  if (exam.subtitle != null && exam.subtitle!.isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 2),
-                    Text(exam.subtitle!, style: AppTypography.body(fontSize: 12, color: colors.neutral500)),
+    // Satırın kendisi bir buton: ölçek `Container`ın **dışında**, yoksa
+    // seçili satırın zemin rengi de küçülüp kenarında boşluk bırakırdı.
+    return AppPressable(
+      // Satır geniş ve alçak; 0.97 burada ekranın yarısı kadar bir yüzeyi
+      // gözle görülür şekilde kaydırırdı, dokunuşu 0.99 zaten söylüyor.
+      scale: 0.99,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          color: exam.isActive ? examAccentDeepColor(exam.accentRole, colors).withValues(alpha: 0.35) : Colors.transparent,
+          child: Row(
+            children: <Widget>[
+              Icon(examAccentIcon(), size: 23, color: tint),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(exam.name, style: AppTypography.display(fontSize: 15, weight: FontWeight.w500, color: colors.text)),
+                    if (exam.subtitle != null && exam.subtitle!.isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 2),
+                      Text(exam.subtitle!, style: AppTypography.body(fontSize: 12, color: colors.neutral500)),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            RichText(
-              text: TextSpan(
-                children: <InlineSpan>[
-                  TextSpan(
-                    text: '$days',
-                    style: AppTypography.display(fontSize: 17, weight: FontWeight.w700, color: tint).copyWith(
-                      fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+              RichText(
+                text: TextSpan(
+                  children: <InlineSpan>[
+                    TextSpan(
+                      text: '$days',
+                      style: AppTypography.display(fontSize: 17, weight: FontWeight.w700, color: tint).copyWith(
+                        fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+                      ),
                     ),
-                  ),
-                  TextSpan(
-                    text: AppLocalizations.of(context).examPickerDaysSuffix,
-                    style: AppTypography.display(fontSize: 11, weight: FontWeight.w700, color: tint.withValues(alpha: 0.7)),
-                  ),
-                ],
+                    TextSpan(
+                      text: AppLocalizations.of(context).examPickerDaysSuffix,
+                      style: AppTypography.display(fontSize: 11, weight: FontWeight.w700, color: tint.withValues(alpha: 0.7)),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

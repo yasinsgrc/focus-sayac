@@ -12,6 +12,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/time/app_day.dart';
+import '../../core/widgets/app_pressable.dart';
 import '../../core/widgets/bottom_nav_bar.dart';
 import '../../core/widgets/pop_on_increase.dart';
 import '../../core/widgets/rise_in.dart';
@@ -544,34 +545,38 @@ class _CountdownBody extends ConsumerWidget {
           const SizedBox(height: 14),
           RiseIn(
             delay: RiseIn.step * 3,
-            child: SizedBox(
-              height: 60,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  border: Border.all(color: colors.ember),
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: <Color>[colors.emberDeep, colors.emberDeep.withValues(alpha: 0)],
-                  ),
-                ),
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: InkWell(
+            // Ekranın birincil eylemi: dalganın yanına basıldığını hissettiren
+            // ölçek de giriyor (madde 20).
+            child: AppPressable(
+              child: SizedBox(
+                height: 60,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: colors.ember),
                     borderRadius: BorderRadius.circular(20),
-                    onTap: () async {
-                      await ref.read(pomodoroControllerProvider.notifier).startFocus();
-                      if (context.mounted) unawaited(context.push(RoutePaths.focusSession));
-                    },
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Icon(PhosphorIconsFill.play, size: 16, color: colors.ember),
-                          const SizedBox(width: 10),
-                          Text(focusButtonLabel, style: AppTypography.display(fontSize: 15.5, weight: FontWeight.w600, color: colors.ember)),
-                        ],
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: <Color>[colors.emberDeep, colors.emberDeep.withValues(alpha: 0)],
+                    ),
+                  ),
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () async {
+                        await ref.read(pomodoroControllerProvider.notifier).startFocus();
+                        if (context.mounted) unawaited(context.push(RoutePaths.focusSession));
+                      },
+                      child: Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            Icon(PhosphorIconsFill.play, size: 16, color: colors.ember),
+                            const SizedBox(width: 10),
+                            Text(focusButtonLabel, style: AppTypography.display(fontSize: 15.5, weight: FontWeight.w600, color: colors.ember)),
+                          ],
+                        ),
                       ),
                     ),
                   ),

@@ -1406,3 +1406,77 @@ kımıldamıyor. 251 test geçiyor (+13).
   "hareketi azalt" dalı var; ekranın tamamını çizen testlerde
   `platformDispatcher.accessibilityFeaturesTestValue` üzerinden.
 - **Cihazda bakılmadı** — madde 18 gibi; hareketin son hâli emülatörde görülmedi.
+
+---
+
+## Madde 20: Rota geçişleri + dokunma geri bildirimi
+
+Hareket katmanının son üçte biri: beş sekme arasındaki geçiş Material'ın varsayılan sayfa
+animasyonuydu (uygulamanın kendi kimliği yoktu), alt çubuğun aktif hapı sekme değişince bir
+yerden diğerine ışınlanıyordu, birincil CTA'da yalnızca jenerik `InkWell` dalgası vardı.
+258 test geçiyor (+7).
+
+- **Rota geçişleri `CustomTransitionPage` ile, iki dil.** `app_router.dart`ta artık hiç
+  `builder` yok, dokuz rotanın hepsi `pageBuilder`.
+  - **Sekmeler (fade-through):** giren ekran opaklıkla ve 1.02 → 1.0 ölçekle gelir,
+    `AppMotion.base` + `enter`. Ekran 08 (süresi geçmiş sınav) da bu dile dahil: bir sekme
+    değil ama oraya da Ekran 02'nin **yerine** gidiliyor (`context.go`), yani aynı kat.
+  - **Üste `push` edilenler (odak seansı, sınav ekleme):** aşağıdan yukarı 0.04 kayma +
+    opaklık. Yığında bir kat yukarı çıkan bir ekranın kardeş geçişiyle aynı dili
+    konuşması yönü kaybettirirdi.
+  - **Çıkan ekran için ayrı bir animasyon yok.** `push`/`pushReplacement`te alttaki rota
+    olduğu yerde duruyor ve giren opak ekran üstünü kapatıyor; ikisini birden soldurmak
+    alt çubuğun opak zeminini geçiş boyunca yarı saydam gösterirdi (iki %50 katman üst
+    üste tam opaklık vermiyor).
+  - **`NoTransitionPage` yerine sıfır süre.** ROADMAP reduce-motion için ayrı bir sayfa
+    tipi öneriyordu; `transitionDuration: Duration.zero` gözlemlenebilir olarak aynı şeyi
+    yapıyor (animasyon ilk karede 1.0'da) ve erişilebilirlik kapısını tek yerde,
+    `AppMotion.respectingMotion`da tutuyor — iki kod yolu yerine bir tane.
+  - **Eğriler `CurveTween` zinciriyle**, `CurvedAnimation` ile değil: `CurvedAnimation`
+    rota animasyonuna bir durum dinleyicisi ekliyor ve her karede yeniden çağrılan bir
+    geçiş oluşturucusunda onu bırakacak yer yok.
+- **Alt çubuk hapı: ROADMAP'in (a) şıkkı — `Hero`.** Beş sekmenin her biri ayrı bir rota ve
+  çubuk her rotada sıfırdan kurulduğu için hap `AnimatedPositioned` ile kayamıyor; `Hero`
+  iki rotadaki hapı ortak etiketle eşleştirip aradaki dikdörtgeni (genişlik `flex: 16` ↔
+  `flex: 10` değişiyor) kendisi enterpole ediyor. (b)'ye düşmek gerekmedi.
+  - **`pushReplacement`te de uçuyor.** Şıkkın tek gerçek riski buydu: sekmeden sekmeye
+    geçiş `pushReplacement` ve `HeroController`ın bir zamanlar `didPush`/`didPop` dışında
+    bir kancası yoktu. Bugünkü Flutter'da kanca `didChangeTop` — üstteki rota **nasıl**
+    değişirse değişsin tetikleniyor (`packages/flutter/lib/src/widgets/heroes.dart:828`).
+  - **`flightShuttleBuilder` şart:** hapın içeriği sekmeye göre değişiyor (etiket, ikon,
+    gradyan), varsayılan mekik yalnızca hedefi çizerdi. İki hap çapraz soluyor,
+    dikdörtgeni `Hero` taşıyor.
+  - **İlerleme `pop` uçuşlarında ters çevriliyor:** o yönde `animation` 1'den 0'a gidiyor
+    ve ham hâliyle kullanılsaydı geri dönüşte solma yönü şaşardı.
+  - **Reduce-motion'da `Hero` hiç kurulmuyor** (`_heroPill`), yer tutucu takasının bile
+    olmaması için.
+- **`core/widgets/app_pressable.dart` — dalganın üstüne binen ölçek.** Basılıyken 0.97,
+  bırakınca `AppMotion.pop.flipped` ile 1'e. Uygulandığı yerler: Ekran 02'nin CTA'sı,
+  `AppPillButton`, sınav seçim sheet'inin satırları (orada 0.99 — satır geniş ve alçak,
+  0.97 ekranın yarısı kadar bir yüzeyi gözle görülür kaydırırdı), Ekran 05'in
+  PAYLAŞ/Kaydet/Kopyala üçlüsü.
+  - **`Listener`, `GestureDetector` değil.** `GestureDetector` kendi `TapGestureRecognizer`ını
+    jest arenasına sokar ve sardığı `InkWell`inkiyle yarışırdı; arenayı içteki kazandığında
+    dıştakinin `onTapCancel`i basılı hâlden erken çıkardı. `Listener` ham işaretçi olaylarını
+    arenayı hiç ilgilendirmeden alıyor, `onTap` yine `InkWell`in.
+  - **`Transform` ölçek tam 1'ken de ağaçta — `PopOnIncrease`in aksine.** İlk kodlamada
+    `PopOnIncrease`in deseni kopyalandı (ölçek 1'ken `Transform`u ağaca hiç sokmama) ve
+    **birincil CTA tamamen ölü kaldı**: `Transform`u basış anında araya sokmak `InkWell`in
+    alt ağacını yeni bir ebeveynin altına taşıyor, eski öğeler sökülüyor ve tanıyıcı jesti
+    ortasında iptal ediliyor — buton basılı görünüyor ama `onTap` hiç çalışmıyor. İki widget
+    arasındaki fark animasyonu **neyin** başlattığı: `PopOnIncrease`te bir değer değişimi
+    (ağacın o an yeniden kurulmasının kimseye zararı yok), burada parmağın kendisi.
+    Testin `expect(taps, 1)` satırı bu regresyonun kilidi.
+  - **Ölçek `Transform`la, düzenle değil:** dokunma hedefi küçülmüyor, madde 12'nin 48px
+    kuralı basılı hâlde de geçerli.
+  - **Mevcut `InkWell` dalgaları kaldırılmadı.** Dalga "nereye bastım"ı, ölçek "bastım"ı
+    söyler; ikisi farklı sorunun cevabı.
+- **Testler (+7):** `test/core/app_pressable_test.dart` (4 — basılı ölçek, kapalı buton,
+  reduce-motion, düzen boyutunun değişmemesi), `test/features/countdown/countdown_navigation_test.dart`
+  (3 — fade-through'un ara karesi ve `pushReplacement` sonrası tek ekran, reduce-motion'da
+  ilk karede hedef, hapın uçuşu). Hap testinin ölçümü "SAYAÇ" dizesi: aktif hap onu **metin**
+  olarak çiziyor, pasif dört yuva yalnızca ikon + ekran okuyucu adı. Uçuş sırasında o metin
+  iki rotanın da içinde değil (`Hero` ikisini de yer tutucuya çeviriyor), `Overlay`de.
+- **Madde 12 ve 13'ün testleri değişmeden geçiyor:** 48px dokunma hedefi ve "sekmeler
+  arasında dolaşmak yığını büyütmüyor" — geçişlerin yığın semantiğine dokunmadığının kanıtı.
+- **Cihazda bakılmadı** — madde 18 ve 19 gibi; hareketin son hâli emülatörde görülmedi.
