@@ -210,18 +210,27 @@ Widget _pillFlightShuttle(
   final Animation<double> progress = direction == HeroFlightDirection.push
       ? animation
       : ReverseAnimation(animation);
-  return Stack(
-    fit: StackFit.expand,
-    children: <Widget>[
-      FadeTransition(
-        opacity: progress.drive(Tween<double>(begin: 1, end: 0).chain(CurveTween(curve: AppMotion.exit))),
-        child: (fromHeroContext.widget as Hero).child,
-      ),
-      FadeTransition(
-        opacity: progress.drive(CurveTween(curve: AppMotion.enter)),
-        child: (toHeroContext.widget as Hero).child,
-      ),
-    ],
+  // Mekik uçuş boyunca `Navigator`ın `Overlay`inde çiziliyor — çubuğun kendi
+  // `Material`ı ağacın o dalında yok. `AppTypography.display` `decoration`
+  // vermediği için hapın etiketi `DefaultTextStyle`den miras alıyor ve orada
+  // `WidgetsApp`in "bu metni bir Material'a koyun" geri düşüş biçimi duruyordu:
+  // her sekme geçişinde etiket uçuş boyunca **sarı çift alt çizgiyle**
+  // çiziliyordu. Saydam `Material` biçimi çubuktakiyle aynı hâle getiriyor.
+  return Material(
+    type: MaterialType.transparency,
+    child: Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        FadeTransition(
+          opacity: progress.drive(Tween<double>(begin: 1, end: 0).chain(CurveTween(curve: AppMotion.exit))),
+          child: (fromHeroContext.widget as Hero).child,
+        ),
+        FadeTransition(
+          opacity: progress.drive(CurveTween(curve: AppMotion.enter)),
+          child: (toHeroContext.widget as Hero).child,
+        ),
+      ],
+    ),
   );
 }
 

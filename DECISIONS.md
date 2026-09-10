@@ -1479,4 +1479,39 @@ yerden diğerine ışınlanıyordu, birincil CTA'da yalnızca jenerik `InkWell` 
   iki rotanın da içinde değil (`Hero` ikisini de yer tutucuya çeviriyor), `Overlay`de.
 - **Madde 12 ve 13'ün testleri değişmeden geçiyor:** 48px dokunma hedefi ve "sekmeler
   arasında dolaşmak yığını büyütmüyor" — geçişlerin yığın semantiğine dokunmadığının kanıtı.
-- **Cihazda bakılmadı** — madde 18 ve 19 gibi; hareketin son hâli emülatörde görülmedi.
+
+## Madde 18-19-20 — emülatör doğrulaması
+
+Üç maddenin de kapanışında "cihazda bakılmadı" notu duruyordu. Android 16 (API 36)
+emülatöründe, Impeller (OpenGLES) arka ucuyla, koyu ve açık temada bakıldı. Hareket
+`screenrecord` kaydından kare kare çıkarılarak incelendi; `logcat`te tek bir Flutter
+istisnası, `RenderFlex` taşması ya da çerçeve hatası yok. 259 test geçiyor (+1),
+`flutter analyze` 0/0.
+
+- **Bulunan tek hata — uçan hapın etiketi sarı çift alt çizgiliydi.** `flightShuttleBuilder`
+  uçuş boyunca `Navigator`ın `Overlay`inde çiziliyor; çubuğun kendi `Material`ı (bkz.
+  `BottomNavBar.build`, dalga gerekçesi) ağacın o dalında yok. `AppTypography.display`
+  `decoration` vermediği için hapın `Text`i `DefaultTextStyle`den miras alıyor ve orada
+  `WidgetsApp`in "bu metni bir Material'a koyun" geri düşüş biçimi duruyor
+  (`Color(0xD0FF0000)` + çift sarı `TextDecoration.underline`). Rengi `style.foreground`
+  ezdiği için hata kırmızısı görünmüyordu; alt çizgi ise **her sekme geçişinde** uçuş
+  boyunca görünüyordu. Mekik saydam bir `Material`a sarıldı — çubuktakiyle aynı çözüm.
+  - **Neden testler görmedi:** madde 20'nin uçuş testi hapın **yerini** ölçüyordu
+    ("SAYAÇ" kaynağın çubuğunda değil, `Overlay`de). Biçim ölçülmüyordu. Eklenen test
+    (`uçan hapın etiketi alt çizgisiz`) uçuşun ortasında `RenderParagraph`ın birleşmiş
+    `TextSpan.style.decoration`ına bakıyor; düzeltme geri alındığında kırmızıya düşüyor.
+  - **Genel ders:** `Overlay`de çizilen her şey tema ağacının altında değil. Metin taşıyan
+    bir mekik yazılıyorsa `Material` şart.
+- **Doğrulanan davranışlar.** Madde 18: sınav değişiminde (282 → 247) yalnızca son iki
+  hane kayıyor, baştaki `2` hiç kımıldamıyor; azalan değerde haneler yukarıdan aşağı
+  giriyor; `ShaderMask`in krom gradyanı kayan hanelerin üstünde doğru duruyor; halka
+  oranı `TweenAnimationBuilder` ile akıyor, sıçramıyor. Madde 19: doğal bitişte sayaç
+  00:00'da duruyor, dolu halka közden naneye enterpole oluyor, sonra mola gövdesi
+  geliyor. Madde 20: sekme geçişi çapraz solma (iki ekran ara karede birlikte), hap
+  yuvadan yuvaya uçuyor, CTA basılıyken 0.97'ye iniyor ve `onTap` **çalışıyor** —
+  ölü CTA regresyonu cihazda da yok.
+- **Cihazda gözlenemeyenler:** `PopOnIncrease` (seri artışı) ve "bugün" sayaçlarının
+  odometresi, değer ekran **sahne dışındayken** değiştiği için kare olarak yakalanamadı —
+  seans bitince Ekran 02 odak ekranının altında duruyor ve dönüşte ilk build oluyor
+  (tasarım gereği ilk build'de animasyon yok). Bu ikisi widget testlerinde ara kare
+  iddialarıyla duruyor.

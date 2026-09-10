@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/native.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -345,6 +346,36 @@ void main() {
       reason: 'uçan hap hedefin yuvasına indi',
     );
 
+    await _disposeTree(tester);
+    handle.dispose();
+  });
+
+  // Regresyon (emülatör, madde 20): mekik `Navigator`ın `Overlay`inde çizildiği
+  // için çubuğun `Material`ı ağacın o dalında yok. Hapın etiketi `decoration`
+  // vermiyor, yani `DefaultTextStyle`den miras alıyordu — ve orada `WidgetsApp`in
+  // geri düşüş biçimi duruyordu: etiket her sekme geçişinde sarı çift alt
+  // çizgiyle uçuyordu. Bir üstteki uçuş testi yalnızca hapın **yerini** ölçtüğü
+  // için bunu görmüyordu; burada ölçülen şey biçimin kendisi.
+  testWidgets('uçan hapın etiketi alt çizgisiz — mekik Material altında', (WidgetTester tester) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await _pumpApp(tester);
+
+    await tester.tap(find.bySemanticsLabel('ROZETLER'));
+    await tester.pump();
+    await tester.pump(AppMotion.base ~/ 2);
+
+    // Uçuş sırasında hap yalnızca `Overlay`de: bir üstteki test "SAYAÇ"ın
+    // kaynağın çubuğunda değil mekikte olduğunu kilitliyor.
+    final RenderParagraph paragraph = tester.renderObject<RenderParagraph>(find.text('SAYAÇ'));
+    // `Text` kendi biçimini `DefaultTextStyle` ile birleştirip `RichText`e
+    // veriyor, yani miras alınan `decoration` burada görünür hâle geliyor.
+    expect(
+      (paragraph.text as TextSpan).style?.decoration ?? TextDecoration.none,
+      TextDecoration.none,
+      reason: 'uçuşta WidgetsApp hata biçimi mirası alınmıyor',
+    );
+
+    await _settleTransition(tester);
     await _disposeTree(tester);
     handle.dispose();
   });

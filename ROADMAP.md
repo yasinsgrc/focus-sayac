@@ -398,7 +398,10 @@ kontrolü tek bir yardımcıya topluyor, 19 ve 20 onu kullanıyor.
 - **Testler:** `test/core/rolling_number_test.dart` + `test/core/settling_progress_test.dart`;
   `stats_screen_test` sayıları artık `findRollingNumber` ile arıyor,
   `focus_session_screen_test`in iki halka ölçümü yerleşmeyi bekliyor.
-- **Cihazda bakılmadı** — hareketin son hâli emülatörde görülmedi (madde 16 gibi bir tur).
+- **Cihazda doğrulandı** — emülatörde sınav değişimi (282 → 247) kare kare izlendi:
+  baştaki `2` hiç kımıldamıyor, yalnızca son iki hane yukarıdan aşağı kayıyor, krom
+  gradyan kayan hanelerin üstünde doğru duruyor, halka oranı sıçramadan akıyor.
+  Ayrıntı: `DECISIONS.md` "Madde 18-19-20 — emülatör doğrulaması".
 
 **Neden ilk buydu:** uygulamanın en görünür açığı. Bir geri sayım uygulamasında
 ekranın ortasındaki 100px'lik gün sayısı (`countdown_screen.dart:385`) gece
@@ -490,8 +493,11 @@ tek commit.
   kolonu Faz 2'den beri şemada, anahtar Ekran 07'de, `mediumImpact` her faz
   geçişinde (seans bitişi dahil) ve `heavyImpact` rozet açılışında, ikisi de
   ayara bağlı. Bu maddede yalnızca görsel katman kodlandı.
-- **Cihazda bakılmadı** — madde 18 gibi, hareketin son hâli emülatörde
-  görülmedi.
+- **Cihazda doğrulandı** — doğal bitişte sayaç 00:00'da duruyor, dolu halka közden
+  naneye enterpole oluyor, sonra mola gövdesi geliyor. Seri artışının `PopOnIncrease`i
+  cihazda **gözlenemedi**: değer Ekran 02 sahne dışındayken değişiyor, dönüşte ilk
+  build oluyor ve ilk build'de animasyon tasarım gereği yok — o davranış widget
+  testinde duruyor. Ayrıntı: `DECISIONS.md` "Madde 18-19-20 — emülatör doğrulaması".
 
 ---
 
@@ -524,8 +530,13 @@ tek commit.
   testin `expect(taps, 1)` satırı bunun kilidi.
 - **Madde 12 ve 13'ün testleri değişmeden geçiyor** (48px dokunma hedefi, gezinme
   yığını büyümüyor).
-- **Cihazda bakılmadı** — madde 18 ve 19 gibi; hareketin son hâli emülatörde
-  görülmedi.
+- **Cihazda doğrulandı — ve bir hata çıktı.** Sekme geçişi çapraz soluyor, hap yuvadan
+  yuvaya uçuyor, CTA basılıyken 0.97'ye iniyor ve `onTap` çalışıyor (ölü CTA regresyonu
+  cihazda da yok). Ama **uçan hapın etiketi sarı çift alt çizgiliydi**: mekik `Overlay`de
+  çizildiği için çubuğun `Material`ı ağacın o dalında yok ve `Text`, `WidgetsApp`in geri
+  düşüş biçimini miras alıyordu. Mekik saydam bir `Material`a sarıldı; uçuşun ortasında
+  `decoration`a bakan bir regresyon testi eklendi (259 test, +1). Ayrıntı: `DECISIONS.md`
+  "Madde 18-19-20 — emülatör doğrulaması".
 
 ---
 
