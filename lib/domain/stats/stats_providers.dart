@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/time/app_day.dart';
 import '../../services/storage/app_database.dart';
 import '../pomodoro/pomodoro_stats_providers.dart';
 import 'focus_stats.dart';
+import 'weekly_summary.dart';
 
 /// Ekran 06'nın (Faz 9) tüm sayıları. Ekran 02'nin `todayFocusStatsProvider`'ı
 /// ile aynı `allSessionsProvider` akışını tüketir: iki ekranın sayıları tek
@@ -28,4 +30,19 @@ final examFocusSecondsProvider = Provider.family<int, int>((Ref ref, int examId)
   final List<PomodoroSession> sessions =
       ref.watch(allSessionsProvider).value ?? const <PomodoroSession>[];
   return examFocusSeconds(sessions: sessions, examId: examId);
+});
+
+/// Haftalık kapanışın Ekran 06'da duran hâli — pencere **bugünle** bitiyor.
+///
+/// Pazar bildirimi aynı saf fonksiyonu hedef pazarla çağırıyor
+/// (`NotificationService.rescheduleWeeklySummary` çağıranları); böylece iki
+/// yüzey tek bir hesabı paylaşıyor ve bildirimde gördüğü sayıyı uygulamada
+/// arayan kullanıcı başka bir sayı bulmuyor.
+final Provider<WeeklySummary> weeklySummaryProvider = Provider<WeeklySummary>((Ref ref) {
+  final List<PomodoroSession> sessions =
+      ref.watch(allSessionsProvider).value ?? const <PomodoroSession>[];
+  return calculateWeeklySummary(
+    sessions: sessions,
+    weekEndDayKey: currentAppDayKey(DateTime.now().toUtc()),
+  );
 });

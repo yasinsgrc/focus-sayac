@@ -117,6 +117,37 @@ StreakStatus calculateStreakStatus({
   return StreakStatus(days: days, state: state);
 }
 
+/// Kutlanmaya değer seri eşikleri. Bilinçli olarak **seyrek**: her gün ya da
+/// her beş günde bir kutlama, "seriyi agresif kovalama" tuzağı olurdu —
+/// kutlama nadir olduğu sürece kutlama kalıyor. 3 ilk alışkanlık eşiği (ilk
+/// terk dalgasının kırıldığı yer), 7 "Haftalık Seri" rozetiyle aynı gün, 30 ve
+/// 100 ise gerçekten anlatılacak sayılar.
+///
+/// 7'de rozet de açılıyor; çağıran rozet kutlamasını öne aldığı için aynı gün
+/// iki kutlama üst üste binmiyor (bkz. `PomodoroController`).
+const List<int> kStreakMilestones = <int>[3, 7, 30, 100];
+
+/// [days] ile geçilmiş ama [lastCelebrated]'dan büyük **en yüksek** eşiği
+/// döndürür; kutlanacak yeni bir eşik yoksa `null`.
+///
+/// Saf: "daha önce kutlandı mı" bilgisi girdi olarak geliyor (çağıran onu
+/// `SharedPreferences`te tutuyor). Aksi hâlde eşik gününde tamamlanan her
+/// seans aynı kutlamayı yeniden açardı — seri gün boyunca aynı sayıda kalıyor.
+///
+/// Eşiği **geçmiş** olmak da sayılıyor (`days >= milestone`), tam denk gelmek
+/// değil: serisi 30 günken güncellenen bir kullanıcıda 3 ve 7 hiç kutlanmamış
+/// olur; o durumda geriye dönük üç dialog açılmıyor, en yüksek eşik bir kez
+/// kutlanıp geçiliyor.
+int? streakMilestoneToCelebrate({required int days, required int lastCelebrated}) {
+  int? reached;
+  for (final int milestone in kStreakMilestones) {
+    if (days >= milestone && milestone > lastCelebrated) {
+      reached = milestone;
+    }
+  }
+  return reached;
+}
+
 /// [calculateStreakStatus]'un yalnızca gün sayısını isteyen çağrıcıları için
 /// kısayol (bildirim zamanlaması, hikâye kartı, ana ekran widget'ı).
 int calculateStreak({

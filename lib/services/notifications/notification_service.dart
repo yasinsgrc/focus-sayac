@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,10 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../core/l10n/l10n_providers.dart';
+// Bildirim gövdesi "Bu hafta 6 saat odaklandın" cümlesini hikâye kartıyla aynı
+// kaynaktan kuruyor; `domain/time` saf bir yaprak olduğu için bu bağımlılık
+// `NotificationPreferences`in `services/storage`den kaçındığı sınıfa girmiyor.
+import '../../domain/time/duration_formatter.dart';
 import '../../l10n/gen/app_localizations.dart';
 
 /// Durum çubuğu ikonunun Android kaynak adı (`res/drawable-*/ic_notification.png`).
@@ -33,6 +39,7 @@ class NotificationPreferences {
     required this.notificationsEnabled,
     required this.soundEnabled,
     required this.streakReminderEnabled,
+    this.weeklySummaryEnabled = true,
   });
 
   /// Ayar okuyamayan bağlamlar (testler, [NotificationService.disabled]) için
@@ -40,15 +47,23 @@ class NotificationPreferences {
   const NotificationPreferences.allEnabled()
       : notificationsEnabled = true,
         soundEnabled = true,
-        streakReminderEnabled = true;
+        streakReminderEnabled = true,
+        weeklySummaryEnabled = true;
 
   /// Ana anahtar: kapalıyken hiçbir bildirim **gönderilmez** (iptaller yine
   /// çalışır, bkz. [NotificationService]).
   final bool notificationsEnabled;
   final bool soundEnabled;
 
-  /// Yalnızca "seri riski" tipini kapatır; diğer üç tip açık kalır.
+  /// Yalnızca "seri riski" tipini kapatır; diğer tipler açık kalır.
   final bool streakReminderEnabled;
+
+  /// Yalnızca "haftalık kapanış" tipini kapatır. Varsayılanı olan tek alan:
+  /// kolon sonradan eklendi ve bu sınıfı doğrudan kuran tek testin
+  /// (`notification_service_test.dart`) sınamadığı bir davranış için oraya yeni
+  /// bir argüman taşımak gürültü olurdu — `AppSettingsTable`daki kolon
+  /// varsayılanı da `true`.
+  final bool weeklySummaryEnabled;
 }
 
 /// Her gönderim anında güncel ayarları okur. `AppSettings` tek satırlık bir
@@ -99,10 +114,27 @@ class NotificationService {
   final NotificationPreferencesReader _readPreferences;
   tz.Location? _istanbul;
 
+  /// Bildirime basıldığında gelen yükler. `broadcast`: dinleyici
+  /// (`NotificationLaunchScope`) ilk kareden sonra bağlanıyor, servis ise
+  /// `runApp`tan önce kuruluyor — tek abonelikli bir kanal o aralıkta gelen
+  /// olayı dinleyicisiz bulurdu. Uygulama ömrü boyunca açık kalıyor, o yüzden
+  /// kapatılmıyor (servisin kendisi de hiç `dispose` edilmiyor).
+  final StreamController<String> _taps = StreamController<String>.broadcast();
+
+  /// Dokunulan bildirimlerin yükü (`RoutePaths` ile birebir aynı yol dizesi).
+  Stream<String> get tappedPayloads => _taps.stream;
+
   static const int _sessionEndNotificationId = 1001;
   static const int _ongoingFocusNotificationId = 1002;
   static const int _streakRiskNotificationId = 1003;
   static const int _breakEndNotificationId = 1004;
+  static const int _weeklySummaryNotificationId = 1005;
+
+  /// Haftalık kapanış bildirimine basıldığında açılacak ekran. Dokunuş
+  /// `WidgetLaunchScope` ile aynı dili konuşuyor: yük, `RoutePaths` ile birebir
+  /// aynı yol dizesi — böylece iki giriş kapısı (widget ve bildirim) tek bir
+  /// eşleme tablosunu paylaşıyor.
+  static const String weeklySummaryPayload = '/stats';
 
   /// SPEC.md Ekran 07 "Ses" anahtarının Android karşılığı. Bir kanalın ses
   /// ayarı **oluşturulduktan sonra değiştirilemez** (Android 8+: kanal
@@ -172,6 +204,19 @@ class NotificationService {
         playSound: false,
       );
 
+  AndroidNotificationDetails get _weeklySummaryAndroidDetails => AndroidNotificationDetails(
+        'weekly_summary',
+        _l10n.notificationChannelWeeklySummaryName,
+        channelDescription: _l10n.notificationChannelWeeklySummaryDescription,
+      );
+
+  AndroidNotificationDetails get _weeklySummarySilentAndroidDetails => AndroidNotificationDetails(
+        'weekly_summary_silent',
+        _l10n.notificationChannelWeeklySummarySilentName,
+        channelDescription: _l10n.notificationChannelWeeklySummarySilentDescription,
+        playSound: false,
+      );
+
   /// `timezone` veritabanını yükler ve platform kanalını başlatır. İzin
   /// **istemez**: açılışta hiçbir bağlam vermeden sistem diyaloğu açmak,
   /// SPEC.md Ekran 01'in işi olan "neden gerekli" anlatısını atlıyordu. İzin
@@ -190,7 +235,31 @@ class NotificationService {
     // Buradaki değer varsayılan: `AndroidNotificationDetails`lerin hiçbiri
     // `icon:` geçmiyor, hepsi bunu miras alıyor.
     const AndroidInitializationSettings androidInit = AndroidInitializationSettings(kNotificationIconResource);
-    await plugin.initialize(settings: const InitializationSettings(android: androidInit));
+    await plugin.initialize(
+      settings: const InitializationSettings(android: androidInit),
+      onDidReceiveNotificationResponse: _handleResponse,
+    );
+  }
+
+  void _handleResponse(NotificationResponse response) {
+    final String? payload = response.payload;
+    // Yüksüz bildirimler (seans bitişi, mola, rozet) uygulamayı yalnızca
+    // açıyor; gidecekleri özel bir yer yok, o yüzden sessizce geçiliyor.
+    if (payload == null || payload.isEmpty) return;
+    _taps.add(payload);
+  }
+
+  /// Uygulama **kapalıyken** bildirime basılarak açıldıysa o dokunuşun yükü.
+  /// `onDidReceiveNotificationResponse` bu durumda tetiklenmiyor: soğuk
+  /// başlangıçta kanal, olay düşerken henüz kurulmamış oluyor. `home_widget`in
+  /// `initiallyLaunchedFromHomeWidget`iyle aynı rol.
+  Future<String?> launchPayload() async {
+    final FlutterLocalNotificationsPlugin? plugin = _plugin;
+    if (plugin == null) return null;
+    final NotificationAppLaunchDetails? details = await plugin.getNotificationAppLaunchDetails();
+    if (details == null || !details.didNotificationLaunchApp) return null;
+    final String? payload = details.notificationResponse?.payload;
+    return payload == null || payload.isEmpty ? null : payload;
   }
 
   /// SPEC.md Ekran 01 "İZİN VER VE BAŞLA": `POST_NOTIFICATIONS` →
@@ -239,6 +308,7 @@ class NotificationService {
     required String body,
     required tz.TZDateTime scheduledDate,
     required NotificationDetails notificationDetails,
+    String? payload,
   }) async {
     try {
       await plugin.zonedSchedule(
@@ -248,6 +318,7 @@ class NotificationService {
         scheduledDate: scheduledDate,
         notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: payload,
       );
     } on PlatformException catch (error) {
       if (error.code != 'exact_alarms_not_permitted') rethrow;
@@ -258,6 +329,7 @@ class NotificationService {
         scheduledDate: scheduledDate,
         notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: payload,
       );
     }
   }
@@ -388,6 +460,67 @@ class NotificationService {
       notificationDetails: NotificationDetails(
         android: preferences.soundEnabled ? _badgeAndroidDetails : _badgeSilentAndroidDetails,
       ),
+    );
+  }
+
+  /// Haftalık kapanış — [sendAtUtc] anı için tek seferlik kurulur
+  /// (`domain/stats/weekly_summary.dart`'ın `nextWeeklySummaryUtc`'si: pazar
+  /// 20:00 TSİ). [seconds]/[previousSeconds] o pazarla **biten** yedi günlük
+  /// pencere ve ondan önceki pencere.
+  ///
+  /// "Seri riski" ile aynı kalıp: geleceğe dönük bir arka plan işi yok (SPEC §1
+  /// backend/cloud sync'i yasaklıyor), bildirim her yeniden değerlendirme
+  /// noktasında (açılış + her odak tamamlanışı) iptal edilip yeniden kurulur.
+  ///
+  /// Sayılar bu yüzden bayatlamıyor: odak yalnızca uygulama içinde birikiyor ve
+  /// her birikme bu metodu yeniden çağırıyor. Hiç seans yapılmayan günler de
+  /// doğru, çünkü pencere **hedef pazara** göre hesaplanıyor — son çağrıdan
+  /// sonra eklenen bir şey yoksa sayı zaten değişmemiş olur.
+  ///
+  /// İki pencere de boşken gönderilmiyor: söyleyecek bir şey yokken hatırlatma
+  /// yapmak, tavsiyenin uyardığı "bir görev daha" hissini yaratırdı.
+  Future<void> rescheduleWeeklySummary({
+    required DateTime sendAtUtc,
+    required int seconds,
+    required int previousSeconds,
+  }) async {
+    final FlutterLocalNotificationsPlugin? plugin = _plugin;
+    if (plugin == null) return;
+    // İptal kapıdan önce (`rescheduleStreakRiskReminder` ile aynı gerekçe):
+    // ayar kapatıldıktan sonraki ilk çağrı kurulmuş bildirimi de temizler.
+    await plugin.cancel(id: _weeklySummaryNotificationId);
+    final NotificationPreferences? preferences = await _allowedPreferences();
+    if (preferences == null || !preferences.weeklySummaryEnabled) return;
+    if (seconds == 0 && previousSeconds == 0) return;
+    final tz.TZDateTime target = tz.TZDateTime.from(sendAtUtc, _location);
+    if (!target.isAfter(tz.TZDateTime.now(_location))) return;
+
+    final String total = spellFocusDuration(_l10n, seconds);
+    final int delta = seconds - previousSeconds;
+    final String body;
+    if (previousSeconds == 0) {
+      // İlk hafta: kullanıcıya kendi sıfırıyla kıyas sunulmuyor.
+      body = _l10n.notificationWeeklySummaryBody(total);
+    } else if (delta > 0) {
+      body = _l10n.notificationWeeklySummaryBodyUp(total, spellFocusDuration(_l10n, delta));
+    } else if (delta < 0) {
+      body = _l10n.notificationWeeklySummaryBodyDown(total, spellFocusDuration(_l10n, -delta));
+    } else {
+      body = _l10n.notificationWeeklySummaryBodySame(total);
+    }
+
+    await _zonedSchedule(
+      plugin,
+      id: _weeklySummaryNotificationId,
+      title: _l10n.notificationWeeklySummaryTitle,
+      body: body,
+      scheduledDate: target,
+      notificationDetails: NotificationDetails(
+        android: preferences.soundEnabled ? _weeklySummaryAndroidDetails : _weeklySummarySilentAndroidDetails,
+      ),
+      // Bildirim yalnızca bir sebep değil bir **dönüş** yolu: dokunuş
+      // Ekran 06'ya gidiyor, özetin aynı sayıları kart olarak orada duruyor.
+      payload: weeklySummaryPayload,
     );
   }
 }

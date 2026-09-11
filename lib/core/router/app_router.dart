@@ -10,6 +10,7 @@ import '../../features/focus_session/focus_session_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/stats/stats_screen.dart';
+import '../../domain/story_card/story_card_text.dart';
 import '../../features/story_card/story_card_screen.dart';
 import '../theme/app_motion.dart';
 import 'route_paths.dart';
@@ -143,8 +144,17 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
       ),
       GoRoute(
         path: RoutePaths.storyCard,
-        pageBuilder: (BuildContext context, GoRouterState state) =>
-            _tabPage(context, state, const StoryCardScreen()),
+        pageBuilder: (BuildContext context, GoRouterState state) {
+          // `extra` yalnızca kutlamadan gelen geçişte dolu (seri eşiği SERİ
+          // şablonunu öneriyor); alt çubuğun sekme geçişi bir şey vermiyor ve
+          // `as ...?` onu `null`a düşürüyor — Ekran 02'nin `autoOpenSheet`
+          // bayrağıyla aynı kalıp.
+          return _tabPage(
+            context,
+            state,
+            StoryCardScreen(initialTemplate: state.extra as StoryCardTemplate?),
+          );
+        },
       ),
       GoRoute(
         path: RoutePaths.stats,

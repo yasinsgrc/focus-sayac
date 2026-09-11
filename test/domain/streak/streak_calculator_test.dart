@@ -161,4 +161,66 @@ void main() {
       );
     });
   });
+
+  group('streakMilestoneToCelebrate', () {
+    test('eşikler seyrek: son eşik kutlandıktan sonra aradaki günler sessiz', () {
+      // Kutlama nadir olduğu sürece kutlama kalıyor; her gün tetiklenen bir
+      // dialog "seriyi agresif kovalama" tuzağı olurdu. Karşılaştırma **geçilmiş
+      // en yüksek eşikle** yapılıyor, o yüzden her gün kendi öncülüyle sınanıyor.
+      const Map<int, int> daysWithLastCelebrated = <int, int>{
+        1: 0,
+        2: 0,
+        4: 3,
+        5: 3,
+        6: 3,
+        8: 7,
+        20: 7,
+        29: 7,
+        31: 30,
+        99: 30,
+      };
+      daysWithLastCelebrated.forEach((int day, int lastCelebrated) {
+        expect(
+          streakMilestoneToCelebrate(days: day, lastCelebrated: lastCelebrated),
+          isNull,
+          reason: '$day. gün yeni bir eşik açmamalı (son kutlanan: $lastCelebrated)',
+        );
+      });
+    });
+
+    test('her eşik kendi gününde bir kez veriliyor', () {
+      expect(streakMilestoneToCelebrate(days: 3, lastCelebrated: 0), 3);
+      expect(streakMilestoneToCelebrate(days: 7, lastCelebrated: 3), 7);
+      expect(streakMilestoneToCelebrate(days: 30, lastCelebrated: 7), 30);
+      expect(streakMilestoneToCelebrate(days: 100, lastCelebrated: 30), 100);
+    });
+
+    test('aynı eşik ikinci kez kutlanmıyor', () {
+      // Eşik günü boyunca seri aynı sayıda kalıyor: o gün tamamlanan her seans
+      // aksi hâlde aynı kutlamayı yeniden açardı.
+      expect(streakMilestoneToCelebrate(days: 7, lastCelebrated: 7), isNull);
+      expect(streakMilestoneToCelebrate(days: 8, lastCelebrated: 7), isNull);
+      expect(streakMilestoneToCelebrate(days: 29, lastCelebrated: 7), isNull);
+    });
+
+    test('geçilmiş eşiklerde yalnızca en yükseği veriliyor', () {
+      // Serisi 30 günken güncelleyen kullanıcıda 3 ve 7 hiç kutlanmamış olur;
+      // geriye dönük üç dialog açılmıyor.
+      expect(streakMilestoneToCelebrate(days: 34, lastCelebrated: 0), 30);
+      // Eşik işaretlendikten sonraki çağrıda artık bir şey yok.
+      expect(streakMilestoneToCelebrate(days: 34, lastCelebrated: 30), isNull);
+    });
+
+    test('sıfır seri hiçbir eşiği açmıyor', () {
+      expect(streakMilestoneToCelebrate(days: 0, lastCelebrated: 0), isNull);
+    });
+
+    test('eşik listesi artan sırada (en yüksek seçimi buna dayanıyor)', () {
+      // `streakMilestoneToCelebrate` listeyi baştan sona tarayıp son uyanı
+      // tutuyor; sıra bozulursa "en yüksek" garantisi sessizce kaybolurdu.
+      for (int i = 1; i < kStreakMilestones.length; i++) {
+        expect(kStreakMilestones[i], greaterThan(kStreakMilestones[i - 1]));
+      }
+    });
+  });
 }

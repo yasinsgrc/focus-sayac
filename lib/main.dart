@@ -11,10 +11,12 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/time/app_day.dart';
 import 'domain/settings/settings_providers.dart';
+import 'domain/stats/weekly_summary.dart';
 import 'domain/streak/streak_calculator.dart';
 import 'l10n/gen/app_localizations.dart';
 import 'services/ads/ad_service.dart';
 import 'services/consent/consent_service.dart';
+import 'services/notifications/notification_launch_handler.dart';
 import 'services/notifications/notification_service.dart';
 import 'services/storage/app_database.dart';
 import 'services/storage/exam_source_service.dart';
@@ -64,6 +66,7 @@ Future<void> main() async {
     debugPrintStack(stackTrace: stackTrace);
   }
   unawaited(_rescheduleStreakRiskReminder(database, notificationService));
+  unawaited(_rescheduleWeeklySummary(database, notificationService));
   // SPEC.md §7: UMP onayı Ekran 01'de toplanıyor, reklam isteğinin kapısı
   // `AdService.canRequestAds` (onay + `isPremium`). SDK'nın başlatılması
   // reklam istemek değil, o yüzden açılışta ve onaydan bağımsız yapılıyor;
@@ -95,9 +98,14 @@ Future<void> main() async {
       // `WidgetLaunchScope` widget dokunuslarini rotalara cevirir. Ikisi de
       // `ProviderScope` altinda, `MaterialApp`in ustunde duruyor: yonlendirici
       // saglayicisina erisip hicbir sey cizmiyorlar.
+      // `NotificationLaunchScope` üçüncü görünmez kabuk: haftalık kapanış
+      // bildirimine basınca Ekran 06'ya götürüyor. `WidgetLaunchScope` ile
+      // kardeş, ikisi de yalnızca dinliyor ve hiçbir şey çizmiyor.
       child: const HomeWidgetSyncScope(
         child: WidgetLaunchScope(
-          child: FocusSayacApp(),
+          child: NotificationLaunchScope(
+            child: FocusSayacApp(),
+          ),
         ),
       ),
     ),
@@ -115,6 +123,7 @@ Future<NotificationPreferences> _readNotificationPreferences(AppDatabase databas
     notificationsEnabled: settings.notificationsEnabled,
     soundEnabled: settings.soundEnabled,
     streakReminderEnabled: settings.streakReminderEnabled,
+    weeklySummaryEnabled: settings.weeklySummaryEnabled,
   );
 }
 
@@ -136,6 +145,31 @@ Future<void> _rescheduleStreakRiskReminder(AppDatabase database, NotificationSer
   }
   final int streak = calculateStreak(completedFocusStartedAtUtc: completedFocusStarts, nowUtc: nowUtc);
   await notificationService.rescheduleStreakRiskReminder(completedToday: completedToday, streak: streak);
+}
+
+/// Haftalık kapanış özetini açılışta kurar — `PomodoroController` her odak
+/// tamamlanışında aynı işi tekrar yapıyor, bu çağrı uygulamayı açıp hiç seans
+/// yapmayan günleri kapsıyor.
+///
+/// Riverpod ağacı kurulmadığı için DAO doğrudan okunuyor
+/// (`_rescheduleStreakRiskReminder` ile aynı gerekçe). Pencere **hedef pazara**
+/// göre hesaplanıyor, bugüne göre değil: bildirim o pazarın yedi gününü
+/// anlatmalı (bkz. `domain/stats/weekly_summary.dart`).
+Future<void> _rescheduleWeeklySummary(
+  AppDatabase database,
+  NotificationService notificationService,
+) async {
+  final List<PomodoroSession> sessions = await database.pomodoroSessionDao.getAllCompletedFocusSessions();
+  final DateTime sendAtUtc = nextWeeklySummaryUtc(DateTime.now().toUtc());
+  final WeeklySummary summary = calculateWeeklySummary(
+    sessions: sessions,
+    weekEndDayKey: weeklySummaryWindowEnd(sendAtUtc),
+  );
+  await notificationService.rescheduleWeeklySummary(
+    sendAtUtc: sendAtUtc,
+    seconds: summary.seconds,
+    previousSeconds: summary.previousSeconds,
+  );
 }
 
 class FocusSayacApp extends ConsumerWidget {

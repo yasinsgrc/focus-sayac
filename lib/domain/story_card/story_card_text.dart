@@ -70,7 +70,7 @@ StoryCardText buildStoryCardText({
   switch (template) {
     case StoryCardTemplate.nightTorch:
       final FocusDurationParts parts = formatFocusDuration(todayFocusSeconds);
-      final String todayLine = l10n.storyCardTodayLine(_spelledDuration(l10n, parts));
+      final String todayLine = l10n.storyCardTodayLine(spellFocusDuration(l10n, todayFocusSeconds));
       return StoryCardText(
         tag: l10n.storyCardTodayTag,
         big: '${parts.hours}:${parts.minutes.toString().padLeft(2, '0')}',
@@ -118,11 +118,4 @@ StoryCardText buildStoryCardText({
 /// link kaybolur, o durumda kartın kendi alt imzası devreye giriyor.
 String buildStoryCardShareText(AppLocalizations l10n, StoryCardText text) {
   return l10n.storyCardShareMessage(text.shareHeadline, kPlayStoreUrl);
-}
-
-/// `2 saat 15 dakika` / `45 dakika` / `3 saat`.
-String _spelledDuration(AppLocalizations l10n, FocusDurationParts parts) {
-  if (parts.hours == 0) return l10n.durationMinutes(parts.minutes);
-  if (parts.hours > 0 && parts.minutes == 0) return l10n.durationHours(parts.hours);
-  return l10n.durationHoursMinutes(parts.hours, parts.minutes);
 }

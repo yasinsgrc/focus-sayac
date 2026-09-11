@@ -11,8 +11,11 @@ import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
 import '../badges/badge_providers.dart';
+import '../celebration/session_celebration.dart';
 import '../exams/exam_providers.dart';
 import '../review/app_review_service.dart';
+import '../stats/weekly_summary.dart';
+import '../streak/streak_calculator.dart';
 import 'pomodoro_math.dart';
 import 'pomodoro_phase.dart';
 import 'pomodoro_stats_providers.dart';
@@ -23,6 +26,17 @@ const String kPomodoroPhasePrefsKey = 'pomodoro_active_phase_v1';
 
 /// Molada en fazla kaç kez "5 dk ekle" kullanılabilir (SPEC.md Ekran 09).
 const int kMaxBreakExtensions = 2;
+
+/// Onboarding'in bitişinde açılan **ilk** seansın süresi (dakika).
+///
+/// Ayardaki 25 dakika değil: alışkanlık, ilk seans o oturumda **tamamlanırsa**
+/// kuruluyor. Uygulamayı yeni kurmuş birinden 25 dakika istemek, ilk seansın
+/// yarıda kalma olasılığını baştan yüksek tutuyordu. Sonraki tüm seanslar yine
+/// `AppSettings.focusMinutes` süresinde (`startFocus()` argümansız çağrılır).
+///
+/// Ekran 01 bu sayıyı metninde de söylüyor (`onboardingFirstSessionNote`), yani
+/// kullanıcı 05:00'ı sürpriz olarak görmüyor.
+const int kFirstSessionMinutes = 5;
 
 final NotifierProvider<PomodoroController, PomodoroPhase> pomodoroControllerProvider =
     NotifierProvider<PomodoroController, PomodoroPhase>(PomodoroController.new);
@@ -90,15 +104,21 @@ class PomodoroController extends Notifier<PomodoroPhase> {
 
   /// Ekran 02'nin "… DAKİKA ODAKLAN" butonu (süre `settings.focusMinutes`).
   /// Yalnızca `idle`'dan çağrılabilir.
-  Future<void> startFocus() async {
+  ///
+  /// [minutesOverride] yalnızca onboarding'in bitirdiği ilk seans için veriliyor
+  /// ([kFirstSessionMinutes]); ayarı **yazmıyor**, sadece bu seansın süresini
+  /// belirliyor. Diğer tüm çağıranlar (Ekran 02 butonu, Hızlı Odak widget'ı)
+  /// argümansız çağırıp ayardaki süreyi kullanıyor.
+  Future<void> startFocus({int? minutesOverride}) async {
     if (state is! PomodoroIdle) return;
     final AppSettingsTableData settings = await ref.read(appSettingsDaoProvider).getSettings();
+    final int focusMinutes = minutesOverride ?? settings.focusMinutes;
     final Exam? exam = ref.read(activeExamProvider).value;
     final TodayFocusStats stats = ref.read(todayFocusStatsProvider);
     final int completedInCycle = stats.completedCount % 4;
     final int cyclePosition = completedInCycle + 1;
     final DateTime startedAt = DateTime.now().toUtc();
-    final int plannedSec = settings.focusMinutes * 60;
+    final int plannedSec = focusMinutes * 60;
     final int sessionId = await ref.read(pomodoroSessionDaoProvider).startSession(
           examId: exam?.id,
           type: SessionType.focus,
@@ -118,7 +138,9 @@ class PomodoroController extends Notifier<PomodoroPhase> {
         isLongBreakFor(cyclePosition) ? settings.longBreakMinutes : settings.shortBreakMinutes;
     await _notifications.scheduleFocusSessionEnd(
       endAtUtc: startedAt.add(Duration(seconds: plannedSec)),
-      focusMinutes: settings.focusMinutes,
+      // Bildirim metni bu seansın gerçek süresini söylemeli, ayardakini değil:
+      // ilk seansta ikisi farklı (bkz. [kFirstSessionMinutes]).
+      focusMinutes: focusMinutes,
       breakMinutes: breakMinutes,
     );
     await _notifications.showOngoingFocus(cyclePosition: cyclePosition);
@@ -358,13 +380,78 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     await _notifications.rescheduleStreakRiskReminder(completedToday: true, streak: ref.read(streakProvider));
     final Set<String> unlockedBadges =
         await ref.read(badgeUnlockServiceProvider).evaluateAfterFocusCompletion();
+    // Tamamlanmış odak geçmişi iki iş için de gerekiyor (haftalık özet +
+    // seri eşiği); tek sorguyla okunup ikisine de veriliyor. Akış
+    // (`allSessionsProvider`) yerine DAO: bu satır henüz yazıldığı için akış
+    // bir tik geride olabilir ve eşik kutlaması bir gün şaşardı.
+    final List<PomodoroSession> completedFocus =
+        await ref.read(pomodoroSessionDaoProvider).getAllCompletedFocusSessions();
+    await _rescheduleWeeklySummary(completedFocus);
+    final bool celebrating = await _offerCelebration(unlockedBadges, completedFocus);
     await _haptic();
     // SPEC.md §7.2: interstitial **mola başlangıcında**. Kurallar (3'te 1,
     // 180 sn, uzak bayrak, premium/onay kapısı) `InterstitialManager`da;
-    // burada yalnızca an ve "rozet açıldı mı" bilgisi veriliyor.
+    // burada yalnızca an ve "kutlama ekranda mı" bilgisi veriliyor.
+    //
+    // Parametre adı `badgeUnlocked` kalıyor ama anlamı artık "üstüne binilmemesi
+    // gereken bir kutlama var": seri eşiği kutlaması da tam ekran bir reklamın
+    // altında kaybolurdu, oysa kuralın koruduğu şey rozetin kendisi değil o an.
     await ref.read(interstitialManagerProvider).maybeShowOnBreakStart(
-          badgeUnlocked: unlockedBadges.isNotEmpty,
+          badgeUnlocked: celebrating,
         );
+  }
+
+  /// Haftalık kapanışı hedef pazarın penceresiyle yeniden kurar. Her odak
+  /// tamamlanışında çağrılıyor: odak yalnızca uygulama içinde birikebildiği
+  /// için bildirimdeki sayı böylece hiç bayatlamıyor (bkz.
+  /// [NotificationService.rescheduleWeeklySummary]).
+  Future<void> _rescheduleWeeklySummary(List<PomodoroSession> completedFocus) async {
+    final DateTime sendAtUtc = nextWeeklySummaryUtc(DateTime.now().toUtc());
+    final WeeklySummary summary = calculateWeeklySummary(
+      sessions: completedFocus,
+      weekEndDayKey: weeklySummaryWindowEnd(sendAtUtc),
+    );
+    await _notifications.rescheduleWeeklySummary(
+      sendAtUtc: sendAtUtc,
+      seconds: summary.seconds,
+      previousSeconds: summary.previousSeconds,
+    );
+  }
+
+  /// Kutlamayı `sessionCelebrationProvider`a bırakır; bir kutlama sunulduysa
+  /// `true` döner (interstitial kapısı bunu kullanıyor).
+  ///
+  /// Rozet **önce**: ikisi aynı anda düşebiliyor (7. günde "Haftalık Seri"
+  /// rozeti ile 7 günlük seri eşiği) ve iki dialogu üst üste açmak kutlamayı
+  /// kesintiye çevirirdi. Rozetin öne geçmesi bilinçli — adı ve görseli olan,
+  /// daha somut ödül o.
+  Future<bool> _offerCelebration(
+    Set<String> unlockedBadges,
+    List<PomodoroSession> completedFocus,
+  ) async {
+    if (unlockedBadges.isNotEmpty) {
+      ref.read(sessionCelebrationProvider.notifier).offer(
+            BadgeCelebration(unlockedBadges.toList(growable: false)),
+          );
+      return true;
+    }
+
+    final int days = calculateStreak(
+      completedFocusStartedAtUtc:
+          completedFocus.map((PomodoroSession s) => s.startedAt).toList(growable: false),
+      nowUtc: DateTime.now().toUtc(),
+    );
+    final int? milestone = streakMilestoneToCelebrate(
+      days: days,
+      lastCelebrated: _prefs.getInt(kCelebratedStreakMilestonePrefsKey) ?? 0,
+    );
+    if (milestone == null) return false;
+    // Eşik, dialog gösterilmeden **önce** işaretleniyor: kullanıcı kutlamayı
+    // kapatmadan uygulamayı öldürse bile aynı eşik bir daha açılmıyor. Kaçırılan
+    // bir kutlama, her seans sonunda tekrar eden bir kutlamadan iyi.
+    await _prefs.setInt(kCelebratedStreakMilestonePrefsKey, milestone);
+    ref.read(sessionCelebrationProvider.notifier).offer(StreakCelebration(days: days));
+    return true;
   }
 
   /// [endedAtUtc] molanın **planlanan bitiş anı**dır — bkz. [_completeFocus].

@@ -11,7 +11,11 @@
 
   "onboardingKicker": "Y2K · ODAK PROTOKOLÜ",
   "onboardingTitle": "MEŞALE\nSENDE",
-  "onboardingDescription": "Sınavına kalan süreyi gör, 25 dakikalık seanslar tut, seriyi kırmadan devam et. Her şey cihazında kalır.",
+  "onboardingDescription": "Sınavına kalan süreyi gör, seriyi kırmadan odaklan. Her şey cihazında kalır. İlk seansın {minutes} dakika.",
+  "@onboardingDescription": {
+    "description": "Süre kFirstSessionMinutes'ten geliyor. Ekran 01'in iki çıkışı da doğrudan ilk odak seansını açtığı için beklenti burada kuruluyor; eskiden metin sabit '25 dakikalık seanslar' diyordu ve ilk seansın süresiyle çelişiyordu.",
+    "placeholders": { "minutes": { "type": "int" } }
+  },
   "onboardingPermissionNotificationTitle": "Bildirim",
   "onboardingPermissionNotificationSubtitle": "Seans bitişi ve seri hatırlatması",
   "onboardingPermissionAlarmTitle": "Tam zamanlı alarm",
@@ -211,6 +215,22 @@
     }
   },
 
+  "streakCelebrationKicker": "SERİ",
+  "streakCelebrationTitle": "{days} GÜN",
+  "@streakCelebrationTitle": {
+    "description": "Seri eşiği kutlaması (kStreakMilestones) — seans bitişinde bir kez açılır.",
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "streakCelebrationBody": "{days} gün üst üste meşaleyi yaktın. Bunu bir kartla anlatabilirsin.",
+  "@streakCelebrationBody": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "streakCelebrationSemantics": "{days} günlük seri tamamlandı",
+  "@streakCelebrationSemantics": {
+    "description": "Ekran okuyucu için kutlamanın sözlü hâli.",
+    "placeholders": { "days": { "type": "int" } }
+  },
+
   "storyCardTitle": "BAŞARI KARTI",
   "storyCardTemplateNightTorch": "GECE MEŞALESİ",
   "storyCardTemplateMinimal": "MİNİMAL",
@@ -286,6 +306,18 @@
   "@statsAverageMinutes": {
     "placeholders": { "minutes": { "type": "int" } }
   },
+  "statsWeeklyClosingLabel": "BU HAFTA",
+  "statsWeeklyClosingDeltaUp": "Geçen haftadan {delta} fazla.",
+  "@statsWeeklyClosingDeltaUp": {
+    "description": "Haftalık kapanış kartının ikinci satırı; {delta} hazır biçimlenmiş süre metni.",
+    "placeholders": { "delta": { "type": "String" } }
+  },
+  "statsWeeklyClosingDeltaDown": "Geçen haftadan {delta} az.",
+  "@statsWeeklyClosingDeltaDown": {
+    "placeholders": { "delta": { "type": "String" } }
+  },
+  "statsWeeklyClosingDeltaSame": "Geçen haftayla aynı.",
+  "statsWeeklyClosingNoComparison": "İlk haftan — karşılaştırma önümüzdeki pazar gelir.",
   "statsLongestStreak": "EN UZUN SERİ",
   "statsDaysUnit": " GÜN",
   "statsCompletion": "TAMAMLANMA",
@@ -331,6 +363,7 @@
   "settingsSound": "Sesli uyarı",
   "settingsHaptics": "Titreşim",
   "settingsStreakReminder": "Seri hatırlatması",
+  "settingsWeeklySummary": "Haftalık kapanış",
   "settingsExamSelection": "Sınav seçimi",
   "settingsNoExamSelected": "Seçilmedi",
   "settingsDayStartsAt": "Gün 04:00'te başlar",
@@ -371,6 +404,10 @@
   "notificationChannelBadgeDescription": "Bir rozet açıldığında gönderilir.",
   "notificationChannelBadgeSilentName": "Yeni rozet (sessiz)",
   "notificationChannelBadgeSilentDescription": "Bir rozet açıldığında sessiz gönderilir.",
+  "notificationChannelWeeklySummaryName": "Haftalık kapanış",
+  "notificationChannelWeeklySummaryDescription": "Pazar akşamı haftanın odak özeti.",
+  "notificationChannelWeeklySummarySilentName": "Haftalık kapanış (sessiz)",
+  "notificationChannelWeeklySummarySilentDescription": "Pazar akşamı haftanın odak özeti, sessiz gönderilir.",
 
   "notificationSessionEndTitle": "Seans tamamlandı",
   "notificationSessionEndBody": "{focusMinutes} dakika odak bitti. Meşalen büyüdü — {breakMinutes} dakika mola vakti.",
@@ -401,5 +438,29 @@
   "notificationBadgeBody": "{rule} Başarı kartını paylaş.",
   "@notificationBadgeBody": {
     "placeholders": { "rule": { "type": "String" } }
+  },
+  "notificationWeeklySummaryTitle": "Haftan kapandı",
+  "notificationWeeklySummaryBody": "Bu hafta {total} odaklandın.",
+  "@notificationWeeklySummaryBody": {
+    "description": "Önceki haftada hiç odak yokken kullanılan hâl — kıyas cümlesi kurulmuyor.",
+    "placeholders": { "total": { "type": "String" } }
+  },
+  "notificationWeeklySummaryBodyUp": "Bu hafta {total} odaklandın — geçen haftadan {delta} fazla.",
+  "@notificationWeeklySummaryBodyUp": {
+    "placeholders": {
+      "total": { "type": "String" },
+      "delta": { "type": "String" }
+    }
+  },
+  "notificationWeeklySummaryBodyDown": "Bu hafta {total} odaklandın — geçen haftadan {delta} az.",
+  "@notificationWeeklySummaryBodyDown": {
+    "placeholders": {
+      "total": { "type": "String" },
+      "delta": { "type": "String" }
+    }
+  },
+  "notificationWeeklySummaryBodySame": "Bu hafta {total} odaklandın — geçen haftayla aynı.",
+  "@notificationWeeklySummaryBodySame": {
+    "placeholders": { "total": { "type": "String" } }
   }
 }

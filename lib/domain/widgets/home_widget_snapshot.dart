@@ -16,6 +16,7 @@ class HomeWidgetSnapshot {
     required this.accentColor,
     required this.streak,
     required this.todayMinutes,
+    required this.todayPomodoros,
     required this.weeklyMinutes,
     required this.sessionActive,
     required this.updatedAtUtc,
@@ -26,6 +27,7 @@ class HomeWidgetSnapshot {
   factory HomeWidgetSnapshot.noExam({
     required int streak,
     required int todayMinutes,
+    required int todayPomodoros,
     required List<int> weeklyMinutes,
     required bool sessionActive,
     required DateTime updatedAtUtc,
@@ -37,6 +39,7 @@ class HomeWidgetSnapshot {
       accentColor: null,
       streak: streak,
       todayMinutes: todayMinutes,
+      todayPomodoros: todayPomodoros,
       weeklyMinutes: weeklyMinutes,
       sessionActive: sessionActive,
       updatedAtUtc: updatedAtUtc,
@@ -63,6 +66,15 @@ class HomeWidgetSnapshot {
   /// Bugün (04:00 TSİ sınırlı uygulama günü) tamamlanan odak dakikası.
   final int todayMinutes;
 
+  /// Bugün tamamlanan pomodoro **sayısı**. Dakikadan ayrı bir alan, çünkü
+  /// ikisinden biri diğerinden türetilemiyor: odak süresi ayardan geliyor ve
+  /// kullanıcı onu değiştirebiliyor, dolayısıyla "dakika ÷ 25" yanlış sayı
+  /// verirdi.
+  ///
+  /// Halka widget'ı bunu döngü konumu (`n/4`) olarak çiziyor — widget böylece
+  /// yalnızca "kaç gün kaldı" değil "bugün ne yaptım" da söylüyor.
+  final int todayPomodoros;
+
   /// Eskiden yeniye 7 gün; son eleman bugün. `FocusStats.lastWeek` ile aynı sıra.
   final List<int> weeklyMinutes;
 
@@ -85,6 +97,7 @@ class HomeWidgetSnapshot {
       keyAccentHex: accentColor == null ? '' : toHex(accentColor!),
       keyStreak: streak,
       keyTodayMinutes: todayMinutes,
+      keyTodayPomodoros: todayPomodoros,
       keyWeeklyMinutes: weeklyMinutes.join(','),
       keySessionActive: sessionActive,
       keyUpdatedAtMillis: updatedAtUtc.millisecondsSinceEpoch,
@@ -111,6 +124,7 @@ class HomeWidgetSnapshot {
   static const String keyAccentHex = 'accentHex';
   static const String keyStreak = 'streak';
   static const String keyTodayMinutes = 'todayMinutes';
+  static const String keyTodayPomodoros = 'todayPomodoros';
   static const String keyWeeklyMinutes = 'weeklyMinutes';
   static const String keySessionActive = 'sessionActive';
   static const String keyUpdatedAtMillis = 'updatedAtMillis';
@@ -124,6 +138,7 @@ class HomeWidgetSnapshot {
     keyAccentHex,
     keyStreak,
     keyTodayMinutes,
+    keyTodayPomodoros,
     keyWeeklyMinutes,
     keySessionActive,
     keyUpdatedAtMillis,

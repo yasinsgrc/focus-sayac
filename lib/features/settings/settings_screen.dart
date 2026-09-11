@@ -206,6 +206,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         AppSettingsTableCompanion(streakReminderEnabled: Value<bool>(!settings.streakReminderEnabled)),
                       ),
                     ),
+                    // Seri hatırlatmasının hemen altında: ikisi de ana
+                    // "Bildirimler" anahtarının altındaki tip kapıları.
+                    _SettingsRow(
+                      icon: PhosphorIconsDuotone.calendarCheck,
+                      iconColor: colors.accent400,
+                      label: l10n.settingsWeeklySummary,
+                      value: _onOff(l10n, settings.weeklySummaryEnabled),
+                      valueColor: _onOffColor(settings.weeklySummaryEnabled, colors),
+                      onTap: () => _write(
+                        AppSettingsTableCompanion(
+                          weeklySummaryEnabled: Value<bool>(!settings.weeklySummaryEnabled),
+                        ),
+                      ),
+                    ),
                     _SettingsRow(
                       icon: PhosphorIconsDuotone.circleHalf,
                       iconColor: colors.accent400,

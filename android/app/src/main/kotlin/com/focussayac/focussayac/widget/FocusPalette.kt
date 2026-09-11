@@ -25,6 +25,9 @@ class FocusPalette(context: Context) {
 
     @ColorInt val sky: Int = context.getColor(R.color.focus_sky)
 
+    /** Tamamlanma rolu - halka widgetindeki "bugun kac pomodoro" yayi. */
+    @ColorInt val mint: Int = context.getColor(R.color.focus_mint)
+
     @ColorInt val neutral300: Int = context.getColor(R.color.focus_neutral_300)
     @ColorInt val neutral400: Int = context.getColor(R.color.focus_neutral_400)
     @ColorInt val neutral500: Int = context.getColor(R.color.focus_neutral_500)

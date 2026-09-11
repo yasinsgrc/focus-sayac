@@ -19,6 +19,7 @@ void main() {
       accentColor: accent,
       streak: 12,
       todayMinutes: 75,
+      todayPomodoros: 3,
       weeklyMinutes: week,
       sessionActive: false,
       updatedAtUtc: updatedAt,
@@ -67,6 +68,7 @@ void main() {
     final HomeWidgetSnapshot empty = HomeWidgetSnapshot.noExam(
       streak: 3,
       todayMinutes: 0,
+      todayPomodoros: 0,
       weeklyMinutes: week,
       sessionActive: false,
       updatedAtUtc: updatedAt,
@@ -99,6 +101,7 @@ void main() {
       () => HomeWidgetSnapshot.noExam(
         streak: 0,
         todayMinutes: 0,
+        todayPomodoros: 0,
         weeklyMinutes: const <int>[1, 2, 3],
         sessionActive: false,
         updatedAtUtc: updatedAt,

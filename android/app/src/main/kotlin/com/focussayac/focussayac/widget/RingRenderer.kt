@@ -28,6 +28,9 @@ object RingRenderer {
     private const val DASHED_RADIUS = 112f
     private const val TRACK_STROKE = 9f
 
+    /** Gunluk pomodoro yayi geri sayim yayindan ince: ikincil bir bilgi. */
+    private const val HABIT_STROKE = 5f
+
     private const val OUTER_COLOR = 0x17FFFFFF
     private const val TRACK_COLOR = 0x12FFFFFF
 
@@ -39,6 +42,8 @@ object RingRenderer {
         centerText: String,
         labelText: String,
         muted: Boolean,
+        todayRatio: Float,
+        habitColor: Int,
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -75,8 +80,51 @@ object RingRenderer {
             color = withAlpha(accentColor, 0x59),
         )
 
+        // "Bugun kac pomodoro" yayi, kesikli ic cemberin uzerinde. Widget
+        // boylece yalnizca "kac gun kaldi" demiyor, "bugun ne yaptim" da
+        // soyluyor - kullaniciyi uygulamayi acmaya cagiran sey bu.
+        //
+        // Sinav secilmemisken bile ciziliyor (`muted` disinda tutuluyor):
+        // geri sayim durmus olabilir ama odak birikmeye devam ediyor ve bu
+        // halkanin anlattigi sey sinav degil, bugun.
+        if (todayRatio > 0f) {
+            drawHabitArc(
+                canvas = canvas,
+                cx = cx,
+                cy = cy,
+                radius = DASHED_RADIUS * scale,
+                stroke = HABIT_STROKE * scale,
+                ratio = todayRatio,
+                color = habitColor,
+            )
+        }
+
         drawCenterText(context, canvas, cx, cy, sizePx, centerText, labelText, accentColor, muted)
         return bitmap
+    }
+
+    /**
+     * Gunluk dongunun dolulugu (tamamlanan pomodoro / 4). Geri sayim yayinin
+     * gradyanini tasimiyor, tek renk: iki yay ayni dili konussaydi hangisinin
+     * sinav hangisinin gun oldugu okunmazdi.
+     */
+    private fun drawHabitArc(
+        canvas: Canvas,
+        cx: Float,
+        cy: Float,
+        radius: Float,
+        stroke: Float,
+        ratio: Float,
+        color: Int,
+    ) {
+        val rect = RectF(cx - radius, cy - radius, cx + radius, cy + radius)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color
+            style = Paint.Style.STROKE
+            strokeWidth = stroke
+            strokeCap = Paint.Cap.ROUND
+        }
+        canvas.drawArc(rect, -90f, 360f * ratio.coerceIn(0f, 1f), false, paint)
     }
 
     private fun drawProgressArc(

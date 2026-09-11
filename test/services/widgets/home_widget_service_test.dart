@@ -30,6 +30,7 @@ void main() {
     return HomeWidgetSnapshot.noExam(
       streak: 4,
       todayMinutes: 50,
+      todayPomodoros: 2,
       weeklyMinutes: const <int>[0, 0, 25, 25, 50, 0, 50],
       sessionActive: true,
       updatedAtUtc: DateTime.utc(2026, 6, 1),

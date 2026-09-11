@@ -9,6 +9,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/consent/consent_service.dart';
 import '../../services/notifications/notification_service.dart';
@@ -65,8 +66,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
       await ref.read(appSettingsDaoProvider).updateSettings(
             const AppSettingsTableCompanion(onboardingCompleted: Value<bool>(true)),
           );
+      // Onboarding'in son adımı doğrudan ilk seansı **başlatıyor**: alışkanlık,
+      // ilk seans o oturumda tamamlanırsa kuruluyor. Eskiden ekran kullanıcıyı
+      // geri sayıma bırakıyordu ve ilk pomodoro'yu bulmak onun işiydi.
+      //
+      // İki çıkış da aynı yere gidiyor: "Şimdi değil" izinleri reddediyor,
+      // seansı değil. Süre kısa ([kFirstSessionMinutes]) ve Ekran 01 bunu
+      // metninde söylüyor; istemeyen kullanıcı "X" ile çıkabiliyor (Ekran 10'un
+      // iptal onayı zaten bu yolda).
+      await ref.read(pomodoroControllerProvider.notifier).startFocus(
+            minutesOverride: kFirstSessionMinutes,
+          );
       if (!mounted) return;
-      context.go(RoutePaths.countdown);
+      // `go`, `push` değil: yığında altta duran onboarding'e dönülecek bir yer
+      // yok. Seans kapanınca Ekran 03 `canPop`u false bulup geri sayıma gidiyor
+      // (`focus_session_screen.dart`in idle dinleyicisi).
+      context.go(RoutePaths.focusSession);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -120,7 +135,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                   _ShimmerTitle(shimmer: _shimmer),
                   const SizedBox(height: 16),
                   Text(
-                    l10n.onboardingDescription,
+                    // Süre metinde duruyor, ayrı bir satırda değil: ekran
+                    // 390×844'te zaten tam dolu (`Spacer` sıfıra inmiş durumda)
+                    // ve eklenen her satır taşmaya yol açıyor. Bilginin kendisi
+                    // zorunlu — düğme artık geri sayıma değil doğrudan bir
+                    // seansa götürüyor, 05:00 sürpriz olmamalı.
+                    l10n.onboardingDescription(kFirstSessionMinutes),
                     style: AppTypography.body(fontSize: AppTextSize.lg, color: colors.neutral400),
                   ),
                   const SizedBox(height: 32),

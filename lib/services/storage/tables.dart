@@ -61,6 +61,13 @@ class AppSettingsTable extends Table {
   BoolColumn get onboardingCompleted => boolean().withDefault(const Constant(false))();
   BoolColumn get streakReminderEnabled => boolean().withDefault(const Constant(true))();
 
+  /// Pazar akşamı gönderilen haftalık kapanış özeti (Ekran 06'nın kartıyla
+  /// aynı sayılar). `streakReminderEnabled` ile aynı kalıp: ana "Bildirimler"
+  /// anahtarının altında, yalnızca bu tipi kapatan ikinci bir kapı — haftalık
+  /// bir rapor istemeyen kullanıcı seans bitişi bildirimlerinden de vazgeçmek
+  /// zorunda kalmasın.
+  BoolColumn get weeklySummaryEnabled => boolean().withDefault(const Constant(true))();
+
   /// Varsayılan `system`: ilk kurulumda cihazın tercihine uyulur. Mevcut
   /// kurulumlar migration'da aynı varsayılanı alır — v2'ye kadar uygulama
   /// zaten tek koyu temaydı, cihazı koyu olan kullanıcı hiçbir değişiklik

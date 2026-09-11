@@ -12,15 +12,20 @@ import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_pill_button.dart';
 import '../../core/widgets/settling_progress.dart';
+import '../../domain/badges/badge_definition.dart';
+import '../../domain/celebration/session_celebration.dart';
 import '../../domain/pomodoro/break_tips.dart';
 import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_math.dart';
 import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
 import '../../domain/settings/settings_providers.dart';
+import '../../domain/story_card/story_card_text.dart';
 import '../../l10n/gen/app_localizations.dart';
+import '../badges/badges_screen.dart';
 import 'widgets/flame_widget.dart';
 import 'widgets/session_ring_painter.dart';
+import 'widgets/streak_celebration_dialog.dart';
 
 /// Odak halkasının gradyanı. Koyu temada prototipin `fdg`'si birebir: karanlık
 /// közden aleve, en açık durak neredeyse beyaz. Açık temada o sıra halkanın
@@ -68,6 +73,69 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
     _completionTimer = Timer(duration, () {
       if (mounted) setState(() => _completingFocus = null);
     });
+  }
+
+  /// Aynı kutlamanın iki kez açılmasını engelleyen kapı. `consume()` yuvayı
+  /// hemen boşaltıyor ama dialog açıkken gelen ikinci bir tik (ör. gecikmeli
+  /// yakalama tiki ikinci bir fazı da kapatırsa) yeni bir kutlama sunabilir.
+  bool _celebrating = false;
+
+  /// Kutlamayı gösterir: rozet açılışında Ekran 04'ün dialogu, seri eşiğinde
+  /// kutlama dialogu. İkisinin de birincil aksiyonu başarı kartı — paylaşım
+  /// artık kullanıcının gidip aramasını beklemiyor, kutlama anında önüne
+  /// geliyor.
+  Future<void> _showCelebration(SessionCelebration celebration) async {
+    if (_celebrating) return;
+    _celebrating = true;
+    // Yuva hemen boşaltılıyor: dialog açıkken ekran yeniden çizilirse
+    // `ref.listen` yeniden tetiklenmesin.
+    ref.read(sessionCelebrationProvider.notifier).consume();
+    try {
+      // Dolu halkanın közden naneye döndüğü pencere (bkz. [_startCompletion])
+      // bitmeden dialog açmak, seansın kendi kapanış anını kapatırdı.
+      await Future<void>.delayed(AppMotion.respectingMotion(context, AppMotion.slow));
+      if (!mounted) return;
+
+      switch (celebration) {
+        case BadgeCelebration(badgeKeys: final List<String> keys):
+          // Katalog sırasında geziliyor: aynı anda birden fazla rozet açılabilir
+          // ve merdivenin sırası sunum kararıdır (`session_celebration.dart`).
+          for (final BadgeDefinition definition in kBadgeCatalog) {
+            if (!keys.contains(definition.key)) continue;
+            if (!mounted) return;
+            await showBadgeUnlockDialog(
+              context,
+              definition: definition,
+              unlocked: true,
+              // Rozet kutlamasında şablon zorlanmıyor: kullanıcının seçtiği
+              // kart neyse o açılıyor.
+              onOpenStoryCard: _openStoryCard,
+            );
+          }
+        case StreakCelebration(days: final int days):
+          await showStreakCelebrationDialog(
+            context,
+            days: days,
+            // Seri kutlamasında SERİ şablonu öneriliyor: "30 gün" diye kutlanıp
+            // bugünün saatini gösteren bir kart açmak tutarsız olurdu. Tercih
+            // **yazılmıyor**, yalnızca bu açılışta gösteriliyor.
+            onOpenStoryCard: () => _openStoryCard(StoryCardTemplate.streak),
+          );
+      }
+    } finally {
+      _celebrating = false;
+    }
+  }
+
+  /// Başarı kartını bu ekranın **yerine** açar.
+  ///
+  /// `push` değil `pushReplacement`: `push` olsaydı bu ekran altta canlı
+  /// kalırdı ve molanın bitişinde idle dinleyicisi `context.pop()` çağırıp
+  /// kullanıcıyı kartın ortasından çekip alırdı. Yerine geçmek molayı
+  /// durdurmuyor — faz controller'da sürüyor, bitiş bildirimi kurulu ve
+  /// Ekran 02 aktif seansı kurtarıyor.
+  void _openStoryCard([StoryCardTemplate? template]) {
+    context.pushReplacement(RoutePaths.storyCard, extra: template);
   }
 
   @override
@@ -141,6 +209,9 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
         if (duration > Duration.zero) _startCompletion(previous, duration);
       }
       if (next is PomodoroIdle && !_leftForIdle) {
+        // Ekrandan çıkılıyor: gösterilemeyecek bir kutlama yuvada kalmasın,
+        // yoksa bir sonraki seansın başında eski kutlama açılırdı.
+        ref.read(sessionCelebrationProvider.notifier).consume();
         _leftForIdle = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && context.canPop()) {
@@ -150,6 +221,17 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
           }
         });
       }
+    });
+
+    // Kutlamayı `PomodoroController._completeFocus` yuvaya bırakıyor; bu ekran
+    // o anda zaten ağaçta (tamamlanmayı tetikleyen tik buradan geliyor).
+    // `addPostFrameCallback`: `build` sürerken dialog açmak yasak.
+    ref.listen<SessionCelebration?>(sessionCelebrationProvider,
+        (SessionCelebration? previous, SessionCelebration? next) {
+      if (next == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_showCelebration(next));
+      });
     });
 
     return PopScope<Object?>(

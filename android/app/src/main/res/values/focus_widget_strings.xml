@@ -36,11 +36,16 @@
     <string name="widget_streak_days">%1$d gün seri</string>
     <!-- ARB: statsAverageMinutes -->
     <string name="widget_minutes">%1$d dk</string>
+    <!-- Halka widget'inin alt satiri. ARB'de birebir karsiligi yok cunku
+         uygulamada bu iki sayi hic yan yana yazilmiyor (Ekran 02'de seri bir
+         rozet, pomodoro sayisi bir kart). Kelimeler yine ARB'den:
+         countdownStreakBadge "gun seri" + breakPomodoroDone "pomodoro". -->
+    <string name="widget_ring_habit">%1$d gün seri · %2$d pomodoro</string>
 
     <!-- Widget secicide gorunen ad ve aciklamalar. ARB karsiligi yok:
          bu metinler uygulamanin icinde degil, sistem arayuzunde gosteriliyor. -->
     <string name="widget_ring_label">Geri Sayım Halkası</string>
-    <string name="widget_ring_description">Sınavına kalan günü halkalı sayaçla gösterir.</string>
+    <string name="widget_ring_description">Sınavına kalan günü, serini ve bugünkü pomodorolarını halkalı sayaçla gösterir.</string>
     <string name="widget_strip_label">Geri Sayım Şeridi</string>
     <string name="widget_strip_description">Kalan gün ve saati ince bir şeritte gösterir.</string>
     <string name="widget_streak_label">Odak Serisi</string>

@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -52,6 +52,12 @@ class AppDatabase extends _$AppDatabase {
             // backfill gerekmiyor — `presetKey`ten farkı bu: orada varsayılan
             // yoktu, anlamlı değer seed dosyasından türetilmek zorundaydı.
             await m.addColumn(appSettingsTable, appSettingsTable.themeMode);
+          }
+          if (from < 4) {
+            // Haftalık kapanış özeti (Faz 18) — `themeMode` ile aynı kalıp:
+            // varsayılanı `true`, yani güncelleme alan kullanıcı özeti açık
+            // bulur. Kapatma yolu Ekran 07'de.
+            await m.addColumn(appSettingsTable, appSettingsTable.weeklySummaryEnabled);
           }
         },
       );

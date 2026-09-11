@@ -23,6 +23,8 @@ class RingWidgetProvider : BaseFocusWidgetProvider() {
                 centerText = render.dayText(),
                 labelText = render.statusLabel(),
                 muted = render.muted,
+                todayRatio = render.todayRatio,
+                habitColor = render.palette.mint,
             ),
         )
         views.setTextViewText(R.id.widget_ring_exam, render.examLine())
@@ -30,6 +32,7 @@ class RingWidgetProvider : BaseFocusWidgetProvider() {
             R.id.widget_ring_exam,
             if (render.muted) render.palette.neutral500 else render.palette.neutral300,
         )
+        views.setTextViewText(R.id.widget_ring_habit, render.habitLine())
     }
 
     private companion object {

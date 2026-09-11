@@ -43,6 +43,7 @@ final Provider<HomeWidgetSnapshot?> homeWidgetSnapshotProvider =
     return HomeWidgetSnapshot.noExam(
       streak: streak,
       todayMinutes: todayMinutes,
+      todayPomodoros: today.completedCount,
       weeklyMinutes: weeklyMinutes,
       sessionActive: sessionActive,
       updatedAtUtc: nowUtc,
@@ -59,6 +60,7 @@ final Provider<HomeWidgetSnapshot?> homeWidgetSnapshotProvider =
     accentColor: examAccentColor(exam.accentRole, _systemPalette()),
     streak: streak,
     todayMinutes: todayMinutes,
+    todayPomodoros: today.completedCount,
     weeklyMinutes: weeklyMinutes,
     sessionActive: sessionActive,
     updatedAtUtc: nowUtc,

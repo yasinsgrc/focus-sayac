@@ -9,6 +9,7 @@ import '../../core/widgets/rise_in.dart';
 import '../../core/widgets/rolling_number.dart';
 import '../../domain/stats/focus_stats.dart';
 import '../../domain/stats/stats_providers.dart';
+import '../../domain/stats/weekly_summary.dart';
 import '../../domain/time/duration_formatter.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/ads/banner_ad_slot.dart';
@@ -95,9 +96,15 @@ class StatsScreen extends ConsumerWidget {
                       style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral500),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
+                  // Haftalık kapanış: pazar akşamı gönderilen bildirimin
+                  // uygulamadaki karşılığı. Bildirim bir "dönüş sebebi"
+                  // olabilsin diye dönülecek bir yer gerekiyordu — aynı iki sayı
+                  // burada her gün duruyor (`weeklySummaryProvider`).
+                  RiseIn(delay: RiseIn.step * 3, child: const _WeeklyClosingCard()),
+                  const SizedBox(height: 12),
                   RiseIn(
-                    delay: RiseIn.step * 3,
+                    delay: RiseIn.step * 4,
                     child: _Card(
                       padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
                       child: RepaintBoundary(
@@ -110,7 +117,7 @@ class StatsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
                   RiseIn(
-                    delay: RiseIn.step * 4,
+                    delay: RiseIn.step * 5,
                     child: Row(
                       children: <Widget>[
                         Expanded(
@@ -139,7 +146,7 @@ class StatsScreen extends ConsumerWidget {
                   if (stats.productiveWindow != null) ...<Widget>[
                     const SizedBox(height: 12),
                     RiseIn(
-                      delay: RiseIn.step * 5,
+                      delay: RiseIn.step * 6,
                       child: _ProductiveWindowCard(window: stats.productiveWindow!),
                     ),
                   ],
@@ -177,6 +184,74 @@ class StatsScreen extends ConsumerWidget {
     return parts.hours > 0
         ? l10n.statsAverageHoursMinutes(parts.hours, parts.minutes)
         : l10n.statsAverageMinutes(parts.minutes);
+  }
+}
+
+/// Haftalık kapanış kartı — pazar akşamı bildiriminin uygulamadaki ikizi.
+///
+/// İki pencere de boşken hiç çizilmiyor: ilk gününde olan kullanıcıya "bu hafta
+/// 0 dakika" göstermek, eşlik eden bir tondan ölçen bir tona geçmek olurdu
+/// (`WeeklySummary.isEmpty`).
+///
+/// Fark yönü renk taşıyor ama **kırmızı yok**: azalma `neutral` tonda
+/// yazılıyor. Düşen bir haftayı uyarı rengiyle göstermek, sınav öğrencisinde
+/// seri kaygısını besleyen tam o ters tepki.
+class _WeeklyClosingCard extends ConsumerWidget {
+  const _WeeklyClosingCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final WeeklySummary summary = ref.watch(weeklySummaryProvider);
+    if (summary.isEmpty) return const SizedBox.shrink();
+
+    final int delta = summary.deltaSeconds;
+    final (String text, Color color) = switch ((summary.hasComparison, delta)) {
+      (false, _) => (l10n.statsWeeklyClosingNoComparison, colors.neutral600),
+      (true, 0) => (l10n.statsWeeklyClosingDeltaSame, colors.neutral500),
+      (true, final int d) when d > 0 => (
+          l10n.statsWeeklyClosingDeltaUp(spellFocusDuration(l10n, d)),
+          colors.mint,
+        ),
+      (true, final int d) => (
+          l10n.statsWeeklyClosingDeltaDown(spellFocusDuration(l10n, -d)),
+          colors.neutral500,
+        ),
+    };
+
+    return _Card(
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        children: <Widget>[
+          Icon(PhosphorIconsDuotone.calendarCheck, size: 22, color: colors.accent400),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  l10n.statsWeeklyClosingLabel,
+                  style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  spellFocusDuration(l10n, summary.seconds),
+                  style: AppTypography.display(
+                    fontSize: AppTextSize.title,
+                    weight: FontWeight.w700,
+                    color: colors.text,
+                  ).copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]),
+                ),
+                const SizedBox(height: 4),
+                Text(text, style: AppTypography.body(fontSize: AppTextSize.md, color: color)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

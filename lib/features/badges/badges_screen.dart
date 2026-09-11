@@ -324,25 +324,43 @@ const Key kBadgeUnlockHaloKey = Key('badge_unlock_halo');
 
 /// Prototip satır 200-210 — rozete tıklayınca açılan detay/açılış dialogu.
 /// Kilitli bir rozete tıklamak da bu dialogu açar ("Nasıl açılır: ..." metni).
+/// [onOpenStoryCard] verilmezse "BAŞARI KARTINI OLUŞTUR" Ekran 04'ten gelmiş
+/// gibi davranır (alt çubuğun sekme kuralı). Dialog artık **Ekran 03/09'dan da**
+/// açılıyor — rozet tam açıldığı anda, kutlama yerinde. O bağlamda aktif bir
+/// sekme yok, o yüzden gezinme kararı çağırana bırakılıyor.
 Future<void> showBadgeUnlockDialog(
   BuildContext context, {
   required BadgeDefinition definition,
   required bool unlocked,
   BadgeProgress? progress,
+  VoidCallback? onOpenStoryCard,
 }) {
   // Perde rengi `dialogTheme.barrierColor`dan geliyor (bkz. `app_theme.dart`).
   return showDialog<void>(
     context: context,
-    builder: (BuildContext context) =>
-        _BadgeUnlockDialog(definition: definition, unlocked: unlocked, progress: progress),
+    builder: (BuildContext context) => _BadgeUnlockDialog(
+      definition: definition,
+      unlocked: unlocked,
+      progress: progress,
+      onOpenStoryCard: onOpenStoryCard,
+    ),
   );
 }
 
 class _BadgeUnlockDialog extends StatelessWidget {
-  const _BadgeUnlockDialog({required this.definition, required this.unlocked, this.progress});
+  const _BadgeUnlockDialog({
+    required this.definition,
+    required this.unlocked,
+    this.progress,
+    this.onOpenStoryCard,
+  });
 
   final BadgeDefinition definition;
   final bool unlocked;
+
+  /// `null` ise Ekran 04'ün sekme geçişi kullanılır — bkz.
+  /// [showBadgeUnlockDialog].
+  final VoidCallback? onOpenStoryCard;
 
   /// Kilitli rozetin sayacı. Kartta görünen sayının diyalogda kaybolması,
   /// "daha fazlasını öğren" diye açılan ekranın daha azını göstermesi olurdu.
@@ -440,7 +458,12 @@ class _BadgeUnlockDialog extends StatelessWidget {
                 // üstünde durması. Çubuktan gelen geçişle aynı yolu kullanmak
                 // ikisini de tek kuralda tutuyor.
                 onPressed: () {
+                  final VoidCallback? openStoryCard = onOpenStoryCard;
                   Navigator.of(context).pop();
+                  if (openStoryCard != null) {
+                    openStoryCard();
+                    return;
+                  }
                   navigateToNavTab(context, AppNavTab.storyCard, current: AppNavTab.badges);
                 },
                 weight: FontWeight.w600,

@@ -69,10 +69,27 @@ class WidgetRenderContext(
     /** Bugunku odak: 75 dk. */
     fun todayLine(): String = context.getString(R.string.widget_minutes, snapshot.todayMinutes)
 
+    /**
+     * Gunluk dongunun dolulugu (0..1) - halka widgetindeki ince ic yay.
+     * Dort pomodoro bir tam tur; fazlasi tasmiyor.
+     */
+    val todayRatio: Float = (snapshot.todayPomodoros / DAILY_CYCLE).coerceIn(0f, 1f)
+
+    /**
+     * Halka widgetinin alt satiri: "12 gun · 3 pomodoro". Sinav adi ustte
+     * duruyor; bu satir widget'i bir geri sayimdan bir aliskanlik
+     * hatirlaticisina cevirmek icin var.
+     */
+    fun habitLine(): String =
+        context.getString(R.string.widget_ring_habit, snapshot.streak, snapshot.todayPomodoros)
+
     fun px(dp: Float): Int = context.widgetPx(dp).toInt()
 
     private companion object {
         const val EM_DASH = "–"
+
+        /** Gunun dongusu - SPEC.md 5.2: dort pomodoro sonra uzun mola. */
+        const val DAILY_CYCLE = 4f
         val TR: Locale = Locale("tr", "TR")
     }
 }

@@ -19,6 +19,12 @@ data class FocusWidgetSnapshot(
     val accentColor: Int?,
     val streak: Int,
     val todayMinutes: Int,
+    /**
+     * Bugun tamamlanan pomodoro sayisi. Dakikadan turetilemez: odak suresi
+     * ayardan geliyor ve kullanici onu degistirebiliyor, yani "dakika / 25"
+     * yanlis sayi verirdi.
+     */
+    val todayPomodoros: Int,
     val weeklyMinutes: List<Int>,
     val sessionActive: Boolean,
 ) {
@@ -72,6 +78,7 @@ data class FocusWidgetSnapshot(
                 accentColor = parseColorOrNull(all.str("accentHex")),
                 streak = all.int("streak"),
                 todayMinutes = all.int("todayMinutes"),
+                todayPomodoros = all.int("todayPomodoros"),
                 weeklyMinutes = parseWeekly(all.str("weeklyMinutes")),
                 sessionActive = all.bool("sessionActive"),
             )

@@ -34,4 +34,21 @@
         android:maxLines="1"
         android:textColor="@color/focus_neutral_300"
         android:textSize="11sp" />
+
+    <!--
+      Aliskanlik satiri: "12 gun seri · 3 pomodoro". Widget boylece yalnizca
+      geri sayim degil, bugunun durumu da oluyor. Sinav adindan bir kademe
+      sonik: birincil bilgi hala hedefin kendisi.
+    -->
+    <TextView
+        android:id="@+id/widget_ring_habit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:ellipsize="end"
+        android:fontFamily="@font/inter_600"
+        android:gravity="center"
+        android:maxLines="1"
+        android:textColor="@color/focus_neutral_500"
+        android:textSize="10sp" />
 </LinearLayout>

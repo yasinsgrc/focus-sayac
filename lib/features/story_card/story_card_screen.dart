@@ -28,13 +28,33 @@ import 'widgets/story_card_view.dart';
 /// rozet dialogundaki "BAŞARI KARTINI OLUŞTUR" düğmesinden ve alt gezinme
 /// çubuğunun "alev" yuvasından açılıyor.
 class StoryCardScreen extends ConsumerStatefulWidget {
-  const StoryCardScreen({super.key});
+  const StoryCardScreen({super.key, this.initialTemplate});
+
+  /// Bu açılış için önerilen şablon; `null` ise kayıtlı tercih kullanılır.
+  ///
+  /// Seri eşiği kutlaması SERİ şablonunu öneriyor — "30 gün" diye kutlanıp
+  /// bugünün saatini gösteren bir kart açmak tutarsız olurdu. Öneri
+  /// `AppSettings.selectedTemplateIndex`e **yazılmıyor**: kullanıcının kendi
+  /// seçimini tek bir kutlama yüzünden kalıcı değiştirmek, sessizce tercih
+  /// ezmek olurdu.
+  final StoryCardTemplate? initialTemplate;
 
   @override
   ConsumerState<StoryCardScreen> createState() => _StoryCardScreenState();
 }
 
 class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
+  /// [StoryCardScreen.initialTemplate]'in yaşadığı yer. Kullanıcı seçiciye
+  /// dokunduğu anda temizleniyor: o dokunuş kayıtlı tercihi yazıyor ve
+  /// önerinin üstüne çıkması gerekiyor.
+  StoryCardTemplate? _templateOverride;
+
+  @override
+  void initState() {
+    super.initState();
+    _templateOverride = widget.initialTemplate;
+  }
+
   /// Dışa aktarımın tutamağı — `StoryCardExporter` bu anahtar üzerinden
   /// `RenderRepaintBoundary`ye ulaşıyor.
   final GlobalKey _cardKey = GlobalKey();
@@ -74,7 +94,8 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
     final StoryCardExporter exporter = ref.watch(storyCardExporterProvider);
 
     final AppSettingsTableData? settings = ref.watch(appSettingsProvider).value;
-    final StoryCardTemplate template = StoryCardTemplate.fromIndex(settings?.selectedTemplateIndex ?? 0);
+    final StoryCardTemplate template =
+        _templateOverride ?? StoryCardTemplate.fromIndex(settings?.selectedTemplateIndex ?? 0);
 
     final Exam? exam = ref.watch(activeExamProvider).value;
     final DateTime nowUtc = DateTime.now().toUtc();
@@ -132,6 +153,9 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
                     child: _TemplatePicker(
                       selected: template,
                       onSelect: (StoryCardTemplate value) {
+                        // Kullanıcı seçti: kutlamanın önerisi bitti, bundan
+                        // sonra kayıtlı tercih geçerli.
+                        setState(() => _templateOverride = null);
                         unawaited(
                           ref
                               .read(appSettingsDaoProvider)

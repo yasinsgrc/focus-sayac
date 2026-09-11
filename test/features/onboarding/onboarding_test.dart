@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:flutter/services.dart' show ByteData, StandardMessageCodec;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,11 +8,13 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
+import 'package:focussayac/domain/pomodoro/pomodoro_controller.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/consent/consent_service.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
+import 'package:focussayac/services/storage/storage_enums.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
 
 /// İzin isteğinin yapılıp yapılmadığını sayan servis. `disabled()` gövdesi
@@ -55,6 +58,23 @@ Future<T> _read<T>(WidgetTester tester, Future<T> Function() query) async {
   return (await tester.runAsync(query)) as T;
 }
 
+/// Ekran 01'in iki çıkışı da artık Ekran 03'ü açıyor ve o ekran `initState`te
+/// `WakelockPlus.enable()` çağırıyor — testte platform kanalı yok, stub
+/// olmadan `PlatformException` testi düşürüyor
+/// (`focus_session_screen_test.dart` / `countdown_navigation_test.dart`'taki
+/// aynı stub).
+void _stubWakelockChannel() {
+  const String channel = 'dev.flutter.pigeon.wakelock_plus_platform_interface.WakelockPlusApi.toggle';
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMessageHandler(
+    channel,
+    (ByteData? message) async => const StandardMessageCodec().encodeMessage(<Object?>[null]),
+  );
+  addTearDown(
+    () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMessageHandler(channel, null),
+  );
+}
+
 class _Harness {
   _Harness({required this.database, required this.notifications, required this.consent});
 
@@ -71,6 +91,7 @@ Future<_Harness> _pumpApp(WidgetTester tester, {required bool onboardingComplete
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+  _stubWakelockChannel();
 
   await initializeDateFormatting('tr_TR');
   final AppDatabase database = await _read(tester, () async {
@@ -136,7 +157,7 @@ void main() {
     await _disposeTree(tester);
   });
 
-  testWidgets('"İZİN VER VE BAŞLA" izinleri isteyip geri sayıma geçiyor', (WidgetTester tester) async {
+  testWidgets('"İZİN VER VE BAŞLA" izinleri isteyip ilk seansı başlatıyor', (WidgetTester tester) async {
     final _Harness harness = await _pumpApp(tester, onboardingCompleted: false);
     expect(harness.notifications.permissionRequests, 0);
 
@@ -150,19 +171,30 @@ void main() {
       (await _read(tester, harness.database.appSettingsDao.getSettings)).onboardingCompleted,
       isTrue,
     );
-    expect(find.text('GÜN KALDI'), findsOneWidget);
+    // Artık geri sayım değil Ekran 03: alışkanlık, ilk seans o oturumda
+    // tamamlanırsa kuruluyor (ROADMAP "ilk 60 saniye").
+    expect(find.text('GÜN KALDI'), findsNothing);
+    expect(find.text('ODAK SÜRÜYOR'), findsOneWidget);
+
+    // Seans gerçekten açıldı (yalnızca ekran değişmedi) ve süresi ayardaki 25
+    // değil `kFirstSessionMinutes`.
+    final List<PomodoroSession> sessions =
+        await _read(tester, () => harness.database.pomodoroSessionDao.watchAllSessions().first);
+    expect(sessions, hasLength(1));
+    expect(sessions.single.type, SessionType.focus);
+    expect(sessions.single.plannedDurationSec, kFirstSessionMinutes * 60);
 
     await _disposeTree(tester);
   });
 
-  testWidgets('"Şimdi değil" izin istemeden geri sayıma geçiyor', (WidgetTester tester) async {
+  testWidgets('"Şimdi değil" izin istemeden ilk seansı başlatıyor', (WidgetTester tester) async {
     final _Harness harness = await _pumpApp(tester, onboardingCompleted: false);
 
     await tester.tap(find.text('Şimdi değil'));
     await _settle(tester, rounds: 10);
 
     // SPEC DoD "İzinler reddedildiğinde uygulama tam çalışıyor": izin hiç
-    // istenmeden geri sayım ekranı çalışır durumda açılıyor.
+    // istenmeden seans açılıyor.
     expect(harness.notifications.permissionRequests, 0);
     // Onay akışı yine de çalışıyor — reklamın yasal ön koşulu, bildirim
     // izninin bir alt seçeneği değil.
@@ -171,8 +203,12 @@ void main() {
       (await _read(tester, harness.database.appSettingsDao.getSettings)).onboardingCompleted,
       isTrue,
     );
-    expect(find.text('GÜN KALDI'), findsOneWidget);
-    expect(find.text('25 DAKİKA ODAKLAN'), findsOneWidget);
+    // "Şimdi değil" izinleri reddediyor, seansı değil: iki çıkış da aynı yere
+    // gidiyor.
+    expect(find.text('ODAK SÜRÜYOR'), findsOneWidget);
+    final List<PomodoroSession> sessions =
+        await _read(tester, () => harness.database.pomodoroSessionDao.watchAllSessions().first);
+    expect(sessions.single.plannedDurationSec, kFirstSessionMinutes * 60);
 
     await _disposeTree(tester);
   });

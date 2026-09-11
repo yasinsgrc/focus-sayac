@@ -23,6 +23,11 @@ class PanoramaWidgetProvider : BaseFocusWidgetProvider() {
                 centerText = render.dayText(),
                 labelText = render.statusLabel(),
                 muted = render.muted,
+                // Panoramanin halkasi da gunun dongusunu tasiyor: kart zaten
+                // seriyi ve haftalik sutunlari gosteriyor, "bugun" eksik olan
+                // tek parcaydi.
+                todayRatio = render.todayRatio,
+                habitColor = render.palette.mint,
             ),
         )
         views.setTextViewText(R.id.widget_panorama_name, render.examLine())
