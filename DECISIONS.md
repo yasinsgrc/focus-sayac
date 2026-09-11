@@ -1674,3 +1674,66 @@ sebebi ailelerde değil **ölçekte** buldu.
   boşluk, geçmişteki boşluklar, rozet kuralının etkilenmemesi) ve 1'i
   `streak_protection_badge_test.dart` (rozet soluklaşıyor → bugünkü pomodorodan
   sonra tam parlaklığa dönüyor). Emülatörde görsel doğrulama yapılmadı; açık iş.
+
+---
+
+## Son düzlük — geri sayımın işaretini çevirmek
+
+**Sorun.** Ekran 02'nin kahraman sayısı sınav yaklaştıkça giderek daha korkutucu
+okunuyordu: 247 → 12. Kullanıcının bırakmaya en yakın olduğu anda uygulamanın en
+büyük tipografisi kaygıyı büyütüyordu. Aynı veride tersi bir okuma da var ve
+uygulama onu hiçbir yerde kahraman yapmıyordu: biriken emek. Kümülatif toplam
+yalnızca Ekran 06'da, haftalık grafiğin yanında duruyor.
+
+- **Eşik iki koşullu, tek değil.** `isFinalStretch(days, examFocusSeconds)` —
+  kalan gün ≤ 30 **ve** biriken emek ≥ 1 saat. İkinci koşul olmadan kural kendi
+  amacına ters düşüyordu: emeği olmayan kullanıcıda ekran "12 gün kaldı"dan
+  **"0 SAAT ODAKLANDIN"a** düşerdi. Sınavını yeni değiştirmiş kullanıcı da
+  (biriken saat sınav başına) bu dalda geri sayımda kalıyor.
+
+- **Sayı sınav başına, tüm zamanların toplamı değil.** `examFocusSeconds`
+  `PomodoroSessions.examId` üzerinden filtreliyor; o sütun seans açılırken zaten
+  yazılıyordu (`PomodoroController.startFocus`), yeni alan gerekmedi. Gerekçe:
+  sayının anlattığı cümle sınav adıyla kuruluyor ("ALES'e hazırlanırken 148 saat
+  odaklandın") — başka bir hedef için harcanmış saatleri o toplama katmak,
+  kullanıcının kendi verisi hakkında yanlış bir şey söylemek olurdu.
+  `FocusStats.cumulativeSeconds` bu yüzden kullanılmadı, Ekran 06'nınki olarak
+  kaldı. Aktif sınav yokken açılan seansların `examId`'si `null`, hiçbir toplama
+  girmiyorlar.
+
+- **Kalan gün kaybolmuyor, bir satır aşağı iniyor.** Halka içindeki meta satırı
+  iki parçadan üçe çıkıyor: `12 GÜN • 04:22:31 • 12 Haziran 2027`. Burası bir
+  geri sayım uygulaması; günü ekrandan tamamen kaldırmak veri saklamak olurdu.
+  Gün sayısı orada da `RollingNumber` (azalan değer, gece yarısı zıplamıyor;
+  sabit "GÜN" eki kımıldamıyor). Saniye sayacı kaldırılmadı — nabız, tersine
+  çevirmenin hedefi olan "kahraman tipografi" değil.
+
+- **Satır taşma güvencesi.** Üç parçalık satır halkanın kesik çizgili iç
+  çemberini (224px) aşabiliyor. 316'lık `Stack` içinde taşma **hatası** çıkmıyor
+  ama satır çemberi kesebilirdi; `SizedBox(width: 284)` + `FittedBox(scaleDown)`
+  bu durumda kırpmak yerine küçültüyor. Aynı sarmalayıcı eski iki parçalık
+  satırı da koruyor (uzun sınav adları, farklı tarih biçimleri).
+
+- **Halkanın oranı değişmedi.** `progressRatio` yine `clamp(1 - days/400, …)`.
+  O gösterge zaten sınava yaklaştıkça **dolan**, yani baştan ileriye bakan bir
+  işaret taşıyordu; onu da çevirmek ekranda iki ayrı hikâye yaratırdı.
+
+- **`ProviderFamily` tipi yazılamadı.** `examFocusSecondsProvider`
+  `Provider.family<int, int>` ama `flutter_riverpod` 3.1.0 `ProviderFamily`yi
+  dışa vermiyor (yalnızca `package:riverpod/misc.dart`). Dosyadaki diğer
+  sağlayıcıların aksine tip çıkarıma bırakıldı, gerekçe kod içinde duruyor.
+  Aile `activeExamProvider`'ı kendi içinde okumuyor, `examId` ile anahtarlanıyor:
+  tek çağıran zaten aktif sınavı elinde tutan `_CountdownBody` ve bu yön
+  `domain/stats` → `domain/exams` bağımlılığını hiç kurmuyor.
+
+- **Font subset'i tarandı.** Yeni iki dize (`SAAT ODAKLANDIN` kicker'ı Space
+  Grotesk 500, `12 GÜN` meta'sı Inter 500) `cmap`e karşı kontrol edildi; eksik
+  glif yok, sessiz Roboto düşüşü olmuyor.
+
+- **Doğrulama.** `flutter analyze` temiz, **284 test geçiyor** (+6): 5'i
+  `test/domain/countdown/final_stretch_test.dart` (sınav başına filtre, eşiğin
+  iki ucu, sınav günü, emek eşiği), 1'i
+  `test/features/countdown/final_stretch_hero_test.dart` — tek ağaçta üç yayın:
+  T-12 + 9sa10dk → kahraman "9" ve "SAAT ODAKLANDIN"; emek 25 dakikaya düşünce
+  geri sayıma dönüş; T-31'de emek yeterliyken bile geri sayım. Emülatörde görsel
+  doğrulama yapılmadı; açık iş.

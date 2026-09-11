@@ -68,6 +68,28 @@ class FocusStats {
   final ProductiveWindow? productiveWindow;
 }
 
+/// Tek bir sınav için biriken tamamlanmış odak süresi (saniye) — Ekran 02'nin
+/// son düzlükte kahraman yaptığı sayı (`isFinalStretch`).
+///
+/// Neden sınav başına, tüm zamanların toplamı ([FocusStats.cumulativeSeconds])
+/// değil: sayının anlattığı cümle sınav adıyla kuruluyor ("ALES'e hazırlanırken
+/// 148 saat odaklandın"). Başka bir hedef için harcanmış saatleri o toplama
+/// katmak, kullanıcının kendi verisi hakkında yanlış bir şey söylemek olurdu.
+/// `PomodoroSessions.examId` seans açılırken zaten yazılıyor
+/// (`PomodoroController.startFocus`), yeni bir alan gerekmiyor.
+///
+/// Aktif sınav yokken açılan seansların `examId`'si `null`dır; onlar hiçbir
+/// sınavın toplamına girmez.
+int examFocusSeconds({required List<PomodoroSession> sessions, required int examId}) {
+  int seconds = 0;
+  for (final PomodoroSession session in sessions) {
+    if (session.completed && session.type == SessionType.focus && session.examId == examId) {
+      seconds += session.plannedDurationSec;
+    }
+  }
+  return seconds;
+}
+
 /// Saf hesaplayıcı — IO yok, `nowUtc` dışarıdan verilir (SPEC.md §9 "boş veri,
 /// tek gün, hafta sınırı" testleri bu fonksiyona bakar).
 FocusStats calculateFocusStats({

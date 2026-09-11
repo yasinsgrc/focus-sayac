@@ -24,6 +24,7 @@ import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
 import '../../domain/settings/settings_providers.dart';
+import '../../domain/stats/stats_providers.dart';
 import '../../domain/streak/streak_calculator.dart';
 import '../../domain/time/duration_formatter.dart';
 import '../../l10n/gen/app_localizations.dart';
@@ -339,6 +340,24 @@ class _CountdownBody extends ConsumerWidget {
     final DateFormat examDateFormat = DateFormat('d MMMM y', 'tr');
     final String examDateText = examDateFormat.format(toIstanbulWallClock(exam.dateUtc));
 
+    // Son düzlükte ekranın işareti dönüyor: kahraman sayı kalan gün değil, bu
+    // sınav için biriken odak saati olur (`isFinalStretch` gerekçeyi taşıyor).
+    // Halkanın oranı **değişmiyor** — o zaten sınava yaklaştıkça dolan, yani
+    // zaten ileriye bakan bir gösterge.
+    final int examSeconds = ref.watch(examFocusSecondsProvider(exam.id));
+    final bool finalStretch = isFinalStretch(days: days, examFocusSeconds: examSeconds);
+    final int examFocusHours = formatFocusDuration(examSeconds).hours;
+
+    // Halka içindeki meta satırının ortak stili; son düzlükte bu satır iki
+    // parçadan üçe çıktığı için üç kez tekrarlanmasın diye burada.
+    final TextStyle metaStyle = AppTypography.body(
+        fontSize: AppTextSize.sm, weight: FontWeight.w500, color: colors.neutral400);
+    final Widget metaDot = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 9),
+      child: Container(
+          width: 3, height: 3, decoration: BoxDecoration(color: colors.ember, shape: BoxShape.circle)),
+    );
+
     final TodayFocusStats todayStats = ref.watch(todayFocusStatsProvider);
     final StreakStatus streakStatus = ref.watch(streakStatusProvider);
     final int streak = streakStatus.days;
@@ -474,7 +493,7 @@ class _CountdownBody extends ConsumerWidget {
                             stops: AppColors.chromeGradientStops,
                           ).createShader(bounds),
                           child: RollingNumber(
-                            value: days,
+                            value: finalStretch ? examFocusHours : days,
                             style: AppTypography.counter(
                                 fontSize: AppTextSize.counterHero,
                                 weight: FontWeight.w700,
@@ -482,32 +501,47 @@ class _CountdownBody extends ConsumerWidget {
                                 height: 1),
                           ),
                         ),
-                        Text(l10n.countdownDaysLeft,
+                        Text(finalStretch ? l10n.countdownFocusedHoursUnit : l10n.countdownDaysLeft,
                             style: AppTypography.kicker(
                                 fontSize: AppTextSize.kicker, color: colors.neutral500)),
                         const SizedBox(height: 16),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Text(
-                              '$hh:$mm:$ss',
-                              style: AppTypography.body(
-                                      fontSize: AppTextSize.sm,
-                                      weight: FontWeight.w500,
-                                      color: colors.neutral400)
-                                  .copyWith(
-                                fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
-                              ),
+                        // Kalan gün kahramanlığı bırakıyor ama **kaybolmuyor**:
+                        // son düzlükte bu satırın başına geçiyor ve üç parça
+                        // oluyor ("12 GÜN • 04:22:31 • 12 Haziran 2027").
+                        // Halkanın kesik çizgili iç çemberi 224px; 316'lık
+                        // kutuda taşma hatası çıkmasa da satır o çemberi
+                        // aşabiliyor, `FittedBox` böyle bir durumda kırpmak
+                        // yerine küçültüyor (284 = halkanın 9px'lik izinin
+                        // içinde kalan genişlik).
+                        SizedBox(
+                          width: 284,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                if (finalStretch) ...<Widget>[
+                                  // Gün sayısı burada da azalan bir değer;
+                                  // `RollingNumber` gece yarısı zıplamayı
+                                  // engelliyor, sabit "GÜN" eki kımıldamıyor.
+                                  RollingNumber(
+                                    value: days,
+                                    text: l10n.countdownDaysLeftInline(days),
+                                    style: metaStyle,
+                                  ),
+                                  metaDot,
+                                ],
+                                Text(
+                                  '$hh:$mm:$ss',
+                                  style: metaStyle.copyWith(
+                                    fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+                                  ),
+                                ),
+                                metaDot,
+                                Text(examDateText, style: metaStyle),
+                              ],
                             ),
-                            const SizedBox(width: 9),
-                            Container(width: 3, height: 3, decoration: BoxDecoration(color: colors.ember, shape: BoxShape.circle)),
-                            const SizedBox(width: 9),
-                            Text(examDateText,
-                                style: AppTypography.body(
-                                    fontSize: AppTextSize.sm,
-                                    weight: FontWeight.w500,
-                                    color: colors.neutral400)),
-                          ],
+                          ),
                         ),
                       ],
                     ),

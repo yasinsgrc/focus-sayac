@@ -540,6 +540,34 @@ tek commit.
 
 ---
 
+## 21. Son düzlük — geri sayımın işaretini çevirme ✅ bitti
+
+284 test geçiyor (+6). Kararlar: `DECISIONS.md` "Son düzlük — geri sayımın
+işaretini çevirmek".
+
+- **Sorun:** kahraman sayı sınav yaklaştıkça daha korkutucu okunuyordu
+  (247 → 12) — tam da bırakma anında ekranın en büyük tipografisi kaygıyı
+  büyütüyordu. Biriken emek ise hiçbir yerde kahraman değildi (Ekran 06 haftalık
+  bakıyor).
+- **Kural:** kalan gün ≤ 30 **ve** o sınav için biriken emek ≥ 1 saat ise halka
+  içindeki kahraman sayı "kalan gün" olmaktan çıkıp **biriken odak saati**
+  oluyor; altındaki kicker `GÜN KALDI` → `SAAT ODAKLANDIN`. İkinci koşul şart:
+  emeksiz kullanıcıda ekran "0 SAAT ODAKLANDIN"a düşer, yani çevirmenin tam
+  tersi bir mesaj verirdi.
+- **Sayı sınav başına** (`PomodoroSessions.examId`), tüm zamanların toplamı
+  değil — cümle sınav adıyla kuruluyor, başka hedefin saatleri o toplama
+  giremez. Yeni sütun gerekmedi, `examId` seans açılırken zaten yazılıyordu.
+- **Kalan gün kaybolmuyor,** meta satırına iniyor: `12 GÜN • 04:22:31 •
+  12 Haziran 2027`. Saniye nabzı duruyor; satır `FittedBox(scaleDown)` ile
+  halkanın iç çemberini aşmaya karşı korunuyor. Halkanın oranı değişmedi — o
+  zaten dolan, yani ileriye bakan bir gösterge.
+- **Yeni ARB anahtarları:** `countdownFocusedHoursUnit`,
+  `countdownDaysLeftInline`. İkisinin glifleri de font subset'lerinde (`cmap`
+  tarandı), sessiz Roboto düşüşü yok.
+- **Emülatör doğrulaması yapılmadı** — açık iş.
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı
@@ -565,7 +593,7 @@ tek commit.
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(258 test, `flutter test`)*
+- [x] Testler geçiyor *(284 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

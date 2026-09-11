@@ -21,6 +21,11 @@
 
   "countdownTarget": "HEDEF",
   "countdownDaysLeft": "GÜN KALDI",
+  "countdownFocusedHoursUnit": "SAAT ODAKLANDIN",
+  "countdownDaysLeftInline": "{days} GÜN",
+  "@countdownDaysLeftInline": {
+    "placeholders": { "days": { "type": "int" } }
+  },
   "countdownToday": "BUGÜN",
   "countdownStreakBadge": "{days} gün seri",
   "@countdownStreakBadge": {
