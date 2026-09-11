@@ -652,47 +652,56 @@ class _CountdownBody extends ConsumerWidget {
                                   color: colors.neutral500)),
                         ],
                       ),
-                      const Spacer(),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 7),
-                        child: Row(
-                          children: List<Widget>.generate(4, (int i) {
-                            return Padding(
-                              padding: const EdgeInsets.only(left: 5),
-                              child: Container(
-                                width: 9,
-                                height: 9,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: i < cycleDots ? colors.mint : colors.fillMedium,
+                      // Gün henüz boşken dört nokta 0/4'ü, çubuk da %0'ı
+                      // duyuruyordu: ikisi birden açılışı bir eksik bildirimine
+                      // çeviriyor. İlk pomodoro tamamlanana kadar ikisi de
+                      // yok; yerlerini ileriye bakan tek satır alıyor.
+                      if (todayStats.completedCount > 0) ...<Widget>[
+                        const Spacer(),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 7),
+                          child: Row(
+                            children: List<Widget>.generate(4, (int i) {
+                              return Padding(
+                                padding: const EdgeInsets.only(left: 5),
+                                child: Container(
+                                  width: 9,
+                                  height: 9,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: i < cycleDots ? colors.mint : colors.fillMedium,
+                                  ),
                                 ),
-                              ),
-                            );
-                          }),
+                              );
+                            }),
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: SizedBox(
-                      height: 4,
-                      child: LinearProgressIndicator(
-                        value: cycleDots / 4,
-                        backgroundColor: colors.fillSubtle,
-                        valueColor: AlwaysStoppedAnimation<Color>(colors.mint),
+                  if (todayStats.completedCount > 0) ...<Widget>[
+                    const SizedBox(height: 14),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: SizedBox(
+                        height: 4,
+                        child: LinearProgressIndicator(
+                          value: cycleDots / 4,
+                          backgroundColor: colors.fillSubtle,
+                          valueColor: AlwaysStoppedAnimation<Color>(colors.mint),
+                        ),
                       ),
                     ),
-                  ),
-                  if (todayStats.completedCount == 0) ...<Widget>[
-                    const SizedBox(height: 9),
+                  ] else ...<Widget>[
+                    const SizedBox(height: 12),
                     Text.rich(
                       TextSpan(
                         style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.neutral500),
-                        // Korumadaki seride "serin 7'ye çıkar" yanlış vaat
-                        // olurdu: bugünkü pomodoro seriyi büyütmüyor, dünkü
-                        // boşluğu telafi edip onu geri kazandırıyor.
+                        // Üç ayrı vaat, üçü de kazanç tarafından: korumadaki
+                        // seride bugünkü pomodoro seriyi büyütmüyor, dünkü
+                        // boşluğu telafi edip onu geri kazandırıyor; seri
+                        // yokken büyütecek bir sayı da yok, seans seriyi
+                        // başlatıyor; gerisinde seri bir gün ileri taşınıyor.
                         children: streakStatus.isProtected
                             ? <InlineSpan>[
                                 TextSpan(text: l10n.countdownStreakProtectedHintPrefix),
@@ -701,13 +710,21 @@ class _CountdownBody extends ConsumerWidget {
                                     style: TextStyle(color: colors.ember)),
                                 TextSpan(text: l10n.countdownStreakProtectedHintSuffix),
                               ]
-                            : <InlineSpan>[
-                                TextSpan(text: l10n.countdownStreakHintPrefix),
-                                TextSpan(
-                                    text: l10n.countdownStreakHintValue(streak + 1),
-                                    style: TextStyle(color: colors.ember)),
-                                TextSpan(text: l10n.countdownStreakHintSuffix),
-                              ],
+                            : streak == 0
+                                ? <InlineSpan>[
+                                    TextSpan(text: l10n.countdownFirstStreakHintPrefix),
+                                    TextSpan(
+                                        text: l10n.countdownFirstStreakHintValue,
+                                        style: TextStyle(color: colors.ember)),
+                                    TextSpan(text: l10n.countdownFirstStreakHintSuffix),
+                                  ]
+                                : <InlineSpan>[
+                                    TextSpan(text: l10n.countdownFirstSessionHintPrefix),
+                                    TextSpan(
+                                        text: l10n.countdownFirstSessionHintValue(streak + 1),
+                                        style: TextStyle(color: colors.ember)),
+                                    TextSpan(text: l10n.countdownFirstSessionHintSuffix),
+                                  ],
                       ),
                     ),
                   ],

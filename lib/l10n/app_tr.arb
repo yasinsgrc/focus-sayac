@@ -38,12 +38,15 @@
   "@countdownFocusButtonWithMinutes": {
     "placeholders": { "minutes": { "type": "int" } }
   },
-  "countdownStreakHintPrefix": "Hedefe 1 pomodoro kaldı — serin ",
-  "countdownStreakHintValue": "{streak}'e",
-  "@countdownStreakHintValue": {
+  "countdownFirstSessionHintPrefix": "Bugünkü ilk seansın seni ",
+  "countdownFirstSessionHintValue": "{streak} günlük seriye",
+  "@countdownFirstSessionHintValue": {
     "placeholders": { "streak": { "type": "int" } }
   },
-  "countdownStreakHintSuffix": " çıkar.",
+  "countdownFirstSessionHintSuffix": " taşır.",
+  "countdownFirstStreakHintPrefix": "Bugünkü ilk seansın ",
+  "countdownFirstStreakHintValue": "seriyi başlatır",
+  "countdownFirstStreakHintSuffix": ".",
   "countdownStreakProtectedHintPrefix": "Dün boş geçti, seri korumada — ",
   "countdownStreakProtectedHintValue": "bugün 1 pomodoro",
   "countdownStreakProtectedHintSuffix": " onu geri kazandırır.",
