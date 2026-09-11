@@ -185,8 +185,31 @@
   "badgeWeeklyStreakRule": "7 gün üst üste ≥1 seans",
   "badgeMarathonName": "Maraton",
   "badgeMarathonRule": "Tek günde 8 pomodoro",
+  "badgeTenHoursName": "10 Saat Kulübü",
+  "badgeTenHoursRule": "Kümülatif 10 saat odak",
+  "badgeFiftyHoursName": "50 Saat Kulübü",
+  "badgeFiftyHoursRule": "Kümülatif 50 saat odak",
   "badgeHundredHoursName": "100 Saat Kulübü",
   "badgeHundredHoursRule": "Kümülatif 100 saat odak",
+  "badgeTwoFiftyHoursName": "250 Saat Kulübü",
+  "badgeTwoFiftyHoursRule": "Kümülatif 250 saat odak",
+  "badgeProgressCounter": "{current}/{target}",
+  "@badgeProgressCounter": {
+    "description": "Kilitli rozetin ilerleme sayacı — birimi rozetin kural metni söylüyor.",
+    "placeholders": {
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "badgeProgressSemantics": "{name}: {target} hedefinde {current}",
+  "@badgeProgressSemantics": {
+    "description": "Ekran okuyucu için sayacın sözlü hâli; '/' işareti okunmuyor.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
 
   "storyCardTitle": "BAŞARI KARTI",
   "storyCardTemplateNightTorch": "GECE MEŞALESİ",

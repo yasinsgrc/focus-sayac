@@ -12,8 +12,10 @@ import '../../core/widgets/rise_in.dart';
 import '../../core/widgets/rolling_number.dart';
 import '../../domain/badges/badge_definition.dart';
 import '../../domain/badges/badge_providers.dart';
+import '../../domain/badges/badge_rules.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/storage/app_database.dart';
+import 'widgets/badge_progress_ring_painter.dart';
 
 /// Ekran 04 — rozetler. Prototip satır 181-212 birebir. Prototipte bu ekranda
 /// alt gezinme çubuğu yoktu (yalnızca Ekran 02/06'da vardı — Faz 4 kararı) ama
@@ -27,9 +29,18 @@ class BadgesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     final AsyncValue<List<UserBadge>> unlockedAsync = ref.watch(unlockedBadgesProvider);
-    final Set<String> unlockedKeys = (unlockedAsync.value ?? const <UserBadge>[])
-        .map((UserBadge b) => b.badgeKey)
-        .toSet();
+    final Map<String, BadgeProgress> progressByKey = ref.watch(badgeProgressProvider);
+    // Kart durumu DB kaydının **ve** kuralın birleşimi. DB satırı seans
+    // bittiğinde düşüyor (`BadgeUnlockService`), oysa merdivenin alt
+    // basamakları eski kullanıcılarda güncellemeden önce zaten hak edilmiş
+    // olabiliyor: o kartlar kilitli kalsaydı "61/10" gibi bir sayaç ve dolup
+    // taşmış bir halka gösterirlerdi. Açılış anı (bildirim, halo) yine DB
+    // tarafında — burası yalnızca ekranın doğruyu söylemesi.
+    final Set<String> unlockedKeys = <String>{
+      for (final UserBadge badge in unlockedAsync.value ?? const <UserBadge>[]) badge.badgeKey,
+      for (final MapEntry<String, BadgeProgress> entry in progressByKey.entries)
+        if (entry.value.earned) entry.key,
+    };
     final int unlockedCount = unlockedKeys.length;
 
     return Scaffold(
@@ -129,11 +140,13 @@ class BadgesScreen extends ConsumerWidget {
                                     delay: RiseIn.step * (index + 2),
                                     child: _BadgeCard(
                                       definition: definition,
+                                      progress: progressByKey[definition.key],
                                       unlocked: unlockedKeys.contains(definition.key),
                                       onTap: () => showBadgeUnlockDialog(
                                         context,
                                         definition: definition,
                                         unlocked: unlockedKeys.contains(definition.key),
+                                        progress: progressByKey[definition.key],
                                       ),
                                     ),
                                   ),
@@ -167,9 +180,19 @@ class BadgesScreen extends ConsumerWidget {
 }
 
 class _BadgeCard extends StatelessWidget {
-  const _BadgeCard({required this.definition, required this.unlocked, required this.onTap});
+  const _BadgeCard({
+    required this.definition,
+    required this.progress,
+    required this.unlocked,
+    required this.onTap,
+  });
 
   final BadgeDefinition definition;
+
+  /// Kilitli kartın halkası ve sayacı. `null` olduğunda kart eski hâline
+  /// dönüyor (yalnızca kural metni) — ilerleme bilinmiyorsa uydurulmuyor.
+  final BadgeProgress? progress;
+
   final bool unlocked;
   final VoidCallback onTap;
 
@@ -178,6 +201,12 @@ class _BadgeCard extends StatelessWidget {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     final AppLocalizations l10n = AppLocalizations.of(context);
     final Color tint = definition.tint.resolve(colors);
+    // Açılmış rozette halka anlamsız (yol bitti), hedefi 1 olanlarda ise
+    // "0/1" ilerleme değil kuralın tekrarı olurdu. Yerel değişken `bool` bayrak
+    // yerine `BadgeProgress?`: `bool` üzerinden tip yükseltme yapılmıyor.
+    final BadgeProgress? progress = this.progress;
+    final BadgeProgress? shownProgress =
+        !unlocked && progress != null && progress.isCountable ? progress : null;
     final Color iconBg = unlocked ? tint.withValues(alpha: 0.32) : colors.fillFaint;
     final Color iconColor = unlocked ? tint : colors.neutral700;
     final Color titleColor = unlocked ? colors.text : colors.neutral600;
@@ -201,14 +230,31 @@ class _BadgeCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
+              // Halkalı da halkasız da 56: kilitli ve açılmış kartlar aynı
+              // yükseklikte kalsın, ızgara satırları kaymasın.
               SizedBox(
-                width: 48,
-                height: 48,
+                width: 56,
+                height: 56,
                 child: Stack(
                   alignment: Alignment.center,
                   children: <Widget>[
+                    if (shownProgress != null)
+                      CustomPaint(
+                        size: const Size.square(56),
+                        painter: BadgeProgressRingPainter(
+                          ratio: shownProgress.ratio,
+                          trackColor: colors.fillSubtle,
+                          // Halka kilitli kartın tek renkli öğesi: ödülün
+                          // rengini ikon soluklaşmışken o taşıyor.
+                          progressColor: tint,
+                        ),
+                      ),
+                    // `DecoratedBox` çocuksuz kalırsa `Stack`in gevşek
+                    // kısıtlarında sıfır boyuta iniyor; daire ölçüsünü
+                    // diyalogdaki gibi `SizedBox` veriyor.
                     DecoratedBox(
                       decoration: BoxDecoration(shape: BoxShape.circle, color: iconBg),
+                      child: const SizedBox(width: 48, height: 48),
                     ),
                     Icon(definition.icon, size: 24, color: iconColor),
                   ],
@@ -225,9 +271,47 @@ class _BadgeCard extends StatelessWidget {
                 definition.rule(l10n),
                 style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.neutral600, height: 1.45),
               ),
+              if (shownProgress != null) ...<Widget>[
+                const SizedBox(height: 10),
+                _BadgeProgressCounter(definition: definition, progress: shownProgress, color: tint),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "61/100" — kilitli rozetin ne kadarının bittiği. Birim yazılmıyor: hemen
+/// üstündeki kural metni ("Kümülatif 100 saat odak") zaten söylüyor.
+///
+/// Ekran okuyucuda eğik çizgi bölme gibi okunduğu için etiket sözlü karşılığıyla
+/// değiştiriliyor (Ekran 02'nin seri rozetiyle aynı yaklaşım).
+class _BadgeProgressCounter extends StatelessWidget {
+  const _BadgeProgressCounter({
+    required this.definition,
+    required this.progress,
+    required this.color,
+  });
+
+  final BadgeDefinition definition;
+  final BadgeProgress progress;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    return Semantics(
+      label: l10n.badgeProgressSemantics(definition.name(l10n), progress.current, progress.target),
+      excludeSemantics: true,
+      child: Text(
+        l10n.badgeProgressCounter(progress.current, progress.target),
+        style: AppTypography.label(
+          fontSize: AppTextSize.xs,
+          weight: FontWeight.w600,
+          color: color,
+        ).copyWith(fontFeatures: const <FontFeature>[FontFeature.tabularFigures()]),
       ),
     );
   }
@@ -244,25 +328,34 @@ Future<void> showBadgeUnlockDialog(
   BuildContext context, {
   required BadgeDefinition definition,
   required bool unlocked,
+  BadgeProgress? progress,
 }) {
   // Perde rengi `dialogTheme.barrierColor`dan geliyor (bkz. `app_theme.dart`).
   return showDialog<void>(
     context: context,
-    builder: (BuildContext context) => _BadgeUnlockDialog(definition: definition, unlocked: unlocked),
+    builder: (BuildContext context) =>
+        _BadgeUnlockDialog(definition: definition, unlocked: unlocked, progress: progress),
   );
 }
 
 class _BadgeUnlockDialog extends StatelessWidget {
-  const _BadgeUnlockDialog({required this.definition, required this.unlocked});
+  const _BadgeUnlockDialog({required this.definition, required this.unlocked, this.progress});
 
   final BadgeDefinition definition;
   final bool unlocked;
+
+  /// Kilitli rozetin sayacı. Kartta görünen sayının diyalogda kaybolması,
+  /// "daha fazlasını öğren" diye açılan ekranın daha azını göstermesi olurdu.
+  final BadgeProgress? progress;
 
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     final AppLocalizations l10n = AppLocalizations.of(context);
     final Color tint = definition.tint.resolve(colors);
+    final BadgeProgress? progress = this.progress;
+    final BadgeProgress? shownProgress =
+        !unlocked && progress != null && progress.isCountable ? progress : null;
     final Color unlockColor = unlocked ? tint : colors.neutral500;
     final Color glow = unlocked ? tint.withValues(alpha: 0.34) : colors.neutral500.withValues(alpha: 0.24);
     final String ruleText = unlocked
@@ -329,6 +422,10 @@ class _BadgeUnlockDialog extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral400),
               ),
+              if (shownProgress != null) ...<Widget>[
+                const SizedBox(height: 12),
+                _BadgeProgressCounter(definition: definition, progress: shownProgress, color: tint),
+              ],
               const SizedBox(height: 26),
               AppPillButton(
                 label: l10n.badgeCreateStoryCard,

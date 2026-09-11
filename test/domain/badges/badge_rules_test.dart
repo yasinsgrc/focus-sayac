@@ -36,8 +36,18 @@ List<PomodoroSession> _sameDay(int day, int count, {int minutes = 25}) {
   ];
 }
 
+/// [count] saatlik geçmiş — günde üç adet 60 dakikalık seans. Saat merdiveni
+/// kümülatif **planlanan** süreye baktığı için dağılımın önemi yok, toplamın
+/// var; günler ardışık, saatler 09:00–11:00 (hiçbir gün/gece sınırına değmiyor).
+List<PomodoroSession> _hours(int count) => <PomodoroSession>[
+      for (int i = 0; i < count; i++) _at(2026, 3, 1 + i ~/ 3, 9 + i % 3, 0, 60),
+    ];
+
 Set<String> _earned(List<PomodoroSession> sessions) =>
     evaluateEarnedBadgeKeys(completedFocusSessions: sessions);
+
+Map<String, BadgeProgress> _progress(List<PomodoroSession> sessions) =>
+    evaluateBadgeProgress(completedFocusSessions: sessions);
 
 void main() {
   group('İlk Kıvılcım', () {
@@ -171,10 +181,98 @@ void main() {
     });
   });
 
-  test('yedi rozetin tamamı tek geçmişten açılabiliyor', () {
+  group('Saat merdiveni — 10/50/100/250', () {
+    test('basamaklar sırayla açılıyor, biri açılırken üstü kapalı kalıyor', () {
+      expect(_earned(_hours(9)), isNot(contains(BadgeKeys.tenHours)));
+
+      final Set<String> atTen = _earned(_hours(10));
+      expect(atTen, contains(BadgeKeys.tenHours));
+      expect(atTen, isNot(contains(BadgeKeys.fiftyHours)));
+
+      final Set<String> atFifty = _earned(_hours(50));
+      expect(atFifty, containsAll(<String>[BadgeKeys.tenHours, BadgeKeys.fiftyHours]));
+      expect(atFifty, isNot(contains(BadgeKeys.hundredHours)));
+
+      expect(_earned(_hours(249)), isNot(contains(BadgeKeys.twoFiftyHours)));
+      expect(
+        _earned(_hours(250)),
+        containsAll(<String>[
+          BadgeKeys.tenHours,
+          BadgeKeys.fiftyHours,
+          BadgeKeys.hundredHours,
+          BadgeKeys.twoFiftyHours,
+        ]),
+      );
+    });
+  });
+
+  group('İlerleme', () {
+    test('boş geçmişte katalog eksiksiz ve her rozet 0/hedef', () {
+      final Map<String, BadgeProgress> progress = _progress(const <PomodoroSession>[]);
+
+      // Ekran 04 kilitli kartların halkasını bu haritadan çiziyor: eksik bir
+      // anahtar sessizce halkasız bir kart demek olurdu.
+      expect(progress.keys.toSet(), kBadgeCatalog.map((BadgeDefinition b) => b.key).toSet());
+      expect(progress.values.every((BadgeProgress p) => p.current == 0), isTrue);
+      expect(progress.values.any((BadgeProgress p) => p.earned), isFalse);
+    });
+
+    test('61 saat "100 saat" rozetinde 61/100 okunuyor', () {
+      final Map<String, BadgeProgress> progress = _progress(_hours(61));
+      final BadgeProgress hundred = progress[BadgeKeys.hundredHours]!;
+
+      expect(hundred.current, 61);
+      expect(hundred.target, 100);
+      expect(hundred.earned, isFalse);
+      expect(hundred.ratio, closeTo(0.61, 0.0001));
+      // Aynı saatler merdivenin bir üst basamağında daha uzak bir hedefe bakıyor.
+      expect(progress[BadgeKeys.twoFiftyHours]!.target, 250);
+    });
+
+    test('tam saate yuvarlanıyor: 9sa 59dk hâlâ 9/10', () {
+      final Map<String, BadgeProgress> progress = _progress(<PomodoroSession>[
+        ..._hours(9),
+        _at(2026, 5, 1, 10, 0, 59),
+      ]);
+      expect(progress[BadgeKeys.tenHours]!.current, 9);
+      expect(progress[BadgeKeys.tenHours]!.earned, isFalse);
+    });
+
+    test('hedefi 1 olan rozetlerde sayaç çizilmiyor', () {
+      final Map<String, BadgeProgress> progress = _progress(const <PomodoroSession>[]);
+      expect(progress[BadgeKeys.morningStar]!.isCountable, isFalse);
+      expect(progress[BadgeKeys.nightWatch]!.isCountable, isFalse);
+      expect(progress[BadgeKeys.firstSpark]!.isCountable, isFalse);
+      expect(progress[BadgeKeys.hundredHours]!.isCountable, isTrue);
+      expect(progress[BadgeKeys.weeklyStreak]!.isCountable, isTrue);
+    });
+
+    test('hedefi aşan ilerlemede halka taşmıyor', () {
+      // Tek günde 12 seans: Odak Meşalesi'nin hedefi 4, oran 1'de duruyor.
+      final BadgeProgress torch = _progress(_sameDay(10, 12))[BadgeKeys.focusTorch]!;
+      expect(torch.current, 12);
+      expect(torch.ratio, 1.0);
+    });
+
+    test('açılmış rozet kümesi ilerlemenin süzülmüş hâli', () {
+      // İki API'nin aynı geçmişte ayrışmaması, kilitli kartın halkası dolduğu
+      // anda rozetin gerçekten açılmasının tek güvencesi.
+      final List<PomodoroSession> history = <PomodoroSession>[..._hours(61), _at(2026, 3, 10, 7)];
+      expect(
+        _earned(history),
+        <String>{
+          for (final MapEntry<String, BadgeProgress> entry in _progress(history).entries)
+            if (entry.value.earned) entry.key,
+        },
+      );
+    });
+  });
+
+  test('kataloğun tamamı tek geçmişten açılabiliyor', () {
     final List<PomodoroSession> history = <PomodoroSession>[
-      // 30 ardışık gün × 8 seans × 25 dk = tam 100 saat.
-      for (int day = 1; day <= 30; day++) ..._sameDay(day, 8),
+      // 75 ardışık gün × 8 seans × 25 dk = tam 250 saat: merdivenin son
+      // basamağı da dâhil her rozet aynı geçmişten açılıyor.
+      for (int day = 1; day <= 75; day++) ..._sameDay(day, 8),
       _at(2026, 3, 5, 7),
       _at(2026, 3, 5, 23, 30),
     ];

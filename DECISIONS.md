@@ -1737,3 +1737,70 @@ yalnızca Ekran 06'da, haftalık grafiğin yanında duruyor.
   T-12 + 9sa10dk → kahraman "9" ve "SAAT ODAKLANDIN"; emek 25 dakikaya düşünce
   geri sayıma dönüş; T-31'de emek yeterliyken bile geri sayım. Emülatörde görsel
   doğrulama yapılmadı; açık iş.
+
+---
+
+## Görünen ilerleme — kilitli rozet ve saat merdiveni
+
+**Sorun.** Ekran 04'ün kilitli kartı yalnızca kuralı yazıyordu ("Kümülatif 100
+saat odak"). Kural, ulaşılamaz bir duvar olarak okunuyordu: kullanıcı 61 saat
+biriktirmiş olsa bile kart ilk gündeki kartla birebir aynı görünüyordu. Üstelik
+yedi rozet bitince hedef tükeniyordu ve saat ekseninde tek bir eşik vardı (100),
+yani ilk haftalarda o rozet hiçbir şey söylemiyordu.
+
+- **İlerleme kuralın kendisinden türüyor, ayrı bir eşik listesinden değil.**
+  `evaluateEarnedBadgeKeys` artık `evaluateBadgeProgress`in `earned` süzülmüş
+  hâli. Ters yön (önce açık rozetler, sonra ayrıca bir "ilerleme" hesabı) iki
+  eşik listesi demekti; halkanın dolduğu an ile rozetin açıldığı anın
+  ayrışmaması ancak tek kaynakla garanti ediliyor. `badge_rules_test.dart`'taki
+  "açılmış rozet kümesi ilerlemenin süzülmüş hâli" testi bunun kilidi.
+
+- **Hedefi 1 olan rozette halka yok.** Sabah Yıldızı / Gece Nöbeti / İlk
+  Kıvılcım için "0/1" bir ilerleme değil, kuralın daha kötü yazılmış hâliydi.
+  `BadgeProgress.isCountable` (hedef > 1) bu ayrımı tek yerde tutuyor.
+
+- **Sayaçta birim yazmıyor ("61/100").** Hemen üstündeki kural metni birimi
+  zaten söylüyor; "61/100 saat" aynı cümleyi iki kez kurardı. Ekran okuyucuya
+  ise eğik çizgi bölme gibi okunmasın diye sözlü karşılığı veriliyor
+  (`badgeProgressSemantics`).
+
+- **Saat merdiveni: 10 → 50 → 100 → 250.** Dördü de aynı `totalHours` sayısına
+  bakıyor, yalnızca hedefleri farklı; yani yeni bir alan ya da göç gerekmedi.
+  `hundred_hours` anahtarı ve adı ("100 Saat Kulübü") aynen duruyor — yayınlanmış
+  bir `badgeKey` DB'de metin olarak saklanıyor, değiştirilemez. Yeni anahtarlar
+  `ten_hours` / `fifty_hours` / `two_fifty_hours` katalogda artan sırada.
+  İkonlar tırmanışı anlatıyor: kum saati → madalya → kupa → taç.
+
+- **Kart durumu DB kaydının ve kuralın birleşimi.** `UserBadges` satırı ancak
+  seans bittiğinde düşüyor (`BadgeUnlockService`). Güncellemeden önce 61 saat
+  biriktirmiş bir kullanıcının 10 ve 50 saat kartları, bir sonraki seansına
+  kadar kilitli kalsaydı **"61/10"** yazan ve halkası taşmış kartlar
+  gösterirlerdi. Ekran 04 bu yüzden `unlockedKeys`i ikisinin birleşimi olarak
+  kuruyor. Açılış **anı** (bildirim, halo, haptik) yine DB tarafında kalıyor:
+  burada değişen yalnızca ekranın kullanıcının kendi verisi hakkında doğruyu
+  söylemesi. `unlockedBadgesProvider`ın tek tüketicisi bu ekran olduğu için
+  birleşim başka hiçbir sayıya sızmıyor.
+
+- **İlerleme akışı `allSessionsProvider`dan.** Rozet ilerlemesi için ayrı bir
+  sorgu açmak, aynı sayının Ekran 02/06 ile farklı anlarda güncellenmesi
+  demekti. Süzgeç (`completed` + `focus`) DAO'nun SQL süzgecinin aynısı.
+
+- **İkon dairesi meğer hiç çizilmiyormuş.** Kartın 48px'lik `DecoratedBox`u
+  çocuksuzdu; `Stack`in gevşek kısıtlarında `RenderProxyBox` çocuksuz kalınca
+  `constraints.smallest`e, yani sıfıra iniyor. Halkanın geometrisi zaten bu
+  yığında kurulduğu için daire diyalogdaki gibi bir `SizedBox` çocukla
+  ölçülendirildi — kilitli/açık ayrımının renk tarafı ancak şimdi görünüyor.
+
+- **Halka ayrı bir painter.** Ekran 02'nin `CountdownRingPainter`'ı ekranın
+  kahramanı (9px, üç duraklı gradyan, kesik çizgili iç çember); onu 56px'lik bir
+  karta ölçeklemek yerine `BadgeProgressRingPainter` yazıldı: 2px, tek renk,
+  saat 12'den saat yönüne.
+
+- **Doğrulama.** `flutter analyze` temiz, **296 test geçiyor** (+12): 7'si
+  `test/domain/badges/badge_rules_test.dart` (merdivenin dört basamağı, boş
+  geçmişte kataloğun eksiksizliği, 61/100, tam saate yuvarlama, hedefi 1 olanlar,
+  taşmayan oran, iki API'nin ayrışmaması), 4'ü
+  `test/features/badges/badge_progress_test.dart` (61/100 ve 61/250 sayaçları,
+  "61/10" çıkmaması + üstteki sayacın 4/10 olması, halkanın yalnızca kilitli ve
+  sayılabilir dört kartta olması, boş geçmişte yedi boş halka). Emülatörde
+  görsel doğrulama yapılmadı; açık iş.

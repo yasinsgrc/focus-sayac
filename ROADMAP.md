@@ -568,6 +568,39 @@ işaretini çevirmek".
 
 ---
 
+## 22. Görünen ilerleme — kilitli rozet ve saat merdiveni ✅ bitti
+
+296 test geçiyor (+12). Kararlar: `DECISIONS.md` "Görünen ilerleme — kilitli
+rozet ve saat merdiveni".
+
+- **Sorun:** kilitli rozet yalnızca kuralı yazıyordu, yani 61 saat biriktirmiş
+  kullanıcının kartı ilk gündekiyle birebir aynıydı — ulaşılamaz bir duvar.
+  Ayrıca yedi rozet bitince hedef tükeniyordu.
+- **Halka + sayaç:** her kilitli ve **sayılabilir** rozetin ikonu 2px'lik bir
+  ilerleme halkasıyla çevrili, kural metninin altında çıplak sayaç ("61/100").
+  Birim yazılmıyor, kural metni zaten söylüyor; ekran okuyucuya sözlü karşılık
+  gidiyor. Hedefi 1 olan rozetlerde (Sabah Yıldızı, Gece Nöbeti, İlk Kıvılcım)
+  halka da sayaç da yok — "0/1" ilerleme değil, kuralın tekrarı olurdu.
+- **Merdiven:** tek "100 Saat Kulübü" yerine 10 → 50 → 100 → 250. Dördü de aynı
+  kümülatif saate bakıyor, yalnızca hedefleri farklı; göç gerekmedi.
+  `hundred_hours` anahtarı ve adı aynen duruyor (yayınlanmış `badgeKey`
+  değiştirilemez). Yeni anahtarlar: `ten_hours`, `fifty_hours`,
+  `two_fifty_hours`.
+- **İlerleme kuralın kendisinden türüyor:** `evaluateEarnedBadgeKeys` artık
+  `evaluateBadgeProgress`in süzülmüş hâli — halkanın dolduğu an ile rozetin
+  açıldığı an ayrışamıyor.
+- **Kart durumu = DB kaydı ∪ kural.** Güncellemeden önce biriken emek yüzünden
+  10/50 saat kartları bir sonraki seansa kadar kilitli kalsaydı "61/10" yazan
+  taşmış kartlar çıkardı. Açılış anı (bildirim, halo, haptik) yine DB tarafında.
+- **Yan bulgu:** kartın ikon dairesi meğer hiç çizilmiyormuş — çocuksuz
+  `DecoratedBox`, `Stack`in gevşek kısıtlarında sıfır boyuta iniyor. Daire
+  diyalogdaki gibi `SizedBox` çocukla ölçülendirildi.
+- **Yeni ARB anahtarları:** `badgeTenHours*`, `badgeFiftyHours*`,
+  `badgeTwoFiftyHours*`, `badgeProgressCounter`, `badgeProgressSemantics`.
+- **Emülatör doğrulaması yapılmadı** — açık iş.
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı
@@ -593,7 +626,7 @@ işaretini çevirmek".
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(284 test, `flutter test`)*
+- [x] Testler geçiyor *(296 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

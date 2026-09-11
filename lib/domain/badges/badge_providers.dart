@@ -7,13 +7,32 @@ import '../../core/l10n/l10n_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/notifications/notification_service.dart';
 import '../../services/storage/app_database.dart';
+import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
+import '../pomodoro/pomodoro_stats_providers.dart';
 import 'badge_definition.dart';
 import 'badge_rules.dart';
 
 /// Açılmış rozetler — Ekran 04'ün kilit/açık durumunu buradan türetir.
 final StreamProvider<List<UserBadge>> unlockedBadgesProvider = StreamProvider<List<UserBadge>>((Ref ref) {
   return ref.watch(userBadgeDaoProvider).watchUnlockedBadges();
+});
+
+/// Her rozetin ilerlemesi — Ekran 04'ün kilitli kartlarındaki halka ve sayaç.
+///
+/// Kaynak, Ekran 02/06'nın da okuduğu `allSessionsProvider`: ilerleme için ayrı
+/// bir sorgu açmak, aynı sayının iki yerde farklı anlarda güncellenmesi
+/// demekti. Süzgeç (`completed` + `focus`)
+/// `PomodoroSessionDao.getAllCompletedFocusSessions()`in SQL'deki süzgecinin
+/// aynısı — halkanın dolduğu an ile rozetin açıldığı an aynı girdiyi görüyor.
+final Provider<Map<String, BadgeProgress>> badgeProgressProvider =
+    Provider<Map<String, BadgeProgress>>((Ref ref) {
+  final List<PomodoroSession> sessions = ref.watch(allSessionsProvider).value ?? const <PomodoroSession>[];
+  return evaluateBadgeProgress(
+    completedFocusSessions: sessions
+        .where((PomodoroSession s) => s.completed && s.type == SessionType.focus)
+        .toList(growable: false),
+  );
 });
 
 final Provider<BadgeUnlockService> badgeUnlockServiceProvider = Provider<BadgeUnlockService>((Ref ref) {
