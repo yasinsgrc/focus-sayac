@@ -24,6 +24,7 @@ import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
 import '../../domain/settings/settings_providers.dart';
+import '../../domain/streak/streak_calculator.dart';
 import '../../domain/time/duration_formatter.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/ads/banner_ad_slot.dart';
@@ -339,7 +340,8 @@ class _CountdownBody extends ConsumerWidget {
     final String examDateText = examDateFormat.format(toIstanbulWallClock(exam.dateUtc));
 
     final TodayFocusStats todayStats = ref.watch(todayFocusStatsProvider);
-    final int streak = ref.watch(streakProvider);
+    final StreakStatus streakStatus = ref.watch(streakStatusProvider);
+    final int streak = streakStatus.days;
     final FocusDurationParts todayParts = formatFocusDuration(todayStats.totalSeconds);
     final int cycleDots = todayStats.completedCount.clamp(0, 4);
 
@@ -534,31 +536,50 @@ class _CountdownBody extends ConsumerWidget {
                           style: AppTypography.kicker(
                               fontSize: AppTextSize.kicker, color: colors.neutral600)),
                       if (streak > 0)
-                        Container(
-                          height: 25,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(color: colors.emberDeep, borderRadius: BorderRadius.circular(999)),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              // Seri büyüdüğünde alev sayıya eşlik ediyor
-                              // (ROADMAP madde 19); seri 0'dan 1'e çıkarken
-                              // rozetin kendisi ağaca yeni giriyor, o yüzden
-                              // vurgu ilk build'de çalışmıyor.
-                              PopOnIncrease(
-                                value: streak,
-                                child: Icon(PhosphorIconsFill.flame, size: 13, color: colors.ember),
+                        // Korumadaki seri sönmüş değil, soluk: alev yerinde
+                        // duruyor ve yalnızca opaklığı düşüyor. Renk tokenı
+                        // değiştirilmiyor (ember → nötr bir gri, "seri bitti"
+                        // demek olurdu); geri kazanıldığı kare rozet yeniden
+                        // tam parlaklığa dönüyor.
+                        AnimatedOpacity(
+                          opacity: streakStatus.isProtected ? 0.45 : 1,
+                          duration: AppMotion.respectingMotion(context, AppMotion.base),
+                          curve: AppMotion.standard,
+                          child: Container(
+                            height: 25,
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            decoration: BoxDecoration(color: colors.emberDeep, borderRadius: BorderRadius.circular(999)),
+                            child: Semantics(
+                              container: true,
+                              excludeSemantics: true,
+                              // Soluklaşma yalnızca görsel bir sinyal; ekran
+                              // okuyucu korumayı sözle duyuyor.
+                              label: streakStatus.isProtected
+                                  ? l10n.countdownStreakProtectedSemantics(streak)
+                                  : l10n.countdownStreakBadge(streak),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  // Seri büyüdüğünde alev sayıya eşlik ediyor
+                                  // (ROADMAP madde 19); seri 0'dan 1'e çıkarken
+                                  // rozetin kendisi ağaca yeni giriyor, o yüzden
+                                  // vurgu ilk build'de çalışmıyor.
+                                  PopOnIncrease(
+                                    value: streak,
+                                    child: Icon(PhosphorIconsFill.flame, size: 13, color: colors.ember),
+                                  ),
+                                  const SizedBox(width: 5),
+                                  RollingNumber(
+                                    value: streak,
+                                    text: l10n.countdownStreakBadge(streak),
+                                    style: AppTypography.body(
+                                        fontSize: AppTextSize.sm,
+                                        weight: FontWeight.w500,
+                                        color: colors.ember),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 5),
-                              RollingNumber(
-                                value: streak,
-                                text: l10n.countdownStreakBadge(streak),
-                                style: AppTypography.body(
-                                    fontSize: AppTextSize.sm,
-                                    weight: FontWeight.w500,
-                                    color: colors.ember),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                     ],
@@ -635,11 +656,24 @@ class _CountdownBody extends ConsumerWidget {
                     Text.rich(
                       TextSpan(
                         style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.neutral500),
-                        children: <InlineSpan>[
-                          TextSpan(text: l10n.countdownStreakHintPrefix),
-                          TextSpan(text: l10n.countdownStreakHintValue(streak + 1), style: TextStyle(color: colors.ember)),
-                          TextSpan(text: l10n.countdownStreakHintSuffix),
-                        ],
+                        // Korumadaki seride "serin 7'ye çıkar" yanlış vaat
+                        // olurdu: bugünkü pomodoro seriyi büyütmüyor, dünkü
+                        // boşluğu telafi edip onu geri kazandırıyor.
+                        children: streakStatus.isProtected
+                            ? <InlineSpan>[
+                                TextSpan(text: l10n.countdownStreakProtectedHintPrefix),
+                                TextSpan(
+                                    text: l10n.countdownStreakProtectedHintValue,
+                                    style: TextStyle(color: colors.ember)),
+                                TextSpan(text: l10n.countdownStreakProtectedHintSuffix),
+                              ]
+                            : <InlineSpan>[
+                                TextSpan(text: l10n.countdownStreakHintPrefix),
+                                TextSpan(
+                                    text: l10n.countdownStreakHintValue(streak + 1),
+                                    style: TextStyle(color: colors.ember)),
+                                TextSpan(text: l10n.countdownStreakHintSuffix),
+                              ],
                       ),
                     ),
                   ],

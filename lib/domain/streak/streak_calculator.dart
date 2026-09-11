@@ -1,5 +1,52 @@
 import '../../core/time/app_day.dart';
 
+/// Telafi ("seri koruma") hakkının yenilenme aralığı: haftada bir.
+/// İki telafi günü arasında en az bu kadar gün olmak zorunda.
+const int kStreakGraceIntervalDays = 7;
+
+/// Serinin o anki hâli.
+enum StreakState {
+  /// Canlı seri yok.
+  none,
+
+  /// Bugün ya da dün tamamlanmış bir odak seansı var; seri sağlam.
+  active,
+
+  /// Dün boş geçti ama haftalık telafi hakkı o günü kapattı: seri yaşıyor,
+  /// alev soluk. Bugün tek bir pomodoro seriyi geri kazandırır; gelmezse
+  /// yarın gerçekten kırılır (iki boşluk üst üste telafi edilemez).
+  protected,
+}
+
+/// Seri sayısı + koruma durumu. Ekran 02 rozeti ikisini birden okuyor:
+/// korumadaki seri sönmüş değil, soluk.
+class StreakStatus {
+  const StreakStatus({required this.days, required this.state});
+
+  static const StreakStatus none = StreakStatus(days: 0, state: StreakState.none);
+
+  /// **Gerçekten çalışılmış** ardışık gün sayısı — telafiyle kapatılan gün
+  /// buna dâhil değil; kullanıcıya çalışmadığı bir gün satılmıyor.
+  final int days;
+
+  final StreakState state;
+
+  bool get isProtected => state == StreakState.protected;
+
+  /// Riverpod bu değeri `==` ile karşılaştırıp gereksiz yeniden çizimi
+  /// eliyor — eskiden sağlanan çıplak `int` de aynı şeyi yapıyordu.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StreakStatus && other.days == days && other.state == state;
+
+  @override
+  int get hashCode => Object.hash(days, state);
+
+  @override
+  String toString() => 'StreakStatus(days: $days, state: $state)';
+}
+
 /// Seri hesaplayıcı — SPEC.md §5.3, saf fonksiyon, IO yok.
 /// "Seri = ≥1 tamamlanmış odak seansı olan ardışık gün sayısı; bugün veya
 /// dün biten seri canlıdır."
@@ -8,35 +55,78 @@ import '../../core/time/app_day.dart';
 /// "6 gün seri" değerini gerçek veriden göstermek zorunda (DoD: demo
 /// sayılar kodda olamaz) — bu yüzden yalnızca bu saf fonksiyon Faz 4'e
 /// çekildi; rozet açma/kilit mantığı hâlâ Faz 7'de.
-int calculateStreak({
+///
+/// Kural buna ek olarak **affediyor**: ardışıklık [kStreakGraceIntervalDays]
+/// günde bir kez tek günlük bir boşlukla bozulmuyor. Alışkanlık
+/// uygulamalarında en büyük terk anı serinin bir anda 0'a düşmesi; bir gün
+/// kaçıran kullanıcı seriyi kaybetmiş değil, korumaya alınmış oluyor. Hak
+/// tamamen türetilmiş — saklanan bir sayaç yok, aynı geçmiş her zaman aynı
+/// sonucu veriyor (SPEC §2 "Basitlik", yerel veri).
+StreakStatus calculateStreakStatus({
   required List<DateTime> completedFocusStartedAtUtc,
   required DateTime nowUtc,
 }) {
   final Set<DateTime> completedDays =
       completedFocusStartedAtUtc.map(appDayKey).toSet();
   if (completedDays.isEmpty) {
-    return 0;
+    return StreakStatus.none;
   }
 
   final DateTime today = currentAppDayKey(nowUtc);
-  DateTime cursor;
+  final DateTime yesterday = today.subtract(const Duration(days: 1));
+
+  final DateTime start;
+  final StreakState state;
+  // Geriye doğru yürürken en son hangi günü telafiyle kapattığımız; hak
+  // yenilenene kadar ikinci bir boşluk seriyi kesiyor.
+  DateTime? lastGraceDay;
+
   if (completedDays.contains(today)) {
-    cursor = today;
+    start = today;
+    state = StreakState.active;
+  } else if (completedDays.contains(yesterday)) {
+    // Bugün henüz bitmedi — boşluk sayılmıyor, hak da harcanmıyor.
+    start = yesterday;
+    state = StreakState.active;
+  } else if (completedDays.contains(yesterday.subtract(const Duration(days: 1)))) {
+    // Dün boş geçti: hak dünü kapatıyor, seri korumada.
+    start = yesterday.subtract(const Duration(days: 1));
+    state = StreakState.protected;
+    lastGraceDay = yesterday;
   } else {
-    final DateTime yesterday = today.subtract(const Duration(days: 1));
-    if (completedDays.contains(yesterday)) {
-      cursor = yesterday;
-    } else {
-      return 0;
-    }
+    return StreakStatus.none;
   }
 
-  int streak = 0;
-  while (completedDays.contains(cursor)) {
-    streak += 1;
+  int days = 0;
+  DateTime cursor = start;
+  while (true) {
+    if (completedDays.contains(cursor)) {
+      days += 1;
+    } else if (lastGraceDay == null ||
+        lastGraceDay.difference(cursor).inDays >= kStreakGraceIntervalDays) {
+      // Geçmişteki boşluk da aynı haftalık hakla kapanıyor: aksi hâlde dün
+      // affedilen gün, gün dönünce seriyi yeniden keserdi (hesap saklanan
+      // değil türetilen bir değer). Döngü sonsuza gitmiyor: bir telafiden
+      // sonraki boşluk yedi günden yakınsa `break` çalışıyor.
+      lastGraceDay = cursor;
+    } else {
+      break;
+    }
     cursor = cursor.subtract(const Duration(days: 1));
   }
-  return streak;
+  return StreakStatus(days: days, state: state);
+}
+
+/// [calculateStreakStatus]'un yalnızca gün sayısını isteyen çağrıcıları için
+/// kısayol (bildirim zamanlaması, hikâye kartı, ana ekran widget'ı).
+int calculateStreak({
+  required List<DateTime> completedFocusStartedAtUtc,
+  required DateTime nowUtc,
+}) {
+  return calculateStreakStatus(
+    completedFocusStartedAtUtc: completedFocusStartedAtUtc,
+    nowUtc: nowUtc,
+  ).days;
 }
 
 /// Tüm zamanların en uzun serisi — [calculateStreak] yalnızca bugün/dün

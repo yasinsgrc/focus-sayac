@@ -39,6 +39,13 @@
     "placeholders": { "streak": { "type": "int" } }
   },
   "countdownStreakHintSuffix": " çıkar.",
+  "countdownStreakProtectedHintPrefix": "Dün boş geçti, seri korumada — ",
+  "countdownStreakProtectedHintValue": "bugün 1 pomodoro",
+  "countdownStreakProtectedHintSuffix": " onu geri kazandırır.",
+  "countdownStreakProtectedSemantics": "{days} gün seri, korumada",
+  "@countdownStreakProtectedSemantics": {
+    "placeholders": { "days": { "type": "int" } }
+  },
   "countdownExamLoadFailedTitle": "SINAV YÜKLENEMEDİ",
   "countdownExamLoadFailedMessage": "Kayıtlı sınavlar okunamadı. Listeden yeniden seçmeyi deneyebilirsin.",
   "countdownNoExamTitle": "HEDEF SEÇİLMEDİ",

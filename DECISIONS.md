@@ -1619,3 +1619,58 @@ sebebi ailelerde değil **ölçekte** buldu.
     Ayrı bir tur konusu.
   - Emülatör taraması yapılmadı: test fontu gerçek metrikleri yansıtmadığı için
     (yukarıdaki "ölçüm tuzağı") cihazda görsel doğrulama hâlâ açık iş.
+
+## Seri koruma — haftalık telafi hakkı
+
+- **Neden.** Alışkanlık uygulamalarında en büyük terk anı serinin bir anda 0'a düşmesi:
+  kullanıcı "zaten bozuldu" deyip geri dönmüyor. `streak_calculator` bugüne kadar hiç
+  affetmiyordu — tek bir kaçırılan gün, aylık bir seriyi sıfırlıyordu.
+
+- **Kural.** Ardışıklık `kStreakGraceIntervalDays` (7) günde bir kez, **tek günlük** bir
+  boşlukla bozulmuyor. Dün kaçırıldıysa seri kırılmıyor, `StreakState.protected` oluyor;
+  ertesi gün tek bir pomodoro onu geri kazandırıyor. İki boşluk üst üste affedilmiyor.
+
+- **Telafi günü seriye eklenmiyor.** "4 gerçek gün + 1 telafi = 5" demek, kullanıcıya
+  çalışmadığı bir günü satmak olurdu; `StreakStatus.days` yalnızca gerçekten çalışılmış
+  günleri sayıyor, koruma bilgisi ayrı bir eksende (`state`) taşınıyor.
+
+- **Hak saklanmıyor, türetiliyor.** Ne yeni bir tablo ne de bir sayaç var: geriye doğru
+  yürürken son telafi gününün tarihi tutuluyor ve bir sonraki boşluk yedi günden yakınsa
+  seri orada kesiliyor. Aynı geçmiş her zaman aynı sonucu veriyor (idempotent, tamamen
+  yerel). Geçmişteki boşlukların da aynı hakla kapanması şart: aksi hâlde dün affedilen
+  gün, gün dönünce seriyi yeniden keserdi.
+
+- **Rozetler dokunulmadan kaldı.** `calculateLongestStreak` değişmedi; SPEC §5.4'ün
+  "7 gün üst üste" kuralı harfiyen geçerli, koruma günleriyle rozet şişirilemiyor.
+  `badge_rules` ve Ekran 06'nın "en uzun seri" istatistiği bu yüzden etkilenmiyor.
+
+- **Görsel dil: sönmüyor, soluklaşıyor.** Rozet `AnimatedOpacity` ile 0.45'e iniyor;
+  alev ikonu ve `ember` tokenı yerinde duruyor. Alevi griye çevirmek "seri bitti"
+  demekti — kastedilen tam tersi. Geri kazanıldığı kare rozet tam parlaklığa dönüyor.
+  İpucu metni de değişiyor: korumadayken "serin 7'ye çıkar" yanlış vaat olurdu
+  (bugünkü pomodoro seriyi büyütmüyor, dünkü boşluğu telafi ediyor).
+
+- **Erişilebilirlik.** Soluklaşma tek başına bir sinyal olarak yeterli değil; rozet
+  `Semantics(label: …)` ile sarıldı ve korumadayken "{n} gün seri, korumada" okunuyor.
+  Etiket ayrıca `RollingNumber`ın karakter karakter böldüğü metnin tek okunabilir
+  bütünü — widget testi de rozeti bu etiketten buluyor.
+
+- **`streakProvider` kırılmadı.** Yeni `streakStatusProvider` durumu taşıyor;
+  `streakProvider` onun `days` alanına inen bir `int` kısayolu olarak kaldı, böylece
+  hikâye kartı, ana ekran widget'ı, iptal diyaloğu ve bildirim zamanlaması
+  değişmeden çalışıyor ve koruma durumu değişip sayı sabit kaldığında yeniden
+  çizilmiyorlar.
+
+- **Test tuzağı.** Widget testinde seans akışı `broadcast` denetleyicisiyle
+  verilince seri hep 0 görünüyordu: Riverpod akışa ilk kareden sonra abone oluyor,
+  yayın denetleyicisi ise dinleyicisiz eklenen olayı düşürüyor. Tamponlayan
+  (normal) `StreamController` gerekiyor. Denetleyici test gövdesinde kapatılamıyor
+  da: `close()` ancak `done` olayı aboneye ulaşınca tamamlanıyor, sahte zaman
+  kipinde o olay pompalanmadan gelmiyor ve bekleyiş 10 dakikalık test zaman
+  aşımına kadar kilitleniyor — kapatma tear-down'da, gerçek zamanda yapılıyor.
+
+- **Doğrulama.** `flutter analyze` temiz, **278 test geçiyor**; 16'sı yeni
+  `streak_calculator_test.dart` (telafi hakkının yenilenme aralığı, üst üste iki
+  boşluk, geçmişteki boşluklar, rozet kuralının etkilenmemesi) ve 1'i
+  `streak_protection_badge_test.dart` (rozet soluklaşıyor → bugünkü pomodorodan
+  sonra tam parlaklığa dönüyor). Emülatörde görsel doğrulama yapılmadı; açık iş.

@@ -261,6 +261,14 @@ Faz geçişlerinde `HapticFeedback.mediumImpact()` (ayarlardan kapatılabilir).
 Gün sınırı **04:00 TSİ** — prototipin bildirim metniyle uyumlu ("Gün 04:00'te kapanıyor").
 Seri = ≥1 tamamlanmış odak seansı olan ardışık gün sayısı; bugün veya dün biten seri canlıdır.
 
+**Seri koruma (telafi hakkı):** ardışıklık **7 günde bir** tek günlük bir boşlukla
+bozulmuyor. Kaçırılan gün seriyi kırmaz, korumaya alır (`StreakState.protected`):
+rozet ağaçta kalır ve soluklaşır, ertesi gün tek bir pomodoro seriyi geri kazandırır.
+Telafi günü **sayıya eklenmez** (kullanıcıya çalışmadığı gün satılmaz) ve iki boşluk
+üst üste affedilmez. Hak saklanmaz, geçmişten türetilir — aynı veri her zaman aynı
+sonucu verir. Rozet kuralları bundan etkilenmez: `calculateLongestStreak` "7 gün üst
+üste"yi harfiyen uygular (§5.4).
+
 ### 5.4 Rozetler (`badge_rules.dart`, saf fonksiyonlar, IO yok)
 İlk Kıvılcım (ilk pomodoro) · Odak Meşalesi (günde 4) · Sabah Yıldızı (08:00 öncesi başlayan) ·
 Gece Nöbeti (23:00 sonrası başlayan) · Haftalık Seri (7 gün) · Maraton (günde 8) ·

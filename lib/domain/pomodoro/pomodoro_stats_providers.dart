@@ -44,16 +44,23 @@ final Provider<TodayFocusStats> todayFocusStatsProvider = Provider<TodayFocusSta
   return TodayFocusStats(completedCount: completedCount, totalSeconds: totalSeconds);
 });
 
-/// Güncel seri — tamamlanmış odak seanslarının `startedAt`'lerinden
-/// `calculateStreak` ile türetilir.
-final Provider<int> streakProvider = Provider<int>((Ref ref) {
+/// Güncel seri durumu — tamamlanmış odak seanslarının `startedAt`'lerinden
+/// `calculateStreakStatus` ile türetilir. Sayının yanında haftalık telafi
+/// hakkının devrede olup olmadığını da taşır (Ekran 02'nin soluk alevi).
+final Provider<StreakStatus> streakStatusProvider = Provider<StreakStatus>((Ref ref) {
   final List<PomodoroSession> sessions = ref.watch(allSessionsProvider).value ?? const <PomodoroSession>[];
   final List<DateTime> completedFocusStarts = sessions
       .where((PomodoroSession s) => s.completed && s.type == SessionType.focus)
       .map((PomodoroSession s) => s.startedAt)
       .toList(growable: false);
-  return calculateStreak(
+  return calculateStreakStatus(
     completedFocusStartedAtUtc: completedFocusStarts,
     nowUtc: DateTime.now().toUtc(),
   );
 });
+
+/// Yalnızca gün sayısını isteyen çağrıcılar için (hikâye kartı, ana ekran
+/// widget'ı, iptal diyaloğu, bildirim) — `int` olduğu için koruma durumu
+/// değişip sayı aynı kaldığında onları yeniden çizdirmiyor.
+final Provider<int> streakProvider =
+    Provider<int>((Ref ref) => ref.watch(streakStatusProvider).days);
