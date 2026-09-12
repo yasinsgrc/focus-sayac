@@ -638,6 +638,158 @@ hiçbir yerde çalıştırılmadı. Öneri: seed'li geçmişle bir debug koşumu
 
 ---
 
+## 24. Haftalık hedef ⬜ başlanmadı
+
+**Sorun.** Uygulamada tek zaman ufku "bugün" (Ekran 02'nin `BUGÜN` kartı) ve
+"sınava kalan gün". İkisinin arası boş: bir günü kaçıran kullanıcı için o gün
+zaten kapanmış, sınav ise kapatılamayacak kadar uzak. Haftalık hedef
+kaçırılan günü telafi edilebilir kılar ve hafta içinde birden çok seans
+başlatmaya sebep verir.
+
+**Kanıt.** `weeklyGoal` / `weeklyTarget` kodda hiç geçmiyor; `AppSettings`
+tablosunda (`lib/services/storage/tables.dart:51-60`) yalnızca `focusMinutes`,
+`shortBreakMinutes`, `longBreakMinutes`, `selectedTemplateIndex`,
+`activeExamId` var.
+
+- **Kapsam:** `AppSettings`'e haftalık hedef alanı (drift göçü), onboarding'de
+  ya da ayarlarda seçim, Ekran 02'de haftalık ilerleme göstergesi.
+- Hafta tanımı `weekly_summary.dart`'taki mevcut hafta sınırıyla **aynı**
+  olmalı — iki farklı "hafta" kavramı çıkmasın.
+- Pazar özeti (madde 19'un bildirimi) hedefe göre konuşabilir hâle gelir:
+  "hedefinin %80'i".
+- **Kabul:** hedef değiştirilebiliyor, Ekran 02'de görünüyor, hafta sınırı
+  `weekly_summary.dart` ile aynı testle çivilenmiş.
+- **Boyut:** küçük. Bu listedeki en ucuz / en yüksek kaldıraçlı madde.
+
+---
+
+## 25. Interstitial'ı mola başlangıcından çıkar ⬜ başlanmadı
+
+**Sorun.** Reklam, ürünün korumayı vaat ettiği tek anı — odak ritüelinin
+molasını — kesiyor. Gelir aynı kalacak şekilde taşınabilir.
+
+**Kanıt.** `lib/domain/pomodoro/pomodoro_controller.dart:399` hâlâ
+`ref.read(interstitialManagerProvider).maybeShowOnBreakStart(...)` çağırıyor.
+Kural tek noktada toplanmış (`lib/services/ads/interstitial_manager.dart:20`),
+yani taşıma lokal.
+
+- **Kapsam:** tetikleyiciyi mola başlangıcından **seans bitip geri sayıma
+  dönüş** anına ya da kart export'u sonrasına al. Sıklık kuralı (3 pomodoroda
+  1) ve `lastShownPrefsKey` kısıtı aynen korunur.
+- **SPEC.md §7.2 de güncellenmeli** — şu an mola başlangıcını yazıyor.
+- **Kabul:** mola başlangıcında interstitial çıkmıyor; yeni tetikleyicide
+  sıklık kuralı korunuyor; `interstitial_manager` testleri yeni ana göre
+  güncel.
+- **Boyut:** yarım gün. Algılanan kaliteye etkisi maliyetinin çok üstünde.
+
+---
+
+## 26. Dönüş yolu — 3 gün yokluk sonrası ⬜ başlanmadı
+
+**Sorun.** Seri koparsa kullanıcıyı geri çağıran ya da karşılayan hiçbir an
+yok. Seri koruma mekaniği (SPEC §5.3) zaten var ama kullanıcıya bunu söyleyen
+bir yüzey yok — döndüğünde onu suçlayan bir sıfır tablosu karşılıyor.
+
+**Kanıt.** `comeback` / `winback` / `dormant` / `absent` — hiçbiri kodda yok.
+
+- **Kapsam:** N gün (3?) hareketsizlikten sonra tek bir bildirim + dönüşte
+  suçlamayan bir karşılama hâli. Ton: "meşalen seni bekliyor, K6'dasın" —
+  kaybedileni değil korunanı göster. Kademe avatarı (madde 23) tam da bunun
+  için elverişli: kademe düşmüyor, yani söylenecek olumlu bir gerçek var.
+- Bildirim altyapısı hazır (`notification_service.dart`), yeni kanal + planlama
+  meselesi.
+- **Kabul:** hareketsizlik eşiği aşılınca bildirim planlanıyor, seans
+  başlayınca iptal ediliyor; dönüş ekranı testle çivilenmiş.
+- **Boyut:** orta.
+
+---
+
+## 27. Geri sayım halkasının ölü aralığı ⬜ başlanmadı
+
+**Sorun.** Halka formülü `clamp(1 - days/400, 0.06, 1)`: sınava 300 gün kalan
+kullanıcıda halka aylarca ~%25'te duruyor. Kullanıcı 40 saat çalışsa da halka
+kıpırdamıyor — geçen zamanı gösteriyor, harcanan emeği değil. Madde 21 (son
+düzlük) doğru içgüdüydü ama yalnızca sonda devreye giriyor.
+
+- **Kapsam:** ya halkayı emeğe bağla, ya ikinci bir eksen ekle, ya da uzak
+  tarihlerde ölçeği yeniden eşle. Karar gerektiren bir tasarım işi — önce
+  seçenekleri yaz, sonra uygula.
+- **Kabul:** 300 gün kalan ve haftada 10 saat çalışan bir kullanıcıda halka
+  hafta hafta gözle görülür şekilde değişiyor.
+- **Boyut:** küçük kod, orta tasarım kararı.
+
+---
+
+## 28. Alt gezinme çubuğunun bilgi mimarisi ⬜ başlanmadı
+
+**Sorun.** `storyCard` beş kalıcı slottan birini tutuyor. Nadiren kullanılan
+bir export aracı, birincil eylem değil.
+
+**Kanıt.** `lib/core/widgets/bottom_nav_bar.dart:42-46` — sekmeler
+`countdown`, `storyCard`, `badges`, `stats`, `settings`.
+
+- **Kapsam:** kart export'unu kalıcı slottan çıkar; kazanım anında (rozet
+  açılışı, kademe atlama, seri kilometre taşı) kendiliğinden önerilsin —
+  madde 19'da paylaşım anı zaten kurulmuştu, bu onun devamı.
+- **Kabul:** kart hâlâ ulaşılabilir, slot birincil bir eyleme geçmiş,
+  gezinme testleri güncel.
+- **Boyut:** küçük.
+
+---
+
+## 29. Aylık ısı haritası (katkı ızgarası) ⬜ başlanmadı
+
+**Sorun.** İstatistik ekranı tek bar grafiği. "Zinciri kırma"nın görsel
+karşılığı olan ızgara yok; piksel başına en çok hikâye anlatan grafik bu.
+
+**Kanıt.** `heatmap` / `contributionGrid` kodda yok.
+
+- **Kapsam:** Ekran 06'ya aylık ızgara. Veri zaten `PomodoroSession`'da.
+- **Kabul:** boş ay, kısmi ay ve yoğun ay üç durumda da doğru çiziliyor;
+  ekran okuyucu karşılığı var.
+- **Boyut:** küçük–orta.
+
+---
+
+## 30. Ders bazlı seans ⬜ başlanmadı
+
+**Sorun.** Sınav öğrencisinin asıl takip ettiği metrik ders dağılımı ve
+uygulamada hiç yok — rakiplere karşı en somut boşluk.
+
+**Kanıt.** `PomodoroSessions` tablosunda (`lib/services/storage/tables.dart:28-36`)
+alanlar: `id`, `examId`, `type`, `plannedDurationSec`, `completed`,
+`breakExtensions`. Ders sütunu yok.
+
+- **Kapsam:** seans başlarken ders seçimi (tek yeni alan + drift göçü), Ekran
+  06'da ders dağılımı, "en çok ihmal ettiğin ders" satırı, haftalık denge.
+- Tek alan, dört yeni içerik yüzeyi açıyor.
+- Göç dikkat ister: mevcut seanslar dersiz kalacak, ekranlar bunu
+  taşıyabilmeli.
+- **Kabul:** ders seçilebiliyor, eski dersiz seanslar hiçbir ekranı
+  kırmıyor, dağılım doğru toplanıyor.
+- **Boyut:** büyük. Bu listedeki en çok iş, ama en savunulabilir
+  farklılaşma.
+
+---
+
+## 31. `FlameRenderer` doğrulama boşluğu ⬜ başlanmadı
+
+**Sorun.** Madde 23'ten devredilen açık iş: emülatör geçmiş verisiyle
+seed'lenemediği için meşale widget'ı yalnızca K1'de gözlemlendi.
+`FlameRenderer`'ın közlü taban (K4+), kıvılcım (K6+) ve hâle (K8+) dalları
+**hiçbir yerde** çalıştırılmadı ve Kotlin tarafında birim test yok.
+
+- **Neden seed'lenemedi:** emülatör prodüksiyon imajı (`adb root` reddediyor),
+  `run-as` verecek debug APK için cihazda yer yoktu, hostta `sqlite3` yok.
+- **Kapsam (iki seçenekten biri):** (a) seed'li geçmişle bir debug koşumu,
+  (b) `FlameRenderer` için Kotlin/Robolectric birim testleri — (b) kalıcı
+  çözüm.
+- **Kabul:** on kademenin her biri için çizim yolu en az bir kez
+  çalıştırılmış.
+- **Boyut:** küçük–orta.
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı
