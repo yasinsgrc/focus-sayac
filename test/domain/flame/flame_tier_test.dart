@@ -171,9 +171,14 @@ void main() {
     });
 
     test('rozetin açıldığı anda kademe de atlanıyor', () {
+      // Harita boş kalırsa `forEach` hiçbir şey doğrulamadan yeşil geçerdi;
+      // rozet anahtarlarından biri yeniden adlandırılsa bu test sessizce
+      // susardı. Sayıyı burada da çiviliyoruz.
+      expect(badgeHourTargets, hasLength(4), reason: 'saat rozeti sayısı değişmiş');
+
       badgeHourTargets.forEach((String key, int target) {
-        final FlameTierStatus atThreshold = flameTierFor(target * 3600);
-        final FlameTierStatus justBefore = flameTierFor(target * 3600 - 1);
+        final FlameTierStatus atThreshold = flameTierFor(_h(target));
+        final FlameTierStatus justBefore = flameTierFor(_h(target) - 1);
         expect(
           atThreshold.tier.index,
           justBefore.tier.index + 1,
