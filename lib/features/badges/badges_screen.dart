@@ -16,6 +16,7 @@ import '../../domain/badges/badge_rules.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/storage/app_database.dart';
 import 'widgets/badge_progress_ring_painter.dart';
+import 'widgets/flame_avatar_card.dart';
 
 /// Ekran 04 — rozetler. Prototip satır 181-212 birebir. Prototipte bu ekranda
 /// alt gezinme çubuğu yoktu (yalnızca Ekran 02/06'da vardı — Faz 4 kararı) ama
@@ -121,6 +122,11 @@ class BadgesScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 22),
+                  RiseIn(
+                    delay: RiseIn.step * 2,
+                    child: const FlameAvatarCard(),
+                  ),
+                  const SizedBox(height: 22),
                   Expanded(
                     child: SingleChildScrollView(
                       child: LayoutBuilder(
@@ -130,14 +136,14 @@ class BadgesScreen extends ConsumerWidget {
                             spacing: 12,
                             runSpacing: 12,
                             children: <Widget>[
-                              // Prototipte kartlar tek tek beliriyor; başlık ve
-                              // ilerleme çubuğu ilk iki basamağı aldığı için
-                              // ızgara üçüncüden devam ediyor.
+                              // Prototipte kartlar tek tek beliriyor; başlık,
+                              // ilerleme çubuğu ve kahraman kart ilk üç basamağı
+                              // aldığı için ızgara dördüncüden devam ediyor.
                               for (final (int index, BadgeDefinition definition) in kBadgeCatalog.indexed)
                                 SizedBox(
                                   width: cardWidth,
                                   child: RiseIn(
-                                    delay: RiseIn.step * (index + 2),
+                                    delay: RiseIn.step * (index + 3),
                                     child: _BadgeCard(
                                       definition: definition,
                                       progress: progressByKey[definition.key],
