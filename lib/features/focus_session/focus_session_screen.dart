@@ -11,9 +11,11 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_pill_button.dart';
+import '../../core/widgets/flame_widget.dart';
 import '../../core/widgets/settling_progress.dart';
 import '../../domain/badges/badge_definition.dart';
 import '../../domain/celebration/session_celebration.dart';
+import '../../domain/flame/flame_providers.dart';
 import '../../domain/pomodoro/break_tips.dart';
 import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_math.dart';
@@ -23,7 +25,6 @@ import '../../domain/settings/settings_providers.dart';
 import '../../domain/story_card/story_card_text.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../badges/badges_screen.dart';
-import 'widgets/flame_widget.dart';
 import 'widgets/session_ring_painter.dart';
 import 'widgets/streak_celebration_dialog.dart';
 
@@ -444,7 +445,18 @@ class _FocusBody extends ConsumerWidget {
                       children: <Widget>[
                         SizedBox(
                           height: 106,
-                          child: Align(alignment: Alignment.bottomCenter, child: FlameWidget(running: running, progress: progress)),
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: FlameWidget(
+                              // Kademe kalıcı: seans bitince alev buraya
+                              // döner, asla altına inmez.
+                              tier: ref.watch(flameTierProvider).tier,
+                              boxHeight: 98,
+                              intensity: progress,
+                              flickering: running,
+                              desaturated: !running,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 6),
                         Text(formatClock(remaining),

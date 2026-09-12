@@ -8,19 +8,38 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/core/theme/app_motion.dart';
+import 'package:focussayac/core/widgets/flame_widget.dart';
+import 'package:focussayac/domain/flame/flame_tier.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_controller.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_phase.dart';
+import 'package:focussayac/domain/pomodoro/pomodoro_stats_providers.dart';
 import 'package:focussayac/features/focus_session/focus_session_screen.dart';
-import 'package:focussayac/features/focus_session/widgets/flame_widget.dart';
 import 'package:focussayac/features/focus_session/widgets/session_ring_painter.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/ads/banner_ad_slot.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
+import 'package:focussayac/services/storage/storage_enums.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
 
 import '../../support/recording_ad_service.dart';
+
+int _id = 0;
+
+/// [count] saatlik tamamlanmış odak geçmişi — `badge_progress_test.dart`daki
+/// kalıbın aynısı; alev kademesinin bu geçmişten türediğini kanıtlamak için.
+List<PomodoroSession> _hours(int count) => <PomodoroSession>[
+      for (int i = 0; i < count; i++)
+        PomodoroSession(
+          id: ++_id,
+          type: SessionType.focus,
+          startedAt: DateTime.utc(2026, 3, 1 + i ~/ 3, 6 + i % 3),
+          plannedDurationSec: 3600,
+          completed: true,
+          breakExtensions: 0,
+        ),
+    ];
 
 /// Fazı sabit tutan ve `tick()` çağrılarını sayan sahte controller. İki işi
 /// var: (1) ekran testin ortasında `idle`'a düşüp kendini kapatmasın,
@@ -64,6 +83,11 @@ Future<_CountingPomodoroController> _pumpFocusSession(
   WidgetTester tester, {
   required PomodoroPhase phase,
   AdService? adService,
+  // Alev kademesi taşıma testi için: verilirse `allSessionsProvider` bu
+  // geçmişle geçersiz kılınır (badge_progress_test.dart'taki kalıp), yoksa
+  // gerçek (boş) veritabanı akışı kullanılır — mevcut testler bu eksene hiç
+  // dokunmuyor.
+  List<PomodoroSession>? sessions,
 }) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
@@ -86,6 +110,8 @@ Future<_CountingPomodoroController> _pumpFocusSession(
         notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
         onboardingCompletedAtLaunchProvider.overrideWithValue(true),
         pomodoroControllerProvider.overrideWith(() => controller),
+        if (sessions != null)
+          allSessionsProvider.overrideWith((Ref ref) => Stream<List<PomodoroSession>>.value(sessions)),
       ],
       child: const FocusSayacApp(),
     ),
@@ -380,6 +406,28 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await tester.pump(const Duration(seconds: 1));
     expect(_flameFlickTransform(tester), before);
+
+    await _disposeTree(tester);
+  });
+
+  // Kalıcılık vaadi: 62 saatlik geçmişte alev K6dan başlar; seans
+  // ilerlemesi ne olursa olsun K6nın ölçeğinde kalır.
+  testWidgets('alev kademe tabanını taşıyor', (WidgetTester tester) async {
+    await _pumpFocusSession(
+      tester,
+      phase: PomodoroPhase.focusRunning(
+        sessionId: 1,
+        examId: null,
+        startedAtUtc: DateTime.now().toUtc(),
+        plannedDurationSec: 25 * 60,
+        cyclePosition: 1,
+      ),
+      sessions: _hours(62),
+    );
+
+    final FlameWidget flame = tester.widget<FlameWidget>(_flame);
+    expect(flame.tier.index, 6);
+    expect(flame.tier.scale, kFlameTierLadder[5].scale);
 
     await _disposeTree(tester);
   });
