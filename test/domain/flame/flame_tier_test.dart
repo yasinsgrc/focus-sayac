@@ -7,6 +7,8 @@ import 'package:focussayac/domain/stats/focus_stats.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
 
+import '../../support/localized_test_app.dart';
+
 /// Saat -> saniye. Merdivenin tamamı saat cinsinden tanımlı, girdi ise saniye.
 int _h(num hours) => (hours * 3600).round();
 
@@ -217,5 +219,13 @@ void main() {
         expect(statsHours, badgeHours, reason: '$count saatlik geçmişte iki sayaç ayrışıyor');
       }
     });
+  });
+
+  test('her kademenin ARB karşılığı var ve boş değil', () {
+    // `name()` bilinmeyen indekste fırlatıyor; bu test kataloğun tamamını
+    // dolaşarak eksik ARB anahtarını yakalıyor.
+    for (final FlameTier tier in kFlameTierLadder) {
+      expect(tier.name(testL10n), isNotEmpty, reason: 'K${tier.index} adsız');
+    }
   });
 }

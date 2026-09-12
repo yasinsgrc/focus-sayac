@@ -197,6 +197,41 @@
   "badgeHundredHoursRule": "Kümülatif 100 saat odak",
   "badgeTwoFiftyHoursName": "250 Saat Kulübü",
   "badgeTwoFiftyHoursRule": "Kümülatif 250 saat odak",
+  "flameTier1Name": "Kıvılcım",
+  "flameTier2Name": "Köz",
+  "flameTier3Name": "Kandil",
+  "flameTier4Name": "Fener",
+  "flameTier5Name": "Meşale",
+  "flameTier6Name": "Ocak",
+  "flameTier7Name": "Şenlik Ateşi",
+  "flameTier8Name": "Harman Ateşi",
+  "flameTier9Name": "Volkan",
+  "flameTier10Name": "Güneş",
+  "flameTierKicker": "MEŞALEN",
+  "flameTopTier": "En üst kademe",
+  "flameNextTierHours": "Sonraki kademeye {hours} saat",
+  "@flameNextTierHours": {
+    "description": "Ekran 04 kahraman kartının alt satırı. Saat, sonraki kademe eşiğine kalan tam saattir (aşağı yuvarlanmış kümülatif odak saatinden).",
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "flameHoursCounter": "{current} / {target} sa",
+  "@flameHoursCounter": {
+    "description": "Kahraman karttaki çıplak sayaç. Rozet kartlarındaki '61/100' ile aynı mantık ama birim burada yazılı, çünkü kartta birimi söyleyen bir kural metni yok.",
+    "placeholders": {
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
+  "flameAvatarSemantics": "{name}, {index}. kademe. {current} saat / {target} saat.",
+  "@flameAvatarSemantics": {
+    "description": "Kahraman kartın ekran okuyucu karşılığı — kart tek bir semantik düğüm.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "index": { "type": "int" },
+      "current": { "type": "int" },
+      "target": { "type": "int" }
+    }
+  },
   "badgeProgressCounter": "{current}/{target}",
   "@badgeProgressCounter": {
     "description": "Kilitli rozetin ilerleme sayacı — birimi rozetin kural metni söylüyor.",

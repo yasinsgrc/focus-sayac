@@ -1,3 +1,5 @@
+import '../../l10n/gen/app_localizations.dart';
+
 /// Meşale avatarının tek bir kademesi. Görsel parametreler (ölçek, süsleme)
 /// burada duruyor çünkü Kotlin tarafındaki widget da aynı sayıları çiziyor ve
 /// `test/android/flame_tier_sync_test.dart` iki kopyayı karşılaştırıyor.
@@ -33,6 +35,22 @@ class FlameTier {
 
   /// Alevin arkasındaki hâlenin opaklığı; 0 ise hâle çizilmez.
   final double haloOpacity;
+
+  /// Ad ARB'den — katalog `const` kalsın diye alan değil metot
+  /// (`BadgeDefinition.name` ile aynı gerekçe).
+  String name(AppLocalizations l10n) => switch (index) {
+        1 => l10n.flameTier1Name,
+        2 => l10n.flameTier2Name,
+        3 => l10n.flameTier3Name,
+        4 => l10n.flameTier4Name,
+        5 => l10n.flameTier5Name,
+        6 => l10n.flameTier6Name,
+        7 => l10n.flameTier7Name,
+        8 => l10n.flameTier8Name,
+        9 => l10n.flameTier9Name,
+        10 => l10n.flameTier10Name,
+        _ => throw ArgumentError.value(index, 'index', 'Bilinmeyen kademe'),
+      };
 }
 
 /// Kademe merdiveni. **Yayınlandıktan sonra eşikler değiştirilemez** —
