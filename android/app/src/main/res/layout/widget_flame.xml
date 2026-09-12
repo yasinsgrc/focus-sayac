@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Mesale widget (2x2). Ust: MESALEN kicker. Orta: kademe alevi.
+  Alt: kademe adi, ilerleme seridi ve sonraki kademeye kalan saat.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_flame_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_surface"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <TextView
+        android:id="@+id/widget_flame_tag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/michroma_regular"
+        android:letterSpacing="0.26"
+        android:text="@string/widget_flame_tag"
+        android:textColor="@color/focus_ember"
+        android:textSize="8sp" />
+
+    <ImageView
+        android:id="@+id/widget_flame_image"
+        android:src="@drawable/widget_preview_flame"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="6dp"
+        android:layout_weight="1"
+        android:contentDescription="@string/widget_flame_label"
+        android:scaleType="fitCenter" />
+
+    <TextView
+        android:id="@+id/widget_flame_tier"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:fontFamily="@font/space_grotesk_700"
+        android:maxLines="1"
+        android:textColor="@color/focus_text"
+        android:textSize="15sp" />
+
+    <ProgressBar
+        android:id="@+id/widget_flame_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_marginTop="5dp"
+        android:max="100"
+        android:progressTint="@color/focus_ember" />
+
+    <TextView
+        android:id="@+id/widget_flame_next"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:ellipsize="end"
+        android:fontFamily="@font/inter_500"
+        android:maxLines="1"
+        android:textColor="@color/focus_neutral_400"
+        android:textSize="10sp" />
+</LinearLayout>

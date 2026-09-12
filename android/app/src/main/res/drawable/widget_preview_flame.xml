@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sadece secici onizlemesi icin duz bir ember oval. Gercek cizim calisma
+  zamaninda FlameRenderer ile bitmap olarak uretiliyor.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="44dp"
+    android:height="64dp"
+    android:viewportWidth="44"
+    android:viewportHeight="64">
+    <path android:fillColor="#FFCC5A10" android:pathData="M22,4 A18,28 0 1,0 22.01,4 Z" />
+</vector>

@@ -54,4 +54,22 @@
     <string name="widget_quick_focus_description">Tek dokunuşla odak seansı başlatır.</string>
     <string name="widget_panorama_label">Panorama</string>
     <string name="widget_panorama_description">Geri sayım, sınav tarihi, seri ve haftalık odak tek kartta.</string>
+
+    <!-- Kademe adlari: lib/l10n/app_tr.arb -> flameTier{N}Name ile birebir ayni kelimeler. -->
+    <string name="widget_flame_tier_1">Kıvılcım</string>
+    <string name="widget_flame_tier_2">Köz</string>
+    <string name="widget_flame_tier_3">Kandil</string>
+    <string name="widget_flame_tier_4">Fener</string>
+    <string name="widget_flame_tier_5">Meşale</string>
+    <string name="widget_flame_tier_6">Ocak</string>
+    <string name="widget_flame_tier_7">Şenlik Ateşi</string>
+    <string name="widget_flame_tier_8">Harman Ateşi</string>
+    <string name="widget_flame_tier_9">Volkan</string>
+    <string name="widget_flame_tier_10">Güneş</string>
+    <!-- ARB: flameTierKicker / flameNextTierHours / flameTopTier -->
+    <string name="widget_flame_tag">MEŞALEN</string>
+    <string name="widget_flame_next">Sonraki: %1$d sa</string>
+    <string name="widget_flame_top">En üst kademe</string>
+    <string name="widget_flame_label">Meşale</string>
+    <string name="widget_flame_description">Biriken odak saatinle büyüyen meşalen</string>
 </resources>

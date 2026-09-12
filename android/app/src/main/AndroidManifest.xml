@@ -116,6 +116,17 @@
                 android:resource="@xml/widget_quick_focus_info" />
         </receiver>
         <receiver
+            android:name=".widget.FlameWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_flame_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_flame_info" />
+        </receiver>
+        <receiver
             android:name=".widget.PanoramaWidgetProvider"
             android:exported="false"
             android:label="@string/widget_panorama_label">

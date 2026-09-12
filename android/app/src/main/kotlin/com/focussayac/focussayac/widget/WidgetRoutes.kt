@@ -17,6 +17,9 @@ object WidgetRoutes {
     const val FOCUS = "/focus"
     const val EXAM_EXPIRED = "/exam-expired"
 
+    /** Mesale widget: kalici avatarin tam karti Ekran 04'te. */
+    const val BADGES = "/badges"
+
     /** Hizli Odak butonu: uygulamayi acar ve seansi dogrudan baslatir. */
     const val FOCUS_AUTOSTART = "/focus?autostart=1"
 

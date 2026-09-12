@@ -90,6 +90,7 @@ abstract class BaseFocusWidgetProvider : HomeWidgetProvider() {
             StreakWidgetProvider::class.java,
             QuickFocusWidgetProvider::class.java,
             PanoramaWidgetProvider::class.java,
+            FlameWidgetProvider::class.java,
         )
     }
 }
