@@ -22,6 +22,7 @@ void main() {
       todayPomodoros: 3,
       weeklyMinutes: week,
       sessionActive: false,
+      cumulativeFocusSeconds: 3600,
       updatedAtUtc: updatedAt,
     );
   }
@@ -71,6 +72,7 @@ void main() {
       todayPomodoros: 0,
       weeklyMinutes: week,
       sessionActive: false,
+      cumulativeFocusSeconds: 0,
       updatedAtUtc: updatedAt,
     );
 
@@ -104,9 +106,30 @@ void main() {
         todayPomodoros: 0,
         weeklyMinutes: const <int>[1, 2, 3],
         sessionActive: false,
+        cumulativeFocusSeconds: 0,
         updatedAtUtc: updatedAt,
       ),
       throwsA(isA<AssertionError>()),
+    );
+  });
+
+  test('kümülatif odak saniyesi payloadda', () {
+    // Widget kademeyi KENDİSİ hesaplıyor; Dart yalnızca ham saniyeyi yazıyor
+    // (`FocusWidgetSnapshot.kt` "türetilmiş değer Dart'tan okunmaz" kuralı).
+    final HomeWidgetSnapshot snapshot = HomeWidgetSnapshot.noExam(
+      streak: 3,
+      todayMinutes: 50,
+      todayPomodoros: 2,
+      weeklyMinutes: const <int>[0, 0, 0, 0, 0, 25, 50],
+      sessionActive: false,
+      cumulativeFocusSeconds: 223200,
+      updatedAtUtc: DateTime.utc(2026, 9, 12),
+    );
+
+    expect(snapshot.toPayload()[HomeWidgetSnapshot.keyCumulativeFocusSeconds], 223200);
+    expect(
+      HomeWidgetSnapshot.payloadKeys,
+      contains(HomeWidgetSnapshot.keyCumulativeFocusSeconds),
     );
   });
 

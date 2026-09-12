@@ -19,6 +19,7 @@ class HomeWidgetSnapshot {
     required this.todayPomodoros,
     required this.weeklyMinutes,
     required this.sessionActive,
+    required this.cumulativeFocusSeconds,
     required this.updatedAtUtc,
   }) : assert(weeklyMinutes.length == weeklyLength, 'weeklyMinutes 7 elemanlı olmalı');
 
@@ -30,6 +31,7 @@ class HomeWidgetSnapshot {
     required int todayPomodoros,
     required List<int> weeklyMinutes,
     required bool sessionActive,
+    required int cumulativeFocusSeconds,
     required DateTime updatedAtUtc,
   }) {
     return HomeWidgetSnapshot(
@@ -42,6 +44,7 @@ class HomeWidgetSnapshot {
       todayPomodoros: todayPomodoros,
       weeklyMinutes: weeklyMinutes,
       sessionActive: sessionActive,
+      cumulativeFocusSeconds: cumulativeFocusSeconds,
       updatedAtUtc: updatedAtUtc,
     );
   }
@@ -82,6 +85,13 @@ class HomeWidgetSnapshot {
   /// butonu buna göre "başlat" ya da "devam et" olur.
   final bool sessionActive;
 
+  /// Tüm zamanların tamamlanmış odak süresi (saniye) — meşale widget'ının tek
+  /// girdisi. **Kademe, kalan saat ve oran burada yok, bilinçli olarak:**
+  /// üçü de Kotlin tarafında merdivenden yeniden hesaplanıyor
+  /// (`FlameTierLadder.kt`). Merdiven zaten çizim için orada bulunmak zorunda;
+  /// türetilmiş değeri ayrıca göndermek ikinci bir gerçek kaynağı olurdu.
+  final int cumulativeFocusSeconds;
+
   final DateTime updatedAtUtc;
 
   bool get hasActiveExam => targetUtc != null;
@@ -100,6 +110,7 @@ class HomeWidgetSnapshot {
       keyTodayPomodoros: todayPomodoros,
       keyWeeklyMinutes: weeklyMinutes.join(','),
       keySessionActive: sessionActive,
+      keyCumulativeFocusSeconds: cumulativeFocusSeconds,
       keyUpdatedAtMillis: updatedAtUtc.millisecondsSinceEpoch,
     };
   }
@@ -127,6 +138,7 @@ class HomeWidgetSnapshot {
   static const String keyTodayPomodoros = 'todayPomodoros';
   static const String keyWeeklyMinutes = 'weeklyMinutes';
   static const String keySessionActive = 'sessionActive';
+  static const String keyCumulativeFocusSeconds = 'cumulativeFocusSeconds';
   static const String keyUpdatedAtMillis = 'updatedAtMillis';
 
   /// Payload'ın tüm anahtarları — servis testinin eksik anahtar yakalaması için.
@@ -141,6 +153,7 @@ class HomeWidgetSnapshot {
     keyTodayPomodoros,
     keyWeeklyMinutes,
     keySessionActive,
+    keyCumulativeFocusSeconds,
     keyUpdatedAtMillis,
   ];
 }

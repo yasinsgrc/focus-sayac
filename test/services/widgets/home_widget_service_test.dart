@@ -33,6 +33,7 @@ void main() {
       todayPomodoros: 2,
       weeklyMinutes: const <int>[0, 0, 25, 25, 50, 0, 50],
       sessionActive: true,
+      cumulativeFocusSeconds: 5400,
       updatedAtUtc: DateTime.utc(2026, 6, 1),
     );
   }

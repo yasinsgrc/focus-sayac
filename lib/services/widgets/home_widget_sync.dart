@@ -37,6 +37,7 @@ final Provider<HomeWidgetSnapshot?> homeWidgetSnapshotProvider =
       stats.lastWeek.map((DailyFocus day) => day.minutes).toList(growable: false);
   final bool sessionActive = phase is! PomodoroIdle;
   final int todayMinutes = today.totalSeconds ~/ 60;
+  final int cumulativeFocusSeconds = stats.cumulativeSeconds;
 
   final Exam? exam = activeExam.value;
   if (exam == null) {
@@ -46,6 +47,7 @@ final Provider<HomeWidgetSnapshot?> homeWidgetSnapshotProvider =
       todayPomodoros: today.completedCount,
       weeklyMinutes: weeklyMinutes,
       sessionActive: sessionActive,
+      cumulativeFocusSeconds: cumulativeFocusSeconds,
       updatedAtUtc: nowUtc,
     );
   }
@@ -63,6 +65,7 @@ final Provider<HomeWidgetSnapshot?> homeWidgetSnapshotProvider =
     todayPomodoros: today.completedCount,
     weeklyMinutes: weeklyMinutes,
     sessionActive: sessionActive,
+    cumulativeFocusSeconds: cumulativeFocusSeconds,
     updatedAtUtc: nowUtc,
   );
 });
