@@ -27,6 +27,8 @@ data class FocusWidgetSnapshot(
     val todayPomodoros: Int,
     val weeklyMinutes: List<Int>,
     val sessionActive: Boolean,
+    /** Tum zamanlarin tamamlanmis odak suresi (saniye) - mesale widget'inin girdisi. */
+    val cumulativeFocusSeconds: Int,
 ) {
     enum class State { NO_EXAM, COUNTING, TODAY, EXPIRED }
 
@@ -81,6 +83,7 @@ data class FocusWidgetSnapshot(
                 todayPomodoros = all.int("todayPomodoros"),
                 weeklyMinutes = parseWeekly(all.str("weeklyMinutes")),
                 sessionActive = all.bool("sessionActive"),
+                cumulativeFocusSeconds = all.int("cumulativeFocusSeconds"),
             )
         }
 
