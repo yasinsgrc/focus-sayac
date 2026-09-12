@@ -1,6 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:focussayac/domain/badges/badge_definition.dart';
+import 'package:focussayac/domain/badges/badge_rules.dart';
 import 'package:focussayac/domain/flame/flame_tier.dart';
+import 'package:focussayac/domain/stats/focus_stats.dart';
+import 'package:focussayac/services/storage/app_database.dart';
+import 'package:focussayac/services/storage/storage_enums.dart';
 
 /// Saat -> saniye. Merdivenin tamamı saat cinsinden tanımlı, girdi ise saniye.
 int _h(num hours) => (hours * 3600).round();
@@ -132,6 +137,80 @@ void main() {
       // Savunma amaçlı: veri bozulsa bile ekran çizilmeli.
       expect(flameTierFor(-1).tier.index, 1);
       expect(flameTierFor(-1).cumulativeHours, 0);
+    });
+  });
+
+  group('rozet merdiveniyle hizalama', () {
+    /// `badge_rules.dart`taki dört saat rozetinin eşikleri. Buraya elle
+    /// yazılmıyor, kuralın kendisinden okunuyor: eşik orada değişirse bu test
+    /// yeni değeri görür ve merdiven hizasızsa düşer.
+    final Map<String, int> badgeHourTargets = <String, int>{
+      for (final MapEntry<String, BadgeProgress> entry
+          in evaluateBadgeProgress(completedFocusSessions: const <PomodoroSession>[]).entries)
+        if (const <String>{
+          BadgeKeys.tenHours,
+          BadgeKeys.fiftyHours,
+          BadgeKeys.hundredHours,
+          BadgeKeys.twoFiftyHours,
+        }.contains(entry.key))
+          entry.key: entry.value.target,
+    };
+
+    test('dört saat rozetinin hepsi bir kademe eşiğine düşüyor', () {
+      final Set<int> ladderThresholds =
+          kFlameTierLadder.map((FlameTier t) => t.thresholdHours).toSet();
+
+      expect(badgeHourTargets.length, 4, reason: 'saat rozeti sayısı değişmiş');
+      badgeHourTargets.forEach((String key, int target) {
+        expect(
+          ladderThresholds,
+          contains(target),
+          reason: '$key rozeti ${target}sa eşiğinde ama merdivende o basamak yok',
+        );
+      });
+    });
+
+    test('rozetin açıldığı anda kademe de atlanıyor', () {
+      badgeHourTargets.forEach((String key, int target) {
+        final FlameTierStatus atThreshold = flameTierFor(target * 3600);
+        final FlameTierStatus justBefore = flameTierFor(target * 3600 - 1);
+        expect(
+          atThreshold.tier.index,
+          justBefore.tier.index + 1,
+          reason: '$key eşiğinde ($target sa) kademe atlamıyor',
+        );
+      });
+    });
+  });
+
+  group('tek kaynak — kademe ve rozet aynı saati sayıyor', () {
+    /// [count] saatlik tamamlanmış odak geçmişi; günde üç adet 60 dakikalık
+    /// seans. Dağılımın önemi yok, toplamın var.
+    List<PomodoroSession> hours(int count) => <PomodoroSession>[
+          for (int i = 0; i < count; i++)
+            PomodoroSession(
+              id: i + 1,
+              type: SessionType.focus,
+              startedAt: DateTime.utc(2026, 3, 1 + i ~/ 3, 6 + i % 3),
+              plannedDurationSec: 3600,
+              completed: true,
+              breakExtensions: 0,
+            ),
+        ];
+
+    test('FocusStats ve badge_rules aynı listede aynı saati veriyor', () {
+      for (final int count in <int>[0, 1, 9, 10, 62, 100, 251]) {
+        final List<PomodoroSession> sessions = hours(count);
+
+        final int statsHours = flameTierFor(
+          calculateFocusStats(sessions: sessions, nowUtc: DateTime.utc(2026, 6, 1)).cumulativeSeconds,
+        ).cumulativeHours;
+
+        final int badgeHours =
+            evaluateBadgeProgress(completedFocusSessions: sessions)[BadgeKeys.hundredHours]!.current;
+
+        expect(statsHours, badgeHours, reason: '$count saatlik geçmişte iki sayaç ayrışıyor');
+      }
     });
   });
 }
