@@ -150,9 +150,11 @@ nokta" sorunu ölçek ayrımıyla çözülüyor.
 - Açık/koyu tema palet ayrımı (`_lightBody` uç düzeltmesi) kademe paletlerinin
   her birine taşınır: krem uç açık zeminde 1.02:1 kontrasta düşüyordu.
 
-Rozet kartındaki avatar da hafif titrer (`flickering: true`, düşük genlik) —
-odak seansı içinde olmadığı için SPEC.md §6 kural 4'ün dekoratif animasyon
-yasağı burayı kapsamıyor. `TickerMode`'a bağlı, sekme arkada kalınca duruyor.
+Rozet kartındaki avatar **titremiyor** (`flickering: false`). Uygulama
+sırasında çıkan kısıt: `test/features/badges/badge_progress_test.dart` ve
+`badge_unlock_dialog_test.dart` `pumpAndSettle` kullanıyor, sonsuz tekrarlı
+bir tikleyici o testleri zaman aşımına düşürür. Durağan portre kimlik için
+zaten daha doğru ve pil için bedava.
 
 ## Ekran 04 — kahraman kart
 

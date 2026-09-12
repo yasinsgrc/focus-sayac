@@ -1804,3 +1804,128 @@ yani ilk haftalarda o rozet hiçbir şey söylemiyordu.
   "61/10" çıkmaması + üstteki sayacın 4/10 olması, halkanın yalnızca kilitli ve
   sayılabilir dört kartta olması, boş geçmişte yedi boş halka). Emülatörde
   görsel doğrulama yapılmadı; açık iş.
+
+## Meşale kademe avatarı
+
+**Sorun.** Meşale yalnızca seans içinde büyüyüp seans bitince sıfırlanan bir
+süstü — kümülatif odak saatine bağlı kalıcı bir kimlik yoktu; rozetler 7/7
+bitince ilerleme ekseni de tükeniyordu; ve ana ekranda uygulamayı geri
+açtıracak "sonraki kademeye N saat" diyen bir yüzey yoktu. Tasarım:
+`docs/superpowers/specs/2026-09-12-mesale-kademe-avatari-design.md`.
+
+- **Seans ekseni boyuttan bilerek ayrıldı.** `FlameWidget.intensity` (seans
+  0→1) alevin boyutunu değiştirmiyor, yalnızca çekirdek parlaklığını, titreşim
+  genliğini ve kıvılcım yoğunluğunu sürüyor. Gerekçe: K9→K10 arasındaki oran
+  farkı yalnızca %6; seans şişmesi bu küçük farkın üstüne binseydi "kademe
+  atladım mı, yoksa seans mı ısındı?" sorusu görsel olarak ayrışmaz hale
+  gelirdi. Seans bitince alev kademenin dinlenme boyutuna döner, **asla
+  altına inmez** — kalıcılık vaadinin tamamı bu kural.
+- **Rozet merdiveniyle hizalama, "rozetleri yut" değil.** Eşikler (K4=10sa,
+  K6=50sa, K7=100sa, K9=250sa) saat rozetleriyle (`badge_rules.dart:76-79`)
+  birebir hizalandı; rozet kademenin belgesi oldu. Elenen alternatif —
+  kademe rozetleri yutsun, yani saat rozetlerini kaldırıp yerine yalnızca
+  kademe göstergesini koymak — `UserBadges` tablosundaki kayıtlı satırların
+  kataloglarında karşılığı kalmaması demekti: `badgeByKey()` böyle bir
+  satırda fırlar, kazanılmış bir rozet DB'de dururken uygulamada geri
+  alınmış olurdu.
+- **Merdiven Kotlin'de ikinci kez tanımlı, senkron testiyle korunuyor.**
+  `FlameTierLadder.kt` çizim için zorunlu — widget kendi süreç ve dilinde
+  çalışıyor, Dart'a erişemiyor — bu da merdiveni iki dilde, iki kez elle
+  tutmak demek. Faz 16'nın palet senkronuyla aynı kalıp tekrarlandı:
+  `test/android/flame_tier_sync_test.dart` Kotlin dosyasını metin olarak
+  ayrıştırıp Dart tablosuyla karşılaştırıyor.
+- **`cumulativeFocusSeconds` ham gönderiliyor.** Kademe, kalan saat ve oran
+  Dart'tan değil Kotlin'de hesaplanıyor — `FocusWidgetSnapshot.kt:11`'in
+  "türetilmiş değer Dart'tan okunmaz" kuralının aynısı. Oranı da Dart'tan
+  göndermek, merdiven zaten çizim için Kotlin'de bulunmak zorunda olduğundan,
+  ikinci bir gerçek kaynağı açardı.
+- **Rozet kartındaki alev titremiyor.** İlk tasarım kararı kartta hafif bir
+  titreşimdi (`flickering: true`, düşük genlik) — seans dışı olduğu için
+  SPEC.md §6 kural 4'ün dekoratif animasyon yasağının burayı kapsamadığı
+  düşünülmüştü. Uygulama sırasında `test/features/badges/badge_progress_test.dart`
+  ve `badge_unlock_dialog_test.dart`ın `pumpAndSettle` kullandığı ortaya
+  çıktı: sonsuz tekrarlı bir tikleyici bu testleri zaman aşımına düşürüyor.
+  Kart artık `flickering: false`; durağan bir portre kimlik için zaten daha
+  doğru ve pil için bedava.
+- **`boxHeight` gerçekten kutuyu dolduruyor.** İlk sürümde `FlameWidget`,
+  64×98 sabit `_FlameShape`e `Transform.scale(scale: tier.scale)` uyguluyordu.
+  `Transform` paint'i etkiler, layout'u etkilemez — bu yüzden `boxHeight`
+  alevi yalnızca **kırpabiliyordu**, hiç **büyütemiyordu**: kahraman kartın
+  `boxHeight: 120`si, odak ekranının 98'iyle birebir aynı boyutta çizilip
+  22px boş alan bırakırdı. Düzeltme: `fillScale = (boxHeight /
+  _kShapeHeight) * tier.scale`, `_kShapeHeight = 98` sabiti `_FlameShape`in
+  kendi `SizedBox`ının yanında duruyor. `FlameTier.scale`'ın doküman yorumu
+  "yüzeyin verdiği kutuya oranı" diyor; uygulama artık bu sözleşmeyi tutuyor.
+  98 dışında bir `boxHeight` (rozet kartının 120'si) ayrı bir regresyon
+  testinde doğrulandı.
+- **`FlameTierStatus` `==`/`hashCode` gerektiriyor.** `flameTierProvider` bir
+  Riverpod `Provider`; Riverpod hesaplanan değerleri `==` ile karşılaştırıp
+  dinleyicileri ancak o zaman uyarıyor. Override olmadan her istatistik tiki
+  kimlikçe farklı bir nesne üretir, odak ekranı + kahraman kart + widget
+  anlık görüntüsü birlikte gereksiz yeniden kurulurdu. Emsal `StreakStatus`
+  (`lib/domain/streak/streak_calculator.dart`) ve `WeeklySummary`
+  (`lib/domain/stats/weekly_summary.dart`) — ikisi de aynı gerekçeyle aynı
+  override'ı taşıyor.
+- **Kotlin senkron testi merdivenin tek bağımsız kanıtı.**
+  `flame_tier_test.dart`'ın sınır testi beklentilerini `kFlameTierLadder`'ın
+  kendisinden türetiyor, yani yanlış bir **değeri** yakalayamaz — yalnızca
+  bozuk bir aramayı yakalar. Rozet hizalama testi (yukarıda) K4/K6/K7/K9'u
+  `badge_rules.dart`'a, bağımsız bir kaynağa karşı pinliyor. Geri kalan altı
+  basamak (K1/K2/K3/K5/K8/K10) **yalnızca**
+  `test/android/flame_tier_sync_test.dart`'ın Kotlin tablosuna karşı kıyasıyla
+  sınanıyor. Gelecekteki bakımcı için not: **Kotlin merdiveni bir gün Dart
+  dosyası kopyalanarak yeniden üretilirse bu kanıt sessizce ortadan kalkar** —
+  Kotlin tarafı bu spesifikasyondan (tasarım belgesinden), `flame_tier.dart`'tan
+  değil, elle transkribe edilmeli.
+- **Riverpod 3.1 test tuzağı.** Dinleyicisi olmayan çıplak bir
+  `ProviderContainer`'da `await container.read(bir StreamProvider'ın .future)`
+  hiç tamamlanmıyor ve 30 sn'de zaman aşımına düşüyor — `StreamProvider`
+  elemanı kuruluyor ama teslim edilen değere hiç bağlanmıyor.
+  `test/domain/flame/flame_providers_test.dart`'taki çözüm:
+  `container.listen(allSessionsProvider, (_, _) {});` çağrısını
+  `addTearDown(container.dispose)`den hemen sonra eklemek. Bunun yükleme
+  durumunu maskelemediği ayrıca doğrulandı — `Stream.value` yine bir
+  microtask'la teslim ettiği için beklenmeyen bir okuma da yükleme yolunu
+  gözlemliyor. Gerçek ağaç pompalayan widget testleri bu tuzaktan etkilenmiyor.
+- **`getMaxScaleOnAxis()` `Transform.scale`i ölçmek için kullanılamıyor.**
+  Matrisin en büyük sütun uzunluğunu döndürüyor; `Transform.scale` z eksenini
+  1.0'da bırakıyor, yani 1.0'ın altındaki her kademe ölçeği için z sütunu
+  kazanıyor ve yardımcı sabit `1.0` raporluyor — hiçbir şeyi ayırt etmiyor.
+  `test/core/widgets/flame_widget_test.dart` bunun yerine
+  `transform.getColumn(0).length` okuyor, gerekçesi yorumla birlikte.
+
+**Emülatör doğrulaması (Task 13).** Android 16 / API 36, release APK,
+ekran görüntüleri `.verify/mesale/`de.
+
+Doğrulanan: alev seans ilerlerken kademe boyutunu koruyor (04:55 ve 02:42'de,
+halka ~%46 doluyken, alev boyut ve konumda birebir aynı) — özelliğin merkezî
+vaadi. Ekran 04 kahraman kart (MEŞALEN kicker'ı, kırpılmamış alev, "Kıvılcım",
+"0 / 1 sa", "Sonraki kademeye 1 saat", rozet ızgarası altta bozulmadan). Açık
+**ve** koyu temada alev ucu doğru renk (`_lightBody` amber / `_darkBody`
+krem) — kontrast düzeltmesi iki yönde de çalışıyor. Duraklamada alev tamamen
+gri (`ColorFiltered`), boyut değişmiyor. Widget seçicide "Meşale" adı, 2×2
+boyutu ve açıklamasıyla listeleniyor; gerçek `FlameRenderer` bitmap'i, kademe
+adı, ilerleme çubuğu ve "Sonraki: 1 sa" ile canlı çiziliyor. Widget'a
+dokunmak uygulamayı Rozetler'de açıyor — Kotlin `WidgetRoutes.BADGES` →
+`WidgetLaunchHandler` → `BadgesScreen` zinciri uçtan uca çalışıyor. Tüm
+Türkçe glifler (Ş, ş, ı, İ, ç, ö, ü) doğru çiziliyor, sessiz font-subset
+düşüşü yok.
+
+**Doğrulanamayan — gerçek boşluk.** Emülatörde yalnızca K1 hiç görüldü.
+Emülatör üretim imajı (`adb root` reddedildi), debuggable APK için depolama
+yetersizdi ve host'ta `sqlite3` yoktu — geçmiş seed'lenemedi. Sonuç:
+**`FlameRenderer`'ın közlü taban (K4+), kıvılcım (K6+) ve hâle (K8+) dalları
+hiçbir yerde hiç çalıştırılmadı** — Kotlin tarafında birim testi yok, tek
+koşum K1'de ve orada üçü de kapalı. Aynı durum kahraman kartın sıfırdan
+farklı bir `ratioInTier`'ı ve widget'ın `isTopTier` dalı için de geçerli.
+Önerilen takip: ya seed'li geçmişle bir debug koşumu, ya da `FlameRenderer`
+için Kotlin/Robolectric birim testleri.
+
+**Tasarım gözlemi, düzeltilmedi.** K1'de kahraman kart kicker ile alev
+arasında büyük bir boşluk bırakıyor: 120px'lik sahne sabit ama K1 alevi onun
+yalnızca %35'ini dolduruyor. "Sabit sahne, büyüyen alev" modelinin doğal
+sonucu, kusur değil — ama düşük kademelerde dengesiz görünüyor, bir
+tasarımcının gözden geçirmesi değer katar.
+
+**Doğrulama.** `flutter analyze` temiz, 359 test geçiyor, `flutter build apk
+--release` derleniyor.

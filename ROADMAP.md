@@ -601,6 +601,43 @@ rozet ve saat merdiveni".
 
 ---
 
+## 23. Meşale kademe avatarı ✅ bitti
+
+359 test geçiyor (+63). Kararlar: `DECISIONS.md` "Meşale kademe avatarı".
+Tasarım: `docs/superpowers/specs/2026-09-12-mesale-kademe-avatari-design.md`.
+
+**Sorun.** Meşale yalnızca seans içinde büyüyüp sıfırlanan bir süstü —
+kümülatif odak saatine bağlı kalıcı bir kimlik yoktu ve ana ekranda
+uygulamayı geri açtıracak "sonraki kademeye kaç saat" diyen bir sebep yoktu.
+
+- **`lib/domain/flame/flame_tier.dart`** — 10 basamaklı `kFlameTierLadder`
+  (K1 Kıvılcım 0 sa → K10 Güneş 400 sa), saat rozetleriyle (10/50/100/250)
+  K4/K6/K7/K9'da hizalı; `flameTierFor()` saf fonksiyon, `flameTierProvider`
+  ile okunuyor.
+- **`FlameWidget`** `lib/features/focus_session/`den `lib/core/widgets/`e
+  taşındı, iki eksenli API'ye kavuştu: kademe (boyut, palet, süsleme —
+  kalıcı) ile seans (çekirdek parlaklığı, titreşim, kıvılcım — geçici)
+  ayrıştı; odak ekranı yeni API'ye bağlandı.
+- **Ekran 04'e kahraman kart** (`FlameAvatarCard`): kademe adı, `62/100 sa`
+  sayacı, "Sonraki kademeye 38 saat"; mevcut rozet grid'i değişmedi.
+- **Altıncı ana ekran widget'ı ("Meşale")** — `FlameTierLadder.kt` +
+  `FlameRenderer.kt` + `FlameWidgetProvider.kt`; dokunuş `/badges`'e gidiyor.
+- **`cumulativeFocusSeconds`** tek yeni payload anahtarı; kademe/kalan
+  saat/oran Kotlin'de hesaplanıyor (türetilmiş değer Dart'tan okunmaz kuralı).
+
+**Doğrulama.** `flutter analyze` temiz, 359 test geçiyor, `flutter build apk
+--release` derleniyor. Emülatörde (API 36) görsel doğrulama yapıldı: alev
+seans ilerlerken boyutunu koruyor, açık/koyu tema kontrastı çalışıyor,
+duraklamada tam gri, widget seçicide doğru ad/boyut/önizlemeyle listeleniyor
+ve dokunuş Rozetler'e gidiyor. **Açık iş:** emülatör geçmiş verisiyle
+seed'lenemediği için yalnızca K1 hiç gözlemlenebildi —
+`FlameRenderer`'ın közlü taban (K4+), kıvılcım (K6+) ve hâle (K8+) dalları
+hiçbir yerde çalıştırılmadı. Öneri: seed'li geçmişle bir debug koşumu ya da
+`FlameRenderer` için Kotlin/Robolectric birim testleri. Ayrıntı:
+`DECISIONS.md` "Meşale kademe avatarı".
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı

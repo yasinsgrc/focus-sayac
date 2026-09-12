@@ -276,7 +276,11 @@ Gece Nöbeti (23:00 sonrası başlayan) · Haftalık Seri (7 gün) · Maraton (g
 Yalnızca başarıyla açılır, asla satın almayla. Açılışta `HapticFeedback.heavyImpact()`.
 
 ### 5.5 Meşale
-`progress` 0→1 ile alev büyür. Duraklıyken `ColorFiltered` ile doygunluk 0.
+Alevin **boyutu** kümülatif odak saatinden gelen kademeden (`flame_tier.dart`,
+10 basamak, 0–400 sa) gelir ve asla küçülmez. Seans `progress`i 0→1 yalnızca
+çekirdek parlaklığını, titreşim genliğini ve kıvılcım yoğunluğunu sürer.
+Duraklıyken `ColorFiltered` ile doygunluk 0 ve titreşim durur.
+Kademe eşikleri saat rozetlerini (10/50/100/250) içerir.
 Prototipteki `flick` keyframe'i (scale/translateY/skewX, 0→33→66→100) `AnimatedBuilder` +
 `Transform` ile birebir uygulanır — **Lottie gerekmez**, CSS keyframe'i zaten Flutter transform'una birebir çevrilir.
 
