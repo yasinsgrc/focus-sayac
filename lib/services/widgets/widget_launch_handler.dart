@@ -62,6 +62,7 @@ class _WidgetLaunchScopeState extends ConsumerState<WidgetLaunchScope> {
           ref.read(examPickerRequestProvider.notifier).request();
         }
       case RoutePaths.stats:
+      case RoutePaths.badges:
       case RoutePaths.examExpired:
         router.go(path);
       default:
