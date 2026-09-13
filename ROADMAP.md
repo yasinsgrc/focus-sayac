@@ -638,7 +638,7 @@ hiçbir yerde çalıştırılmadı. Öneri: seed'li geçmişle bir debug koşumu
 
 ---
 
-## 24. Haftalık hedef ⬜ başlanmadı
+## 24. Haftalık hedef ✅ bitti
 
 **Sorun.** Uygulamada tek zaman ufku "bugün" (Ekran 02'nin `BUGÜN` kartı) ve
 "sınava kalan gün". İkisinin arası boş: bir günü kaçıran kullanıcı için o gün
@@ -651,15 +651,37 @@ tablosunda (`lib/services/storage/tables.dart:51-60`) yalnızca `focusMinutes`,
 `shortBreakMinutes`, `longBreakMinutes`, `selectedTemplateIndex`,
 `activeExamId` var.
 
-- **Kapsam:** `AppSettings`'e haftalık hedef alanı (drift göçü), onboarding'de
-  ya da ayarlarda seçim, Ekran 02'de haftalık ilerleme göstergesi.
-- Hafta tanımı `weekly_summary.dart`'taki mevcut hafta sınırıyla **aynı**
-  olmalı — iki farklı "hafta" kavramı çıkmasın.
-- Pazar özeti (madde 19'un bildirimi) hedefe göre konuşabilir hâle gelir:
-  "hedefinin %80'i".
-- **Kabul:** hedef değiştirilebiliyor, Ekran 02'de görünüyor, hafta sınırı
-  `weekly_summary.dart` ile aynı testle çivilenmiş.
-- **Boyut:** küçük. Bu listedeki en ucuz / en yüksek kaldıraçlı madde.
+371 test geçiyor (+12). Kararlar: `DECISIONS.md` "Haftalık hedef".
+Tasarım: `docs/superpowers/specs/2026-09-13-haftalik-hedef-design.md`.
+
+- **Hafta tanımı yazılmadı — asıl karar bu.** Hedef `weeklySummaryProvider`ı
+  tüketiyor, kendi pencere hesabını kurmuyor; "iki farklı hafta kavramı
+  çıkmasın" şartı testle değil **kurguyla** sağlanıyor — sapabilecek ikinci
+  bir hesap yok. `WeeklyGoalProgress` (`lib/domain/stats/weekly_goal.dart`)
+  yalnızca iki `int` alıyor, içinde hiç tarih geçmiyor.
+- **`AppSettings.weeklyGoalMinutes`** (drift v4 → v5), varsayılan 300 dk =
+  5 sa/hafta. Kolon dakika (tablodaki diğer üç süreyle aynı), slider saat
+  (haftalık hedefi dakikayla konuşmak okunmaz).
+- **Ekran 07'de 0–30 saat slider'ı**; **0 = kapalı**, değer alanı "Kapalı"
+  yazıyor ve Ekran 02'deki satır hiç çizilmiyor. `_DurationSlider`ın değer
+  etiketi dışarı alındı (birimi dakikaya çivili değil artık).
+- **Ekran 02'de `BUGÜN` kartının ikinci satırı:** `BU HAFTA · 4sa 30dk / 5sa`
+  + çubuk; hedef karşılanınca çubuk közden naneye dönüp "Hedef tamam" oluyor.
+  Boş haftada gizlenmiyor — günlük noktaların aksine, %0 eksiklik değil
+  haftanın başıdır.
+- **Yolda çıkan gerçek sorun: Ekran 02'nin dikey bütçesi yokmuş.** 390×844
+  ekranda 90dp'lik adaptive banner'la toplam boşluk 26px, satır ise en sıkı
+  hâliyle 43px istiyordu. Gövde artık **yalnızca sığmadığında** kayıyor
+  (`LayoutBuilder` + `SingleChildScrollView` + `minHeight`), banner kaydırma
+  alanının dışına alındı (`Spacer` kalktı, reklam da kaydırılıp kaybolmuyor).
+  Prototipin hiçbir ölçüsü değişmedi. Ekran bu madde olmadan da büyük sistem
+  yazı tipinde taşıyordu.
+- **Kapsam dışı:** pazar bildiriminin hedefe göre konuşması ("hedefinin
+  %80'i") — dört bildirim varyantını sekize çıkarır ve `weekly_summary.dart`
+  yüzde yerine farkı seçme kararıyla çelişir. Ayrı madde olmalı.
+- **Kabul karşılandı:** hedef değiştirilebiliyor, Ekran 02'de görünüyor,
+  hafta sınırı `weekly_summary.dart` ile aynı ve testle çivilenmiş.
+- **Emülatör doğrulaması yapılmadı** — açık iş.
 
 ---
 

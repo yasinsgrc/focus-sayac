@@ -1929,3 +1929,88 @@ tasarımcının gözden geçirmesi değer katar.
 
 **Doğrulama.** `flutter analyze` temiz, 359 test geçiyor, `flutter build apk
 --release` derleniyor.
+
+---
+
+## Haftalık hedef (ROADMAP madde 24)
+
+Tasarım: `docs/superpowers/specs/2026-09-13-haftalik-hedef-design.md`.
+371 test geçiyor (+12), `flutter analyze` temiz.
+
+**Hafta tanımı yazılmadı — asıl karar bu.** `weeklySummaryProvider`
+(`domain/stats/stats_providers.dart`) bugünle biten kayan yedi uygulama
+gününün odak saniyesini zaten yayınlıyor ve pazar kapanış bildirimi de aynı
+saf fonksiyonu (`calculateWeeklySummary`) çağırıyor. Hedef bu sağlayıcıyı
+**tüketiyor**, kendi pencere hesabını kurmuyor. ROADMAP'in "iki farklı hafta
+kavramı çıkmasın" şartı böylece testle değil **kurguyla** sağlanıyor:
+sapabilecek ikinci bir hesap yok. `WeeklyGoalProgress` bu yüzden yalnızca iki
+`int` alıyor (`goalSeconds`, `focusedSeconds`) ve içinde hiç tarih geçmiyor.
+
+**0 = kapalı.** Slider 0–30 saat; 0'da değer alanı "Kapalı" yazıyor ve
+Ekran 02'deki satır hiç çizilmiyor. Kapatılamayan bir ilerleme çubuğu,
+hafta boyunca %8'de duran bir kullanıcıya "eşlik eden" değil "ölçen" bir ton
+kurardı — `weekly_summary.dart`'ın yüzde yerine farkı seçme gerekçesiyle aynı
+yerden geliyor. `isReached` kapalı hedefte hiçbir zaman `true` olmuyor:
+kullanıcının koymadığı bir hedefi kutlamak anlamsız.
+
+**Birim ikiye ayrıldı, bilinçli.** Kolon dakika tutuyor (tablodaki diğer üç
+süre alanıyla aynı), slider saat gösteriyor (haftalık bir hedefi dakikayla
+konuşmak okunmaz). Çeviri tek yerde, Ekran 07'de.
+
+**Boş haftada gizlenmiyor.** BUGÜN kartının dört noktası ve günlük çubuğu ilk
+pomodoro tamamlanana kadar gizli ("0/4" bir eksik bildirimi). Haftalık çubuk
+için aynı şey geçerli değil: pazartesi sabahı %0'da olmak eksiklik değil,
+haftanın başıdır ve satırın bütün işlevi o noktadan sonrasını göstermek.
+
+### Yolda çıkan gerçek sorun — Ekran 02'nin dikey bütçesi yokmuş
+
+Satır eklenince `banner_placement_test` 34px taşma yakaladı. Ölçüldü:
+390×844 ekranda **90dp'lik** adaptive banner'la (gerçek telefonların çoğunun
+döndürdüğü yükseklik) Ekran 02'nin toplam boşluğu **26px**, hedef satırı ise
+en sıkı hâliyle 43px istiyor. Yani ekran bir tampona değil, tam oturmaya
+dayanıyormuş — bu madde olmadan da büyük sistem yazı tipinde taşardı.
+
+Seçenekler tartıldı: halkayı 316'dan küçültmek, prototipin dikey aralıklarını
+kısmak, satırı yalnız çubuğa indirmek. Üçü de prototip ölçülerini ya da
+hedefin asıl bilgisini ("4sa 30dk / 5sa") feda ediyordu.
+
+**Seçilen: gövde yalnızca sığmadığında kayıyor.** `LayoutBuilder` +
+`SingleChildScrollView` + `ConstrainedBox(minHeight: maxHeight)`. Uzun
+ekranlarda içerik eskisi gibi yerleşiyor, görünüm birebir aynı; yer
+kalmayınca taşma yerine kayıyor. Prototipin hiçbir ölçüsüne dokunulmadı.
+
+- **`IntrinsicHeight` denendi ve düştü** — ağaçtaki bir öğe intrinsic
+  ölçümü desteklemiyor (`RenderFlex._getIntrinsicSize` patladı).
+- **Çözüm `Spacer`ı kaldırmak oldu.** Banner artık kaydırma alanının
+  **dışında**, dış bir `Column`un son çocuğu. İki kazanç: `Spacer` olmadığı
+  için sınırsız yükseklik altında flex hatası doğmuyor, ve reklam kaydırılıp
+  gözden kaybolmuyor — yuvası eskisi gibi altta duruyor.
+- Diff büyük görünüyor ama `git diff -w` ile 134 satır: gerisi sarmalayıcının
+  getirdiği girinti kayması.
+
+### Testler
+
+- `test/domain/stats/weekly_goal_test.dart` (+8): oran kırpma (hedefi üçe
+  katlayan kullanıcıda çubuk rayını taşmıyor), `isReached` sınırı **dahil**,
+  kalan sürenin tabanda kırpılması, kapalı hedef, `==`. İki test de hafta
+  sınırını `calculateWeeklySummary`ye karşı çiviliyor — pencerenin dışındaki
+  bir seans ikisini de aynı anda etkilemiyor.
+- `test/features/countdown/weekly_goal_row_test.dart` (+1): tek testte üç
+  durum (ilerliyor → tamamlandı → kapalı), ayar akışı canlı olduğu için
+  ekran her yazımda kendiliğinden yeniden çiziliyor. Dosya başına tek test,
+  `countdown_glow_test.dart`'taki drift göçü tuzağı yüzünden.
+- `test/services/storage/weekly_goal_migration_test.dart` (+2): v4 → v5,
+  mevcut satır 300 varsayılanını alıyor ve komşu ayarlar korunuyor.
+- `settings_screen_test.dart` (+1): saat → dakika çevirisi, "Kapalı" hâli.
+- **Güncellenen iki test.** `first_session_invite_test`in "hiç
+  `LinearProgressIndicator` yok" iddiası artık günlük çubuğa özel
+  (`kWeeklyGoalProgressKey` ile ayrışıyor); `settings_screen_test`in slider
+  sayısı 3 → 4.
+
+**Kapsam dışı bırakıldı:** pazar bildiriminin hedefe göre konuşması
+("hedefinin %80'i"). Bildirim gövdesinin dört varyantı sekize çıkardı ve
+"%80" cümlesi hedefi kaçıran kullanıcıya pazar akşamı tam da
+`weekly_summary.dart:17-20`'nin reddettiği ölçen tonda bir not verirdi.
+Madde 24'ün Kabul listesinde de yok.
+
+**Doğrulanmadı:** emülatör görsel doğrulaması yapılmadı — açık iş.
