@@ -8,6 +8,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
+import 'package:focussayac/features/countdown/countdown_screen.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_stats_providers.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
@@ -17,6 +18,12 @@ import 'package:focussayac/services/storage/storage_enums.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
 
 int _id = 0;
+
+/// `BUGÜN` kartının günlük döngü çubuğu — haftalık hedef çubuğu da aynı tipte
+/// olduğu için tip değil **anahtarın yokluğu** ayırt ediyor.
+final Finder _dailyProgressBar = find.byWidgetPredicate(
+  (Widget widget) => widget is LinearProgressIndicator && widget.key != kWeeklyGoalProgressKey,
+);
 
 /// [daysAgo] gün önce tamamlanmış bir odak seansı. Tam 24 saatlik adımlar
 /// kullanıldığı için testin çalıştığı saat 04:00 TSİ sınırının hangi
@@ -97,7 +104,12 @@ void main() {
       findsOneWidget,
     );
     // Eksik bildiren ikili ağaçta yok: ne 0/4 noktaları ne de %0 çubuğu.
-    expect(find.byType(LinearProgressIndicator), findsNothing);
+    // Haftalık hedef çubuğu (ROADMAP madde 24) bu iddianın dışında ve ayrıca
+    // doğrulanıyor: haftalık pencerede gerçek bir ilerleme var (üç gün önceki
+    // seanslar) ve haftanın başında %0 olması da eksiklik değil, haftanın
+    // başıdır — gerekçe `countdown_screen.dart`'taki `_WeeklyGoalRow`'da.
+    expect(_dailyProgressBar, findsNothing);
+    expect(find.byKey(kWeeklyGoalProgressKey), findsOneWidget);
 
     // Bugünkü ilk pomodoro tamamlanınca ilerleme gerçek bir sayı oluyor;
     // davet yerini ona bırakıyor.
@@ -108,7 +120,7 @@ void main() {
     }
 
     expect(find.textContaining('Bugünkü ilk seansın'), findsNothing);
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(_dailyProgressBar, findsOneWidget);
 
     // Denetleyici burada **kapatılmıyor**: gerekçe
     // `streak_protection_badge_test.dart`'ta.
