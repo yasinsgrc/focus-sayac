@@ -33,3 +33,16 @@ String spellFocusDuration(AppLocalizations l10n, int totalSeconds) {
   if (parts.minutes == 0) return l10n.durationHours(parts.hours);
   return l10n.durationHoursMinutes(parts.hours, parts.minutes);
 }
+
+/// [spellFocusDuration]'ın kart satırına sığan hâli: `4sa 30dk` / `5sa` /
+/// `45dk`. Aynı üçlü dallanma, yalnızca dizeler kısa.
+///
+/// Ayrı bir fonksiyon çünkü aynı süre aynı anda iki biçimde lazım: Ekran 02'nin
+/// haftalık hedef satırı dar (`BUGÜN` kartının içinde, sağa hizalı), ekran
+/// okuyucu ise kısaltmayı değil sözü duymalı — "4sa" harf harf okunurdu.
+String compactFocusDuration(AppLocalizations l10n, int totalSeconds) {
+  final FocusDurationParts parts = formatFocusDuration(totalSeconds);
+  if (parts.hours == 0) return l10n.durationCompactMinutes(parts.minutes);
+  if (parts.minutes == 0) return l10n.durationCompactHours(parts.hours);
+  return l10n.durationCompactHoursMinutes(parts.hours, parts.minutes);
+}

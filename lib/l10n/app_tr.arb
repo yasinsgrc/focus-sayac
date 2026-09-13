@@ -37,6 +37,28 @@
   },
   "countdownHoursUnit": " SA ",
   "countdownMinutesUnit": " DK",
+  "countdownWeeklyGoalLabel": "BU HAFTA",
+  "countdownWeeklyGoalValue": "{focused} / {goal}",
+  "@countdownWeeklyGoalValue": {
+    "description": "BUGÜN kartının haftalık hedef satırı; iki taraf da hazır biçimlenmiş kısa süre metni (ör. 4sa 30dk / 5sa).",
+    "placeholders": {
+      "focused": { "type": "String" },
+      "goal": { "type": "String" }
+    }
+  },
+  "countdownWeeklyGoalReached": "Hedef tamam",
+  "countdownWeeklyGoalSemantics": "Bu hafta {focused}, haftalık hedef {goal}",
+  "@countdownWeeklyGoalSemantics": {
+    "description": "Ekran okuyucu karşılığı; süreler burada uzun hâliyle okunuyor (2 saat 15 dakika).",
+    "placeholders": {
+      "focused": { "type": "String" },
+      "goal": { "type": "String" }
+    }
+  },
+  "countdownWeeklyGoalReachedSemantics": "Bu hafta {focused}, haftalık hedef tamamlandı",
+  "@countdownWeeklyGoalReachedSemantics": {
+    "placeholders": { "focused": { "type": "String" } }
+  },
   "countdownFocusButton": "ODAKLAN",
   "countdownFocusButtonWithMinutes": "{minutes} DAKİKA ODAKLAN",
   "@countdownFocusButtonWithMinutes": {
@@ -164,6 +186,22 @@
   },
   "durationMinutes": "{minutes} dakika",
   "@durationMinutes": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "durationCompactHoursMinutes": "{hours}sa {minutes}dk",
+  "@durationCompactHoursMinutes": {
+    "description": "Kart satırına sığan kısa süre. Sesli okunan hâli durationHoursMinutes.",
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  },
+  "durationCompactHours": "{hours}sa",
+  "@durationCompactHours": {
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "durationCompactMinutes": "{minutes}dk",
+  "@durationCompactMinutes": {
     "placeholders": { "minutes": { "type": "int" } }
   },
 
@@ -394,6 +432,13 @@
   "@settingsMinutesValue": {
     "placeholders": { "minutes": { "type": "int" } }
   },
+  "settingsWeeklyGoal": "Haftalık hedef",
+  "settingsWeeklyGoalHours": "{hours} sa",
+  "@settingsWeeklyGoalHours": {
+    "description": "Haftalık hedef slider'ının değeri; saat cinsinden çünkü haftalık bir hedefi dakikayla konuşmak okunmaz.",
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "settingsWeeklyGoalOff": "Kapalı",
   "settingsNotifications": "Bildirimler",
   "settingsSound": "Sesli uyarı",
   "settingsHaptics": "Titreşim",
