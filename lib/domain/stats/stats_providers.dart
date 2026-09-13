@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/time/app_day.dart';
 import '../../services/storage/app_database.dart';
 import '../pomodoro/pomodoro_stats_providers.dart';
+import '../settings/settings_providers.dart';
 import 'focus_stats.dart';
+import 'weekly_goal.dart';
 import 'weekly_summary.dart';
 
 /// Ekran 06'nın (Faz 9) tüm sayıları. Ekran 02'nin `todayFocusStatsProvider`'ı
@@ -44,5 +46,26 @@ final Provider<WeeklySummary> weeklySummaryProvider = Provider<WeeklySummary>((R
   return calculateWeeklySummary(
     sessions: sessions,
     weekEndDayKey: currentAppDayKey(DateTime.now().toUtc()),
+  );
+});
+
+/// Ekran 02'nin haftalık hedef satırı (ROADMAP madde 24).
+///
+/// Odak saniyesi **`weeklySummaryProvider`den** geliyor, seans listesinden
+/// yeniden hesaplanmıyor: hedefin haftası ile Ekran 06'nın kartının ve pazar
+/// bildiriminin haftası aynı pencere olmak zorunda, ve bunu sağlamanın en
+/// güvenli yolu ikinci bir hesabın hiç var olmaması.
+///
+/// Ayar akışı ilk değerini yayınlamadan önce hedef **kapalı** sayılıyor
+/// (`focusMinutesProvider`ın "süre bilinmiyorken sayı gösterme" gerekçesi):
+/// satır o tek karede çizilmiyor, kullanıcının koymadığı bir hedefle dolu bir
+/// çubuk gösterilmiyor.
+final Provider<WeeklyGoalProgress> weeklyGoalProgressProvider =
+    Provider<WeeklyGoalProgress>((Ref ref) {
+  final int? goalMinutes = ref.watch(appSettingsProvider).value?.weeklyGoalMinutes;
+  if (goalMinutes == null || goalMinutes <= 0) return WeeklyGoalProgress.off;
+  return WeeklyGoalProgress(
+    goalSeconds: goalMinutes * 60,
+    focusedSeconds: ref.watch(weeklySummaryProvider).seconds,
   );
 });
