@@ -25,6 +25,13 @@ const int kFocusMinutesMax = 90;
 const int kBreakMinutesMin = 1;
 const int kBreakMinutesMax = 30;
 
+/// Haftalık hedef **saat** cinsinden seçiliyor (depolama yine dakika).
+/// Taban 0 = kapalı: hedefi olmayan kullanıcı Ekran 02'de hiçbir çubuk
+/// görmüyor. Tavan 30 sa (~4.3 sa/gün) slider'ın çözünürlüğünü kullanılabilir
+/// tutuyor — daha yükseği bir haftalık hedef değil, bir dilek olurdu.
+const int kWeeklyGoalHoursMin = 0;
+const int kWeeklyGoalHoursMax = 30;
+
 /// Ekran 07 — ayarlar. Prototip v2 satır 287-315 birebir. Prototipte alt
 /// gezinme çubuğu yoktu (Ekran 04 ile aynı durum, Faz 7 kararı); artık çubuk
 /// burada da var, yani sistem geri hareketi tek çıkış yolu değil.
@@ -44,6 +51,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int? _focusMinutes;
   int? _shortBreakMinutes;
   int? _longBreakMinutes;
+
+  /// Diğer üçünden farklı olarak **saat** — slider'ın birimi o.
+  int? _weeklyGoalHours;
 
   Future<void> _write(AppSettingsTableCompanion changes) {
     return ref.read(appSettingsDaoProvider).updateSettings(changes);
@@ -93,6 +103,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final int focus = _focusMinutes ?? settings.focusMinutes;
     final int shortBreak = _shortBreakMinutes ?? settings.shortBreakMinutes;
     final int longBreak = _longBreakMinutes ?? settings.longBreakMinutes;
+    // Kolon dakika tutuyor, slider saat gösteriyor. Tam bölünmeyen bir değer
+    // (ör. eski bir kurulumdan 90 dk) aşağı yuvarlanıyor — kullanıcı slider'a
+    // dokunduğu anda değer yine tam saate oturuyor.
+    final int weeklyGoalHours = _weeklyGoalHours ?? settings.weeklyGoalMinutes ~/ 60;
     final Exam? activeExam = ref.watch(activeExamProvider).value;
 
     return SingleChildScrollView(
@@ -127,7 +141,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 14),
                   _DurationSlider(
                     label: l10n.settingsFocusDuration,
-                    minutes: focus,
+                    value: focus,
+                    valueLabel: l10n.settingsMinutesValue(focus),
                     min: kFocusMinutesMin,
                     max: kFocusMinutesMax,
                     tint: colors.ember,
@@ -137,7 +152,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 14),
                   _DurationSlider(
                     label: l10n.settingsShortBreak,
-                    minutes: shortBreak,
+                    value: shortBreak,
+                    valueLabel: l10n.settingsMinutesValue(shortBreak),
                     min: kBreakMinutesMin,
                     max: kBreakMinutesMax,
                     tint: colors.mint,
@@ -148,12 +164,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 14),
                   _DurationSlider(
                     label: l10n.settingsLongBreak,
-                    minutes: longBreak,
+                    value: longBreak,
+                    valueLabel: l10n.settingsMinutesValue(longBreak),
                     min: kBreakMinutesMin,
                     max: kBreakMinutesMax,
                     tint: colors.sky,
                     onChanged: (int value) => setState(() => _longBreakMinutes = value),
                     onChangeEnd: (int value) => _write(AppSettingsTableCompanion(longBreakMinutes: Value<int>(value))),
+                  ),
+                  const SizedBox(height: 14),
+                  // Haftalık hedef (ROADMAP madde 24). Rengi `sky` çünkü hedef
+                  // Ekran 06'nın haftalık penceresine bakıyor ve o pencerenin
+                  // rengi orada da `sky`. Uzun molayla aynı tonu paylaşması
+                  // sorun değil: ikisi farklı kavram grupları ve yan yana
+                  // değiller (araya iki satır giriyor).
+                  _DurationSlider(
+                    label: l10n.settingsWeeklyGoal,
+                    value: weeklyGoalHours,
+                    valueLabel: weeklyGoalHours <= 0
+                        ? l10n.settingsWeeklyGoalOff
+                        : l10n.settingsWeeklyGoalHours(weeklyGoalHours),
+                    min: kWeeklyGoalHoursMin,
+                    max: kWeeklyGoalHoursMax,
+                    tint: colors.sky,
+                    onChanged: (int value) => setState(() => _weeklyGoalHours = value),
+                    // Saat → dakika burada çevriliyor: kolon dakika tutuyor
+                    // (`tables.dart`), slider saat gösteriyor.
+                    onChangeEnd: (int value) =>
+                        _write(AppSettingsTableCompanion(weeklyGoalMinutes: Value<int>(value * 60))),
                   ),
                 ],
               ),
@@ -371,10 +409,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
 /// Prototipteki süre satırı: solda etiket, sağda renkli değer, altında ince
 /// ray + yuvarlak tutamak.
+///
+/// Değer **birimi** bileşenin dışında: [valueLabel] hazır metin olarak
+/// veriliyor. Üç süre satırı dakikayı yazıyor, haftalık hedef saati ve 0'da
+/// "Kapalı"yı — biri "dakika"ya çivili olsaydı hedef satırı bu bileşeni
+/// kullanamaz, ikinci bir slider kopyası doğardı.
 class _DurationSlider extends StatelessWidget {
   const _DurationSlider({
     required this.label,
-    required this.minutes,
+    required this.value,
+    required this.valueLabel,
     required this.min,
     required this.max,
     required this.tint,
@@ -383,7 +427,8 @@ class _DurationSlider extends StatelessWidget {
   });
 
   final String label;
-  final int minutes;
+  final int value;
+  final String valueLabel;
   final int min;
   final int max;
   final Color tint;
@@ -396,7 +441,7 @@ class _DurationSlider extends StatelessWidget {
     // Kayıtlı değer sınırların dışında kalmış olsaydı (ör. sınırlar sonradan
     // daralırsa) `Slider` aralık dışı değerde assert atardı; gösterim
     // kırpılıyor, kullanıcı kaydırdığı anda değer aralığa giriyor.
-    final double value = minutes.clamp(min, max).toDouble();
+    final double sliderValue = value.clamp(min, max).toDouble();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -408,7 +453,7 @@ class _DurationSlider extends StatelessWidget {
           children: <Widget>[
             Text(label, style: AppTypography.label(fontSize: AppTextSize.md, color: colors.text)),
             Text(
-              AppLocalizations.of(context).settingsMinutesValue(minutes),
+              valueLabel,
               style: AppTypography.display(
                 fontSize: AppTextSize.title,
                 weight: FontWeight.w700,
@@ -434,7 +479,7 @@ class _DurationSlider extends StatelessWidget {
               showValueIndicator: ShowValueIndicator.never,
             ),
             child: Slider(
-              value: value,
+              value: sliderValue,
               min: min.toDouble(),
               max: max.toDouble(),
               divisions: max - min,

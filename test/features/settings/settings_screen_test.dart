@@ -119,17 +119,54 @@ void main() {
     await _disposeTree(tester);
   });
 
+  testWidgets('haftalık hedef saat seçiliyor, 0 "Kapalı" yazıyor',
+      (WidgetTester tester) async {
+    final AppDatabase database = await _pumpSettings(tester);
+
+    // Varsayılan 300 dk kullanıcıya saat olarak gösteriliyor.
+    expect(find.text('5 sa'), findsOneWidget);
+
+    final Slider goalSlider = tester.widgetList<Slider>(find.byType(Slider)).elementAt(3);
+    goalSlider.onChangeEnd!(12);
+    await _settle(tester);
+
+    // Slider saat veriyor, kolon dakika tutuyor: çeviri ekranda yapılıyor.
+    AppSettingsTableData settings = await _read(tester, database.appSettingsDao.getSettings);
+    expect(settings.weeklyGoalMinutes, 12 * 60);
+    expect(find.text('12 sa'), findsOneWidget);
+    // Süre kolonları etkilenmiyor — her slider yalnızca kendi kolonunu yazar.
+    expect(settings.focusMinutes, 25);
+    expect(settings.longBreakMinutes, 15);
+
+    // 0 gerçek bir seçim: hedef kapalı. Değer alanı sayı değil "Kapalı" yazıyor
+    // ki slider "0 saat hedefle" karıştırılmasın.
+    goalSlider.onChangeEnd!(0);
+    await _settle(tester);
+
+    settings = await _read(tester, database.appSettingsDao.getSettings);
+    expect(settings.weeklyGoalMinutes, 0);
+    expect(find.text('Kapalı'), findsOneWidget);
+    expect(find.text('0 sa'), findsNothing);
+
+    await _disposeTree(tester);
+  });
+
   testWidgets('slider sınırları SPEC\'teki aralıklar', (WidgetTester tester) async {
     await _pumpSettings(tester);
 
     final List<Slider> sliders = tester.widgetList<Slider>(find.byType(Slider)).toList();
-    expect(sliders, hasLength(3));
+    expect(sliders, hasLength(4));
     expect(sliders[0].min, kFocusMinutesMin.toDouble());
     expect(sliders[0].max, kFocusMinutesMax.toDouble());
-    for (final Slider breakSlider in sliders.sublist(1)) {
+    for (final Slider breakSlider in sliders.sublist(1, 3)) {
       expect(breakSlider.min, kBreakMinutesMin.toDouble());
       expect(breakSlider.max, kBreakMinutesMax.toDouble());
     }
+    // Dördüncü slider haftalık hedef (ROADMAP madde 24) ve birimi **saat**,
+    // diğer üçü gibi dakika değil; tabanı 0 çünkü 0 = hedef kapalı.
+    expect(sliders[3].min, kWeeklyGoalHoursMin.toDouble());
+    expect(sliders[3].max, kWeeklyGoalHoursMax.toDouble());
+    expect(kWeeklyGoalHoursMin, 0);
 
     await _disposeTree(tester);
   });
