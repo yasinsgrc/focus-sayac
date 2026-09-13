@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -58,6 +58,13 @@ class AppDatabase extends _$AppDatabase {
             // varsayılanı `true`, yani güncelleme alan kullanıcı özeti açık
             // bulur. Kapatma yolu Ekran 07'de.
             await m.addColumn(appSettingsTable, appSettingsTable.weeklySummaryEnabled);
+          }
+          if (from < 5) {
+            // Haftalık hedef (ROADMAP madde 24) — `weeklySummaryEnabled` ile
+            // aynı kalıp. `withDefault(300)` mevcut satıra da uygulanıyor,
+            // yani güncelleme alan kullanıcı hedefi 5 saatte açık buluyor;
+            // kapatma yolu Ekran 07'de (slider 0 = kapalı).
+            await m.addColumn(appSettingsTable, appSettingsTable.weeklyGoalMinutes);
           }
         },
       );

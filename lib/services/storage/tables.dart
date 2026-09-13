@@ -68,6 +68,19 @@ class AppSettingsTable extends Table {
   /// zorunda kalmasın.
   BoolColumn get weeklySummaryEnabled => boolean().withDefault(const Constant(true))();
 
+  /// Haftalık odak hedefi (dakika). 0 = kapalı: Ekran 02'deki ilerleme satırı
+  /// hiç çizilmez. Hedefi olmayan kullanıcıyı kapatılamayan bir çubukla
+  /// karşılamak "eşlik eden" tonu "ölçen" tona çevirirdi
+  /// (`domain/stats/weekly_summary.dart`'ın yüzde yerine farkı seçme gerekçesi).
+  ///
+  /// Birim dakika — tablodaki diğer üç süre alanıyla aynı. Kullanıcıya saat
+  /// gösteriliyor (haftalık bir hedefi dakikayla konuşmak okunmaz), ama iki
+  /// birim kavramı çıkmasın diye depolama tabloyla tutarlı kalıyor.
+  ///
+  /// Varsayılan 300 dk = 5 sa/hafta, günde ~45 dk: ulaşılabilir hedef
+  /// ulaşılamaz hedeften daha çok seans başlatır.
+  IntColumn get weeklyGoalMinutes => integer().withDefault(const Constant(300))();
+
   /// Varsayılan `system`: ilk kurulumda cihazın tercihine uyulur. Mevcut
   /// kurulumlar migration'da aynı varsayılanı alır — v2'ye kadar uygulama
   /// zaten tek koyu temaydı, cihazı koyu olan kullanıcı hiçbir değişiklik
