@@ -685,24 +685,39 @@ Tasarım: `docs/superpowers/specs/2026-09-13-haftalik-hedef-design.md`.
 
 ---
 
-## 25. Interstitial'ı mola başlangıcından çıkar ⬜ başlanmadı
+## 25. Interstitial'ı mola başlangıcından çıkar ✅ bitti
 
 **Sorun.** Reklam, ürünün korumayı vaat ettiği tek anı — odak ritüelinin
 molasını — kesiyor. Gelir aynı kalacak şekilde taşınabilir.
 
-**Kanıt.** `lib/domain/pomodoro/pomodoro_controller.dart:399` hâlâ
-`ref.read(interstitialManagerProvider).maybeShowOnBreakStart(...)` çağırıyor.
-Kural tek noktada toplanmış (`lib/services/ads/interstitial_manager.dart:20`),
-yani taşıma lokal.
+377 test geçiyor (+6). Kararlar: `DECISIONS.md` "Madde 25 — Interstitial'ın
+yeri". SPEC.md §7.2 ve Ekran 09 binding tablosu güncellendi.
 
-- **Kapsam:** tetikleyiciyi mola başlangıcından **seans bitip geri sayıma
-  dönüş** anına ya da kart export'u sonrasına al. Sıklık kuralı (3 pomodoroda
-  1) ve `lastShownPrefsKey` kısıtı aynen korunur.
-- **SPEC.md §7.2 de güncellenmeli** — şu an mola başlangıcını yazıyor.
-- **Kabul:** mola başlangıcında interstitial çıkmıyor; yeni tetikleyicide
-  sıklık kuralı korunuyor; `interstitial_manager` testleri yeni ana göre
-  güncel.
-- **Boyut:** yarım gün. Algılanan kaliteye etkisi maliyetinin çok üstünde.
+- **Yeni an `_completeBreak`:** mola dolup uygulama `idle`'a döndüğü, geri
+  sayıma dönülen an. `maybeShowOnBreakStart` → `maybeShowOnCycleComplete`.
+  Sıklık kuralı (3 pomodoroda 1), 180 sn penceresi, uzak bayrak ve
+  premium/onay kapısı aynen korundu — sayaç gösterimleri değil tamamlanan
+  odak seanslarını saydığı için gösterim sayısı da değişmedi.
+- **Yolda çıkan gerçek sorun: değerlendirme istemiyle çakışma.** İkisi de tam
+  3. tamamlanan odak seansında düşüyor ve artık aynı satırda. Eski
+  yerleşimde farklı anlarda oldukları için kimse fark etmemişti.
+  `requestIfEligible()` artık `Future<bool>` ve çıktısı interstitial'ın
+  `otherPromptShown` kapısını besliyor; değerlendirme istemi öncelikli (bir
+  kez sorulabiliyor, reklamın üç seans sonra yeni şansı var).
+- **Kutlama bastırması gereksizleşti.** `badgeUnlocked` parametresi
+  hastalığı değil belirtiyi tedavi ediyordu: kutlama molanın **başında**,
+  reklam artık **sonunda**. `_offerCelebration` `Future<void>` oldu.
+- **`ODAĞA DÖN` reklam çıkarmıyor.** Teknik olarak o da `idle`'a dönüş ama
+  niyeti odağa dönmek; değerlendirme istemi de orada tetiklenmiyor. Molasını
+  hep erken bitiren kullanıcı hiç interstitial görmeyecek — bilinçli kabul
+  edilen maliyet.
+- **Kapsam dışı:** kart export'u sonrası ikinci bir tetik noktası. Tek
+  noktada toplanan kuralın ikinci bir çağıranı, `InterstitialManager`ın
+  sınıf yorumunun tam da uyardığı şey.
+- **Kabul karşılandı:** mola başlangıcında interstitial çıkmıyor (testle
+  çivili), sıklık kuralı korunuyor, `interstitial_manager` testleri yeni ana
+  göre güncel.
+- **Emülatör doğrulaması yapılmadı** — açık iş.
 
 ---
 

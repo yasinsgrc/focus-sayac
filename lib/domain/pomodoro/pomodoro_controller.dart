@@ -387,18 +387,13 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     final List<PomodoroSession> completedFocus =
         await ref.read(pomodoroSessionDaoProvider).getAllCompletedFocusSessions();
     await _rescheduleWeeklySummary(completedFocus);
-    final bool celebrating = await _offerCelebration(unlockedBadges, completedFocus);
+    await _offerCelebration(unlockedBadges, completedFocus);
     await _haptic();
-    // SPEC.md §7.2: interstitial **mola başlangıcında**. Kurallar (3'te 1,
-    // 180 sn, uzak bayrak, premium/onay kapısı) `InterstitialManager`da;
-    // burada yalnızca an ve "kutlama ekranda mı" bilgisi veriliyor.
-    //
-    // Parametre adı `badgeUnlocked` kalıyor ama anlamı artık "üstüne binilmemesi
-    // gereken bir kutlama var": seri eşiği kutlaması da tam ekran bir reklamın
-    // altında kaybolurdu, oysa kuralın koruduğu şey rozetin kendisi değil o an.
-    await ref.read(interstitialManagerProvider).maybeShowOnBreakStart(
-          badgeUnlocked: celebrating,
-        );
+    // Interstitial burada **değil**: yol haritası madde 25 ile mola
+    // başlangıcından döngü kapanışına ([_completeBreak]) alındı. Molanın ilk
+    // saniyesi ürünün korumayı vaat ettiği andı ve tam ekran bir reklam onu
+    // kesiyordu; kutlamanın (rozet/seri) sunulduğu an da burası, yani reklam
+    // hem molayı hem kutlamayı aynı anda basıyordu.
   }
 
   /// Haftalık kapanışı hedef pazarın penceresiyle yeniden kurar. Her odak
@@ -418,14 +413,17 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     );
   }
 
-  /// Kutlamayı `sessionCelebrationProvider`a bırakır; bir kutlama sunulduysa
-  /// `true` döner (interstitial kapısı bunu kullanıyor).
+  /// Kutlamayı `sessionCelebrationProvider`a bırakır.
+  ///
+  /// Eskiden "bir kutlama sunuldu mu" bilgisini döndürüyordu; interstitial
+  /// artık aynı anda tetiklenmediği için (madde 25) o dönüş değerinin tek
+  /// tüketicisi kalmadı.
   ///
   /// Rozet **önce**: ikisi aynı anda düşebiliyor (7. günde "Haftalık Seri"
   /// rozeti ile 7 günlük seri eşiği) ve iki dialogu üst üste açmak kutlamayı
   /// kesintiye çevirirdi. Rozetin öne geçmesi bilinçli — adı ve görseli olan,
   /// daha somut ödül o.
-  Future<bool> _offerCelebration(
+  Future<void> _offerCelebration(
     Set<String> unlockedBadges,
     List<PomodoroSession> completedFocus,
   ) async {
@@ -433,7 +431,7 @@ class PomodoroController extends Notifier<PomodoroPhase> {
       ref.read(sessionCelebrationProvider.notifier).offer(
             BadgeCelebration(unlockedBadges.toList(growable: false)),
           );
-      return true;
+      return;
     }
 
     final int days = calculateStreak(
@@ -445,13 +443,12 @@ class PomodoroController extends Notifier<PomodoroPhase> {
       days: days,
       lastCelebrated: _prefs.getInt(kCelebratedStreakMilestonePrefsKey) ?? 0,
     );
-    if (milestone == null) return false;
+    if (milestone == null) return;
     // Eşik, dialog gösterilmeden **önce** işaretleniyor: kullanıcı kutlamayı
     // kapatmadan uygulamayı öldürse bile aynı eşik bir daha açılmıyor. Kaçırılan
     // bir kutlama, her seans sonunda tekrar eden bir kutlamadan iyi.
     await _prefs.setInt(kCelebratedStreakMilestonePrefsKey, milestone);
     ref.read(sessionCelebrationProvider.notifier).offer(StreakCelebration(days: days));
-    return true;
   }
 
   /// [endedAtUtc] molanın **planlanan bitiş anı**dır — bkz. [_completeFocus].
@@ -469,7 +466,18 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     // SPEC.md Ekran 07: değerlendirme istemi 3. tamamlanan seanstan sonra bir
     // kez. Tetikleme noktası burası — döngü kapandı, ekranda süren bir sayaç
     // yok; eşiği ve "bir kez" bayrağını servis kendi kontrol ediyor.
-    await ref.read(appReviewServiceProvider).requestIfEligible();
+    final bool reviewRequested = await ref.read(appReviewServiceProvider).requestIfEligible();
+    // SPEC.md §7.2: interstitial de burada (madde 25'te mola başlangıcından
+    // taşındı). Kurallar (3'te 1, 180 sn, uzak bayrak, premium/onay kapısı)
+    // `InterstitialManager`da; burada yalnızca an veriliyor.
+    //
+    // Sıra önemli: değerlendirme istemi **önce** soruluyor ve çıktıysa reklam
+    // bastırılıyor. İkisi de tam 3. tamamlanan odak seansında düşüyor, yani
+    // bu çakışma istisna değil kural — ve bir kez sorulabilen değerlendirme
+    // istemi, üç seansta bir tekrar gelecek reklamdan önceliklidir.
+    await ref.read(interstitialManagerProvider).maybeShowOnCycleComplete(
+          otherPromptShown: reviewRequested,
+        );
     await _haptic();
   }
 }

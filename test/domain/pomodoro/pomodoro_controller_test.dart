@@ -14,6 +14,8 @@ import 'package:focussayac/services/storage/storage_enums.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../support/recording_ad_service.dart';
+
 /// SPEC.md §9 "Widget: faz geçişleri (odak → mola → odak → 4. sonrası uzun
 /// mola)". Odak/mola süreleri varsayılan olarak 0 saniyeye ayarlanır ki
 /// `tick()` gerçek `DateTime.now()` ile hemen tamamlanma üretsin — controller
@@ -25,6 +27,7 @@ Future<ProviderContainer> _buildContainer({
   int shortBreakMinutes = 0,
   int longBreakMinutes = 0,
   NotificationService? notifications,
+  AdService? adService,
 }) async {
   final AppDatabase db = AppDatabase.forTesting(NativeDatabase.memory());
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -33,7 +36,7 @@ Future<ProviderContainer> _buildContainer({
     overrides: [
       appDatabaseProvider.overrideWithValue(db),
       sharedPreferencesProvider.overrideWithValue(prefs),
-      adServiceProvider.overrideWithValue(AdService.disabled()),
+      adServiceProvider.overrideWithValue(adService ?? AdService.disabled()),
       notificationServiceProvider.overrideWithValue(notifications ?? NotificationService.disabled()),
     ],
   );
@@ -357,5 +360,54 @@ void main() {
 
       expect(container.read(pomodoroControllerProvider), isA<PomodoroIdle>(), reason: raw);
     }
+  });
+
+  // Yol haritası madde 25: reklam, ürünün korumayı vaat ettiği tek anı — odak
+  // ritüelinin molasını — kesmiyor artık. Sayı üçüncü tamamlanışta seçiliyor
+  // çünkü sıklık kuralı ("3 tamamlanan pomodoroda 1") tam orada ilk kez
+  // tutuyor: eski kodda interstitial burada çıkardı.
+  test('üçüncü odak tamamlanıp mola başlarken interstitial isteği atılmıyor', () async {
+    final RecordingAdService adService = RecordingAdService();
+    // Mola sıfırdan uzun: `tick()` odağı kapatıp molada duruyor, böylece
+    // "mola başlangıcı" anı gözlemlenebiliyor.
+    final ProviderContainer container = await _buildContainer(
+      shortBreakMinutes: 1,
+      adService: adService,
+    );
+    addTearDown(container.dispose);
+    final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
+
+    for (int cycle = 1; cycle <= 3; cycle++) {
+      await controller.startFocus();
+      await controller.tick();
+      expect(container.read(pomodoroControllerProvider), isA<PomodoroBreakRunning>());
+      await _waitForSessionCount(container, cycle * 2);
+      // Son molayı kapatmıyoruz: ölçüm tam mola başlangıcında yapılıyor.
+      if (cycle < 3) {
+        await controller.endBreakEarly();
+        await _waitForSessionCount(container, cycle * 2);
+      }
+    }
+
+    expect(adService.interstitialRequests, 0);
+  });
+
+  test('mola bitip döngü kapanınca interstitial isteği atılıyor', () async {
+    final RecordingAdService adService = RecordingAdService();
+    // Mola da sıfır: tek `tick()` hem odağı hem molayı kapatıp idle'a dönüyor
+    // — kullanıcının geri sayıma döndüğü an.
+    final ProviderContainer container = await _buildContainer(adService: adService);
+    addTearDown(container.dispose);
+    final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
+
+    for (int cycle = 1; cycle <= 3; cycle++) {
+      await controller.startFocus();
+      await controller.tick();
+      expect(container.read(pomodoroControllerProvider), isA<PomodoroIdle>());
+      await _waitForSessionCount(container, cycle * 2);
+      if (cycle < 3) expect(adService.interstitialRequests, 0);
+    }
+
+    expect(adService.interstitialRequests, 1);
   });
 }

@@ -705,7 +705,8 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
   istiyor. Adaptive yükseklik çoğu telefonda prototipin 50'si değil 90 dönüyor; yerleşimin bunu
   taşırmadığı 390×844 yüzeyde `banner_placement_test.dart` ile doğrulandı. Boyut sorgusu cevapsız
   kalırsa (kanalsız koşum) banner'dan vazgeçilmiyor, prototipin 320×50'siyle isteniyor.
-- **Interstitial kuralları tek yerde** (`InterstitialManager`): mola başlangıcı, 3 tamamlanan
+- **Interstitial kuralları tek yerde** (`InterstitialManager`): mola başlangıcı *(madde 25'te
+  döngü kapanışına taşındı)*, 3 tamamlanan
   pomodoroda 1, iki gösterim arası min. 180 sn. "3'te 1" ile "180 sn" bağımsız iki sayaç; ikisini
   çağırana dağıtmak, ileride ikinci bir tetik noktası eklendiğinde sessizce iki kat reklam demekti.
   Son gösterim anı `SharedPreferences`ta kalıcı — uygulama öldürülüp hemen açılırsa kural yine
@@ -714,7 +715,9 @@ Belirtilmemiş her detayda alınan kararlar, tek cümle gerekçesiyle, faz sıra
 - **"3 tamamlanan pomodoro" sayısı `PomodoroSessionDao.getAllCompletedFocusSessions()`ten geliyor**,
   ayrı bir sayaç tutulmuyor — `AppReviewService` ve `BadgeUnlockService` de aynı kaynağı okuyor.
   İptal edilen seanslar (`completed = false`) doğal olarak sayıya girmiyor.
-- **Rozet açılışı interstitial'ı bastırıyor** (SPEC §7.2 "asla binmez"). Bunun için
+- **Rozet açılışı interstitial'ı bastırıyor** (SPEC §7.2 "asla binmez") *(madde 25'te geçersiz
+  kaldı: reklam artık kutlamayla aynı anda tetiklenmiyor, bastırma kapısı değerlendirme istemine
+  bağlandı)*. Bunun için
   `BadgeUnlockService.evaluateAfterFocusCompletion()` artık **o çağrıda** açılan anahtarları
   döndürüyor (`Future<void>` → `Future<Set<String>>`); `PomodoroController._completeFocus` bu
   bilgiyi `maybeShowOnBreakStart`a geçiriyor. Bastırma 180 sn penceresini harcamıyor, sonraki mola
@@ -2014,3 +2017,60 @@ kalmayınca taşma yerine kayıyor. Prototipin hiçbir ölçüsüne dokunulmadı
 Madde 24'ün Kabul listesinde de yok.
 
 **Doğrulanmadı:** emülatör görsel doğrulaması yapılmadı — açık iş.
+
+---
+
+## Madde 25 — Interstitial'ın yeri: mola başlangıcından döngü kapanışına
+
+377 test geçiyor (+6). SPEC.md §7.2 ve Ekran 09 binding tablosu güncellendi.
+
+- **Yeni an `PomodoroController._completeBreak`.** Mola dolup uygulama
+  `idle`'a döndüğü an — kullanıcının hiçbir sayaca bakmadığı tek an.
+  `AppReviewService.requestIfEligible` zaten tam orada duruyordu ve gerekçesi
+  kelimesi kelimesine aynıydı; reklamın oraya taşınması yeni bir kural değil,
+  var olan kuralın ikinci tüketicisi.
+- **Neden mola başlangıcı yanlıştı.** İki ayrı gerekçe aynı saniyede
+  birleşiyordu: (a) molanın ilk saniyesi ürünün korumayı vaat ettiği andı,
+  (b) rozet/seri kutlaması da tam orada sunuluyordu — yani reklam hem molayı
+  hem kutlamayı basıyordu. İkincisi için konmuş `badgeUnlocked` bastırması,
+  hastalığı değil belirtiyi tedavi ediyordu.
+- **Taşıma gösterim sayısını düşürmüyor.** Sıklık kuralının sayacı
+  gösterimler değil tamamlanan **odak** seansları
+  (`getAllCompletedFocusSessions()`); aynı kullanıcı aynı sayıda reklam
+  görüyor, yalnızca birkaç dakika sonra. Gelirin aynı kalması bu maddenin ön
+  şartıydı.
+- **Yeni ve gerçek çakışma: değerlendirme istemi.** İkisi de **3.** tamamlanan
+  odak seansında düşüyor (`minCompletedFocusSessions = 3` ile
+  `showEveryNCompletedFocusSessions = 3`), yani çakışma istisna değil kural.
+  Eski yerleşimde ikisi farklı anlardaydı ve kimse fark etmemişti. Çözüm:
+  `requestIfEligible()` artık `Future<void>` değil `Future<bool>` —
+  "istem gerçekten istendi mi" — ve `_completeBreak` bunu
+  `maybeShowOnCycleComplete(otherPromptShown: ...)` kapısına veriyor.
+  Değerlendirme istemi öncelikli: o **bir kez** sorulabiliyor, reklamın üç
+  seans sonra yeni bir şansı var.
+- **`requestIfEligible` iyimser davranmıyor.** Eşik tutmadığında, istem daha
+  önce gösterilmişse ya da eklenti kanalı yoksa `false`. `true` dönmek
+  reklamı bastırdığı için buradaki her yanlış `true` sessizce gösterim
+  kaybıdır; testle çivilendi (`app_review_service_test.dart`, `InAppReview`i
+  `implements` eden sahte — gerçek nesne testte hep `MissingPluginException`
+  atıp "istem gösterildi" dalına hiç girmiyordu).
+- **`ODAĞA DÖN` (`endBreakEarly`) reklam çıkarmıyor.** Teknik olarak o da
+  `idle`'a dönüş, ama niyeti okumak gerekiyor: molayı erken bitiren kullanıcı
+  odağa dönüyor, yani hâlâ ritüelin içinde. Değerlendirme istemi de aynı
+  gerekçeyle orada tetiklenmiyordu — yeni tetikleyiciyi ona hizalamak, iki
+  ayrı kural yerine tek kural bırakıyor. Molasını hep erken bitiren bir
+  kullanıcı hiç interstitial görmeyecek; bilinçli kabul edilen maliyet.
+- **`badgeUnlocked` → `otherPromptShown`.** Parametrenin anlamı zaten "üstüne
+  binilmemesi gereken bir istem var"dı (yorumda yazılıydı); adı artık onu
+  söylüyor. `BadgeUnlockService.evaluateAfterFocusCompletion()`in açılan
+  anahtarları döndürmesi **korunuyor** — kutlamanın kendisi hâlâ ona bağlı,
+  yalnızca reklam kapısı bu bilgiden koptu.
+- **`_offerCelebration` artık `Future<void>`.** Dönüş değerinin tek tüketicisi
+  interstitial kapısıydı.
+- **Doğrulama.** `pomodoro_controller_test.dart`e iki test: 3. odak tamamlanıp
+  **mola başlarken** hiçbir reklam isteği atılmıyor (eski kodda tam orada
+  çıkardı), mola bitip döngü kapanınca tam bir istek atılıyor. Sayı üçe
+  çivili çünkü sıklık kuralı ilk kez orada tutuyor.
+
+**Doğrulanmadı:** emülatörde gerçek reklamla görsel doğrulama yapılmadı —
+açık iş.

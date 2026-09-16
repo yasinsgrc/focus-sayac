@@ -186,7 +186,7 @@ Otomatik yönlenir. "Odak geçmişin ve rozetlerin korunur." metni **doğru olma
 | "molada dene" ipuçları | Statik katalog, ARB'de; her molada rastgele 2 tanesi |
 | **`5 dk ekle`** | Mola `endAt`'ini +5 dk kaydırır, bildirimi yeniden kurar, bir molada **en fazla 2 kez** |
 | `ODAĞA DÖN` | Molayı erken bitirir |
-| `interstitial · 3 pomodoroda 1` | Mola **başlangıcında** tetiklenir (bkz. 7.2) |
+| `interstitial · 3 pomodoroda 1` | Molanın **bitişinde**, döngü kapanıp geri sayıma dönülürken tetiklenir (bkz. 7.2) |
 
 ### Ekran 10 — Seans iptal onayı
 | Binding | Kaynak |
@@ -315,9 +315,17 @@ Yüklenemezse aynı yükseklikte `SizedBox` → layout zıplamaz. `isPremium` is
 
 ### 7.2 Interstitial
 Prototip Ekran 09'da `interstitial · 3 pomodoroda 1` yazıyor → **v1'de açık.**
-Kurallar tek yerde (`InterstitialManager`): mola **başlangıcında**, 3 tamamlanan pomodoroda 1,
-iki gösterim arası min. **180 sn**. Rozet açılışının veya kart export'unun üstüne **asla** binmez.
+Kurallar tek yerde (`InterstitialManager`): odak–mola **döngüsü kapanırken** — mola dolup
+uygulama `idle`'a döndüğü, kullanıcının hiçbir sayaca bakmadığı an —, 3 tamamlanan pomodoroda 1,
+iki gösterim arası min. **180 sn**. Başka bir tam ekran istemin üstüne **asla** binmez; bu anda o
+istem değerlendirme istemidir (`AppReviewService.requestIfEligible`) ve çıktıysa reklam bastırılır.
 `RemoteFlags.interstitialEnabled` ile kapatılabilir olsun (varsayılan `true`).
+
+Tetikleyici v1'de mola **başlangıcındaydı**; oradan alındı çünkü ürünün korumayı vaat ettiği tek
+anı — odak ritüelinin molasını — kesiyor, üstelik rozet/seri kutlamasıyla aynı saniyeye düşüyordu.
+Sıklık kuralının sayacı tamamlanan **odak** seansları olduğu için taşıma gösterim sayısını
+değiştirmiyor. Molayı `ODAĞA DÖN` ile erken bitirmek reklam çıkarmaz: o dokunuş odağa dönme
+niyetidir ve değerlendirme istemi de aynı gerekçeyle orada tetiklenmiyor.
 
 ### 7.3 Satın alma
 Prototip "Reklamları kaldır · **yakında**" gösteriyor → v1'de UI **pasif**.

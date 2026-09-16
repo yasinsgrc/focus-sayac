@@ -49,17 +49,25 @@ class AppReviewService {
   /// bakmadığı tek an. Odak ya da mola sürerken istem göstermek, SPEC §7.2'nin
   /// interstitial kuralıyla aynı gerekçeyle (ekrandaki işin üstüne binmemek)
   /// yapılmıyor.
-  Future<void> requestIfEligible() async {
-    if (_prefs.getBool(requestedPrefsKey) ?? false) return;
+  ///
+  /// İstem gerçekten istendiyse `true` döner. Interstitial artık **aynı anda**
+  /// tetikleniyor (SPEC §7.2, madde 25) ve ikisi de 3. tamamlanan odak
+  /// seansında düşüyor; çağıran bu değeri
+  /// `InterstitialManager.maybeShowOnCycleComplete`ın `otherPromptShown`
+  /// kapısına veriyor. `false` dönmek reklamın önünü açtığı için burada
+  /// iyimser davranılmıyor: eşik tutmadığında, istem bir kez gösterilmişse ya
+  /// da eklenti yoksa `false`.
+  Future<bool> requestIfEligible() async {
+    if (_prefs.getBool(requestedPrefsKey) ?? false) return false;
     final List<PomodoroSession> completed = await _sessionDao.getAllCompletedFocusSessions();
-    if (completed.length < minCompletedFocusSessions) return;
-    if (!await _isAvailable()) return;
+    if (completed.length < minCompletedFocusSessions) return false;
+    if (!await _isAvailable()) return false;
     // Bayrak istemden **önce** yazılıyor: `requestReview` kotaya takılıp
     // hiçbir şey göstermese de tekrar denemek istemiyoruz (Play istemi
     // gösterip göstermediğini bildirmiyor, tekrar çağırmak yalnızca aynı
     // sessiz sonucu üretirdi).
     await _prefs.setBool(requestedPrefsKey, true);
-    await _guarded(_review.requestReview);
+    return _guarded(_review.requestReview);
   }
 
   /// Ayarlardaki "Uygulamayı değerlendir" satırı. Mağaza sayfası açılabildiyse

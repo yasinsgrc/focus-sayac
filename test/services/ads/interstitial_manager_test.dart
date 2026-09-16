@@ -56,18 +56,18 @@ void main() {
   });
 
   // SPEC.md §7.2: "3 tamamlanan pomodoroda 1".
-  test('ilk iki molada gösterilmiyor, 3. tamamlanan pomodoroda gösteriliyor', () async {
+  test('ilk iki döngüde gösterilmiyor, 3. tamamlanan pomodoroda gösteriliyor', () async {
     final RecordingAdService adService = RecordingAdService();
     final InterstitialManager manager = managerWith(adService);
 
     await _completeFocusSessions(database, 1);
-    expect(await manager.maybeShowOnBreakStart(badgeUnlocked: false, now: _now), isFalse);
+    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
 
     await _completeFocusSessions(database, 1);
-    expect(await manager.maybeShowOnBreakStart(badgeUnlocked: false, now: _now), isFalse);
+    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
 
     await _completeFocusSessions(database, 1);
-    expect(await manager.maybeShowOnBreakStart(badgeUnlocked: false, now: _now), isTrue);
+    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isTrue);
     expect(adService.interstitialRequests, 1);
   });
 
@@ -77,28 +77,30 @@ void main() {
     final InterstitialManager manager = managerWith(adService);
 
     await _completeFocusSessions(database, 3);
-    expect(await manager.maybeShowOnBreakStart(badgeUnlocked: false, now: _now), isTrue);
+    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isTrue);
 
     await _completeFocusSessions(database, 3);
     final DateTime tooSoon = _now.add(const Duration(seconds: 179));
-    expect(await manager.maybeShowOnBreakStart(badgeUnlocked: false, now: tooSoon), isFalse);
+    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: tooSoon), isFalse);
     expect(adService.interstitialRequests, 1);
 
     final DateTime later = _now.add(const Duration(seconds: 181));
-    expect(await manager.maybeShowOnBreakStart(badgeUnlocked: false, now: later), isTrue);
+    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: later), isTrue);
     expect(adService.interstitialRequests, 2);
   });
 
-  // SPEC.md §7.2: "Rozet açılışının üstüne asla binmez".
-  test('aynı tamamlanışta rozet açıldıysa gösterilmiyor', () async {
+  // SPEC.md §7.2: "başka bir tam ekran istemin üstüne asla binmez". Yeni
+  // tetikleme anında (döngü kapanışı) bu istem değerlendirme istemi: ikisi de
+  // 3. tamamlanan seansta düşüyor ve üst üste binerlerdi.
+  test('aynı anda değerlendirme istemi çıktıysa gösterilmiyor', () async {
     final RecordingAdService adService = RecordingAdService();
     final InterstitialManager manager = managerWith(adService);
 
     await _completeFocusSessions(database, 3);
 
-    expect(await manager.maybeShowOnBreakStart(badgeUnlocked: true, now: _now), isFalse);
+    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: true, now: _now), isFalse);
     expect(adService.totalRequests, 0);
-    // Bastırma pencereyi de harcamamalı: rozetsiz bir sonraki mola gösterebilmeli.
+    // Bastırma pencereyi de harcamamalı: bir sonraki döngü gösterebilmeli.
     expect(prefs.getString(InterstitialManager.lastShownPrefsKey), isNull);
   });
 
@@ -110,7 +112,7 @@ void main() {
 
     await _completeFocusSessions(database, 3);
 
-    expect(await manager.maybeShowOnBreakStart(badgeUnlocked: false, now: _now), isFalse);
+    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
     expect(adService.totalRequests, 0);
   });
 
@@ -121,7 +123,7 @@ void main() {
 
     await _completeFocusSessions(database, 3);
 
-    expect(await manager.maybeShowOnBreakStart(badgeUnlocked: false, now: _now), isFalse);
+    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
     expect(adService.totalRequests, 0);
   });
 
@@ -130,7 +132,7 @@ void main() {
     final InterstitialManager manager = managerWith(adService);
 
     await _completeFocusSessions(database, 3);
-    expect(await manager.maybeShowOnBreakStart(badgeUnlocked: false, now: _now), isFalse);
+    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
     expect(adService.interstitialRequests, 1);
     expect(prefs.getString(InterstitialManager.lastShownPrefsKey), isNull);
   });
@@ -148,7 +150,7 @@ void main() {
     );
     await database.pomodoroSessionDao.finishSession(id: cancelled, completed: false, endedAt: _now);
 
-    expect(await manager.maybeShowOnBreakStart(badgeUnlocked: false, now: _now), isFalse);
+    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
     expect(adService.totalRequests, 0);
   });
 }

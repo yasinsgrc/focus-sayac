@@ -18,7 +18,7 @@ final Provider<InterstitialManager> interstitialManagerProvider =
 });
 
 /// SPEC.md §7.2: interstitial kurallarının **tek** yeri. Kuralları çağırana
-/// (şu an tek çağıran `PomodoroController._completeFocus`) dağıtmamak bilinçli
+/// (şu an tek çağıran `PomodoroController._completeBreak`) dağıtmamak bilinçli
 /// — "3'te 1" ile "180 sn" birbirinden bağımsız iki sayaç ve ikisini iki ayrı
 /// yerde tutmak, ileride ikinci bir tetik noktası eklendiğinde sessizce iki
 /// kat reklam demek olurdu.
@@ -51,16 +51,23 @@ class InterstitialManager {
   final PomodoroSessionDao _sessionDao;
   final RemoteFlags _flags;
 
-  /// Mola **başlangıcında** çağrılır (SPEC §7.2). Odak tamamlanışı sırasında
-  /// rozet açıldıysa [badgeUnlocked] ile bastırılır: SPEC "rozet açılışının
-  /// üstüne asla binmez" diyor ve rozet aynı anda bir bildirim gönderiyor.
-  /// Kart export'u (Ekran 05) ayrı bir rota ve yalnızca Ekran 04'ün rozet
-  /// dialogundan açılıyor — mola sürerken erişilemediği için ayrı bir
-  /// bastırma koşuluna gerek yok.
+  /// Odak–mola **döngüsü kapanıp** uygulama `idle`'a döndüğünde çağrılır
+  /// (`PomodoroController._completeBreak`). Eskiden mola başlangıcındaydı;
+  /// oradan alındı çünkü ürünün korumayı vaat ettiği tek an — odak ritüelinin
+  /// molası — kesiliyordu. Yeni an, kullanıcının zaten geri sayıma döndüğü ve
+  /// hiçbir sayaca bakmadığı an: `AppReviewService.requestIfEligible` ile aynı
+  /// gerekçe, aynı yer.
+  ///
+  /// [otherPromptShown] aynı anda başka bir tam ekran istem çıktığını söyler
+  /// ve gösterimi bastırır. Yeni anda bu istem **değerlendirme istemi**: o da
+  /// 3. tamamlanan odak seansında düşüyor, yani sıklık kuralıyla birebir aynı
+  /// tamamlanışa denk geliyordu. Kutlama (rozet/seri) artık ayrı bir an —
+  /// molanın **başında** sunuluyor, burada değil — bu yüzden ayrı bir bastırma
+  /// koşulu gerekmiyor.
   ///
   /// Gösterildiyse `true`.
-  Future<bool> maybeShowOnBreakStart({required bool badgeUnlocked, DateTime? now}) async {
-    if (badgeUnlocked) return false;
+  Future<bool> maybeShowOnCycleComplete({required bool otherPromptShown, DateTime? now}) async {
+    if (otherPromptShown) return false;
     if (!_flags.interstitialEnabled) return false;
     // Kapı, sayaç okumalarından **önce**: premium/onaysız kullanıcıda hiçbir
     // istek atılmadığı gibi boşuna DB de okunmuyor (SPEC §7 DoD).
