@@ -864,13 +864,6 @@ class _CountdownBody extends ConsumerWidget {
 /// bu anahtarla söylüyor.
 const Key kWeeklyGoalProgressKey = Key('weekly-goal-progress');
 
-/// `BUGÜN` kartının ikinci satırı: haftalık hedefin ilerlemesi
-/// (ROADMAP madde 24).
-///
-/// Yeni bir kart açılmadı — Ekran 02 zaten 316px halka + kart + CTA ile dolu ve
-/// ikinci bir kart birincil eylemi ekranın dışına iterdi. Hedefin haftası
-/// Ekran 06'nın kartıyla ve pazar bildirimiyle aynı pencere
-/// (`domain/stats/weekly_goal.dart`).
 /// Dönüş şeridi anahtarı — testler kartın hangi satırına baktığını bununla
 /// söylüyor.
 const Key kComebackRowKey = Key('comeback-row');
@@ -924,6 +917,16 @@ class _ComebackRow extends StatelessWidget {
   }
 }
 
+/// `BUGÜN` kartının ikinci satırı: haftalık hedefin ilerlemesi
+/// (ROADMAP madde 24).
+///
+/// Yeni bir kart açılmadı — Ekran 02 zaten 316px halka + kart + CTA ile dolu ve
+/// ikinci bir kart birincil eylemi ekranın dışına iterdi. Hedefin haftası
+/// Ekran 06'nın kartıyla ve pazar bildirimiyle aynı pencere
+/// (`domain/stats/weekly_goal.dart`).
+///
+/// Aynı ilerleme ROADMAP madde 27'den beri geri sayım halkasının emek yayını da
+/// besliyor; ikisi de bu sınıfın aldığı [WeeklyGoalProgress] örneğini okuyor.
 class _WeeklyGoalRow extends StatelessWidget {
   const _WeeklyGoalRow({required this.progress});
 

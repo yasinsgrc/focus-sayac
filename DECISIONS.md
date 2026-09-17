@@ -2243,3 +2243,33 @@ dokunmadı: widget yalnızca zaman yayını çiziyor. Emek yayını oraya taşı
 payload'a haftalık hedef verisi eklemeyi gerektirir ve "türetilmiş değer
 Dart'tan okunmaz" kuralı gereği oranın Kotlin'de hesaplanmasını ister — ayrı
 madde olmalı.
+
+**Doğrulandı (2026-09-17).** Kabul ölçütü cihazda birebir kuruldu: aktif sınav
++300 güne alındı, yani zaman yayı `1-300/400` = %25'e çivilendi ve yalnızca
+emek ekseni oynadı. Yeni yardımcı `.verify/seed_week.py` — `seed_tier.py`nin
+kısa ufuklu kardeşi: o betik seansları 400 gün geriye yazıyor (kümülatif kademe
+merdiveni için) ve **kayan yedi günlük** pencereyi hiç doldurmuyor. Tohum
+satırları 1–3 gün geriye, `break_extensions=99` işaretiyle konuluyor; bu aralık
+hem pencerenin içinde hem de dönüş şeridini (madde 26) kapalı tutuyor, yani
+şerit kartı örtüp ölçümü bozmuyor.
+
+Dört durum gözlendi (`.verify/m27_a_bos|b_kismi|c_dolu|d_kapali.png`): hafta boş
+→ yalnızca soluk iz, `effort > 0` kapısı sayesinde leke yok; %42 → köz yayı
+~150°, kartın çubuğuyla aynı sayı; %100 → nane yay + "Hedef tamam"; hedef
+kapalı → yay da izi de yok, halka madde 27 öncesiyle birebir aynı. Zaman yayı
+dördünde de %25'te kaldı.
+
+**İki tuzak.** (1) Git Bash `/data/data/...` yolunu Windows yoluna çeviriyor ve
+`adb pull` "failed to stat remote object 'C:/Program Files/Git/data/...'" diyor;
+`MSYS_NO_PATHCONV=1` gerekiyor. (2) Drift tablosunun adı `app_settings` değil
+**`app_settings_table`**; ilk betik sessizce `no such table` ile düştü.
+Veritabanı `adb pull`/`adb push` ile taşındı (`shell cat` ikiliyi bozuyor,
+"Madde 21-22-24-25-26" bölümünde belgeli) ve her yazımdan sonra
+`chown u0_a216:u0_a216` + `restorecon` uygulanıp `-wal`/`-shm` silindi.
+
+**Yan bulgu — madde 27'den değil.** Zaman yayının 12 yönündeki başlangıç ucunda
+küçük bir köz lekesi var: `SweepGradient` + `StrokeCap.round` birleşimi yuvarlak
+ucu başlangıç açısının biraz gerisine taşıyor ve gradyanı ~360°'de, yani
+`ember` durağında örnekliyor. Kaynağı kesin, çünkü hedef kapalı karesinde emek
+yayı hiç çizilmediği hâlde leke duruyor. Bu maddede düzeltilmedi — zaman
+yayının boyasına dokunmak madde 27'nin kapsamı değil, ayrı madde olmalı.

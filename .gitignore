@@ -58,3 +58,8 @@ app.*.map.json
 **/android/**/*.jks
 **/android/**/*.p12
 **/android/**/*.keystore
+
+# Emülatör doğrulama çalışma alanı: ekran görüntüleri, çekilen veritabanları ve
+# tohumlama betikleri. DECISIONS.md bunun yok sayıldığını varsayıyordu ama kural
+# hiç yazılmamıştı — `git add -A` onlarca MB'lık PNG'yi depoya sokabiliyordu.
+/.verify/

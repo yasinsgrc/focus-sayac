@@ -816,9 +816,21 @@ yazılıydı, karar doğrudan alındı.
 - **Kapsam dışı:** ana ekran widget'ının Kotlin ikizi `RingRenderer.kt` yalnızca
   zaman yayını çiziyor; emek yayını oraya taşımak payload'a haftalık hedef
   verisi eklemeyi gerektirir, ayrı madde olmalı.
-- **Açık iş:** emülatör doğrulaması. Bu tamamen görsel bir değişiklik; test
-  painter'ın sözleşmesini çiviliyor ama yayın cihazda nasıl durduğunu
-  göstermiyor.
+- **Emülatör doğrulandı (2026-09-17).** Kabul ölçütü birebir kuruldu: aktif
+  sınav +300 güne alındı (zaman yayı `1-300/400` = %25'e çivilendi), haftalık
+  hedef 10 saate çekildi ve haftalık pencere tohumlandı. Dört durum gözlendi —
+  **hafta boş:** yalnızca soluk iz, yay ve leke yok; **4sa 10dk / 10sa:** köz
+  yayı 12 yönünden ~150°'ye (%42) gitti, kartın çubuğuyla aynı sayı;
+  **10sa / 10sa:** yay nane rengine döndü ve kart "Hedef tamam" dedi;
+  **hedef kapalı:** yay da izi de yok, halka madde 27 öncesiyle birebir aynı.
+  Zaman yayı dördünde de %25'te kaldı — iki eksen gerçekten bağımsız.
+  Ekran görüntüleri `.verify/m27_*.png`, tohumlama `.verify/seed_week.py`.
+- **Yan bulgu (madde 27'den değil):** zaman yayının 12 yönündeki başlangıç
+  ucunda küçük bir köz lekesi var. `SweepGradient` + `StrokeCap.round`
+  birleşiminden geliyor: yuvarlak uç başlangıç açısının biraz gerisine taşıyor
+  ve gradyanı ~360°'de, yani `ember` durağında örnekliyor. Hedef kapalı
+  karesinde emek yayı hiç çizilmediği hâlde leke durduğu için kaynağı kesin.
+  Ayrı madde olmalı.
 
 ---
 
@@ -924,6 +936,32 @@ hata yalnızca son düzlükte görünüyor.
 
 ---
 
+## 33. Zaman yayının başlangıcında köz lekesi ⬜ başlanmadı
+
+**Sorun.** Madde 27'nin emülatör doğrulamasında çıktı. Geri sayım halkasının
+zaman yayı 12 yönünden başlıyor ve tam başlangıç noktasında yayın kendi
+renginden (mavi `sky`) olmayan küçük turuncu bir leke duruyor. Kanıt
+`.verify/m27_a_bos.png`, `.verify/m27_d_kapali.png`.
+
+**Neden.** `countdown_ring_painter.dart` yayı `SweepGradient`
+(`sky → accent400 → ember`, `GradientRotation(-math.pi / 2)`) ve
+`StrokeCap.round` ile çiziyor. Yuvarlak uç başlangıç açısının biraz **gerisine**
+taşıyor; orada gradyan ~360°'de, yani son durakta (`ember`) örnekleniyor. Yayın
+oranı ne olursa olsun leke aynı yerde: %6 tabanında da, %25'te de görünüyor.
+
+Kaynağı kesin — madde 27'nin emek yayı **değil**: hedef kapalı karesinde emek
+yayı hiç çizilmediği hâlde leke duruyor.
+
+- **Kapsam:** üç seçenekten biri — (a) gradyanı `SweepGradient` yerine yayın
+  süpürdüğü açıya sığdırılmış duraklarla kur, (b) başlangıç ucunu `butt` yapıp
+  yalnızca bitiş ucunu yuvarlak bırak (iki ayrı `drawArc` gerekir),
+  (c) gradyanın 0. durağını yayın gerisini de kapsayacak şekilde genişlet.
+- **Kabul:** yayın başlangıcında yayın kendi rengi dışında piksel yok; bitiş
+  ucunun yuvarlaklığı ve prototipin üç gradyan durağı korunuyor.
+- **Boyut:** küçük.
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı
@@ -952,7 +990,7 @@ hata yalnızca son düzlükte görünüyor.
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(394 test, `flutter test`)*
+- [x] Testler geçiyor *(395 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.
