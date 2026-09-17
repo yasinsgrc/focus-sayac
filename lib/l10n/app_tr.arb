@@ -59,6 +59,23 @@
   "@countdownWeeklyGoalReachedSemantics": {
     "placeholders": { "focused": { "type": "String" } }
   },
+  "countdownComebackKicker": "TEKRAR HOŞ GELDİN",
+  "countdownComebackBody": "{tier} kademen ve {duration} yerinde duruyor.",
+  "@countdownComebackBody": {
+    "description": "BUGÜN kartının dönüş şeridi (ROADMAP madde 26). Kaybedilen seriyi değil korunanı söylüyor; tier kademe adı (Kıvılcım…Güneş), duration uzun hâliyle yazılmış kümülatif odak süresi.",
+    "placeholders": {
+      "tier": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "countdownComebackSemantics": "Tekrar hoş geldin. {tier} kademen ve {duration} yerinde duruyor.",
+  "@countdownComebackSemantics": {
+    "description": "Ekran okuyucu karşılığı; kicker ve gövde tek cümle olarak okunuyor.",
+    "placeholders": {
+      "tier": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
   "countdownFocusButton": "ODAKLAN",
   "countdownFocusButtonWithMinutes": "{minutes} DAKİKA ODAKLAN",
   "@countdownFocusButtonWithMinutes": {
@@ -510,6 +527,15 @@
   "notificationStreakRiskBody": "{streak} günlük seri için bugün 1 pomodoro yeter. Gün 04:00'te kapanıyor.",
   "@notificationStreakRiskBody": {
     "placeholders": { "streak": { "type": "int" } }
+  },
+  "notificationComebackTitle": "Ateşin sönmedi",
+  "notificationComebackBody": "{tier} kademen ve {duration} yerinde duruyor. Bir pomodoro yeniden yakar.",
+  "@notificationComebackBody": {
+    "description": "Dönüş bildirimi (ROADMAP madde 26). Seri kırılmış olabilir ama kademe küçülmez — cümle yalnızca korunanı söylüyor.",
+    "placeholders": {
+      "tier": { "type": "String" },
+      "duration": { "type": "String" }
+    }
   },
   "notificationBadgeTitle": "Yeni rozet: {name}",
   "@notificationBadgeTitle": {
