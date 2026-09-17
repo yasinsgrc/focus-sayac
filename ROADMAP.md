@@ -564,7 +564,9 @@ işaretini çevirmek".
 - **Yeni ARB anahtarları:** `countdownFocusedHoursUnit`,
   `countdownDaysLeftInline`. İkisinin glifleri de font subset'lerinde (`cmap`
   tarandı), sessiz Roboto düşüşü yok.
-- **Emülatör doğrulaması yapılmadı** — açık iş.
+- **Emülatör doğrulandı (2026-09-17).** Cihaz saati sınavdan 11 gün öncesine
+  alındı: kahraman sayı `100`, kicker `SAAT ODAKLANDIN`, kalan gün meta
+  satırına indi. **Ama meta satırı halkanın altına giriyor** — madde 32.
 
 ---
 
@@ -597,7 +599,10 @@ rozet ve saat merdiveni".
   diyalogdaki gibi `SizedBox` çocukla ölçülendirildi.
 - **Yeni ARB anahtarları:** `badgeTenHours*`, `badgeFiftyHours*`,
   `badgeTwoFiftyHours*`, `badgeProgressCounter`, `badgeProgressSemantics`.
-- **Emülatör doğrulaması yapılmadı** — açık iş.
+- **Emülatör doğrulandı (2026-09-17).** 100 saatlik tohumlanmış geçmişte
+  merdivenin dördü de göründü: 10/50/100 açık, kilitli "250 Saat Kulübü"
+  halkası kısmen dolu ve çıplak sayaç `100/250` yazıyor. İkon daireleri
+  çiziliyor — "yan bulgu"daki `SizedBox` düzeltmesi cihazda da tutuyor.
 
 ---
 
@@ -681,7 +686,9 @@ Tasarım: `docs/superpowers/specs/2026-09-13-haftalik-hedef-design.md`.
   yüzde yerine farkı seçme kararıyla çelişir. Ayrı madde olmalı.
 - **Kabul karşılandı:** hedef değiştirilebiliyor, Ekran 02'de görünüyor,
   hafta sınırı `weekly_summary.dart` ile aynı ve testle çivilenmiş.
-- **Emülatör doğrulaması yapılmadı** — açık iş.
+- **Emülatör doğrulandı (2026-09-17).** `BU HAFTA 55dk / 5sa` satırı Ekran
+  02'de `BUGÜN`ün altında göründü ve bir seans sonrası `1sa 20dk`ya yürüdü;
+  varsayılan hedef göçten gelen 300 dk.
 
 ---
 
@@ -717,7 +724,13 @@ yeri". SPEC.md §7.2 ve Ekran 09 binding tablosu güncellendi.
 - **Kabul karşılandı:** mola başlangıcında interstitial çıkmıyor (testle
   çivili), sıklık kuralı korunuyor, `interstitial_manager` testleri yeni ana
   göre güncel.
-- **Emülatör doğrulaması yapılmadı** — açık iş.
+- **Emülatör doğrulandı (2026-09-17).** Üç molanın üçünde de başlangıçta
+  interstitial çıkmadı (logcat'te tek `interstitial` izi bile yok); 1. molanın
+  başında yerine kutlama sayfası açıldı. 3. pomodoronun mola **sonunda** önce
+  `requestInAppReview` çağrıldı — Play Store'suz `google_apis` imajında servis
+  bulunamadığı için istem düştü ve sıra interstitial'a geldi. Yani
+  `otherPromptShown` kapısı tasarlandığı gibi: değerlendirme gösterilebilseydi
+  reklam bastırılacaktı.
 
 ---
 
@@ -757,9 +770,13 @@ bir yüzey yok — döndüğünde onu suçlayan bir sıfır tablosu karşılıyo
 - **Kabul karşılandı:** eşik aşılınca bildirim planlanıyor, odak tamamlanınca
   iptal edilip ileriye yeniden kuruluyor, şerit ve eşik altı kapsam dışılığı
   testle çivili.
-- **Emülatör doğrulaması yapılmadı** — açık iş (madde 25 ile aynı durum).
-  Bildirimin cihazda üç gün sonra düşmesi ancak saat ileri alınarak ya da eşik
-  geçici düşürülerek gözlenebilir.
+- **Emülatör doğrulandı (2026-09-17).** Üç odak seansı tamamlandıktan sonra
+  `dumpsys alarm` bildirimi tam üç gün sonrasının 21:00 TSİ anına kurulu
+  gösterdi (`ScheduledNotificationReceiver`, `exactAllowReason=permission`).
+  Cihaz saati o ana alınınca bildirim `streak_risk` kanalında id `1006` ile
+  düştü — "Ateşin sönmedi · Kıvılcım kademen ve 55 dakika…". Uygulama
+  açılınca karşılama şeridi çıktı ("Kıvılcım kademen ve 55 dakika yerinde
+  duruyor") ve ilk odak tamamlanınca bayraksız biçimde kendiliğinden kapandı.
 
 ---
 
@@ -833,19 +850,51 @@ alanlar: `id`, `examId`, `type`, `plannedDurationSec`, `completed`,
 
 ## 31. `FlameRenderer` doğrulama boşluğu ⬜ başlanmadı
 
-**Sorun.** Madde 23'ten devredilen açık iş: emülatör geçmiş verisiyle
-seed'lenemediği için meşale widget'ı yalnızca K1'de gözlemlendi.
-`FlameRenderer`'ın közlü taban (K4+), kıvılcım (K6+) ve hâle (K8+) dalları
-**hiçbir yerde** çalıştırılmadı ve Kotlin tarafında birim test yok.
+**Sorun.** Madde 23'ten devredilen açık iş. **2026-09-17'de yarısı kapandı:**
+Dart tarafı (`FlameWidget` + `FlameAvatarCard`) on kademenin onunda da cihazda
+çizdirildi — K1 Kıvılcım'dan K10 Güneş'e, ölçek artışı, K6'dan sonra
+kıvılcımlar, K8'den sonra hâle. Kanıt `.verify/tiers_all.png`. Kotlin
+`FlameRenderer` hâlâ hiçbir yerde çalıştırılmadı ve birim testi yok.
 
-- **Neden seed'lenemedi:** emülatör prodüksiyon imajı (`adb root` reddediyor),
-  `run-as` verecek debug APK için cihazda yer yoktu, hostta `sqlite3` yok.
-- **Kapsam (iki seçenekten biri):** (a) seed'li geçmişle bir debug koşumu,
-  (b) `FlameRenderer` için Kotlin/Robolectric birim testleri — (b) kalıcı
-  çözüm.
-- **Kabul:** on kademenin her biri için çizim yolu en az bir kez
+- **Seed sorunu çözüldü.** Ayrı bir doğrulama AVD'si (`focussayac_verify`,
+  `android-36/google_apis`, 8G veri bölümü) `adb root` veriyor; geçmiş, drift
+  veritabanına host tarafında Python `sqlite3` ile yazılıp `adb push` ile geri
+  konuyor. **`adb shell cat` ile çekme ikili veriyi bozuyor** — `adb pull`
+  şart.
+- **Kalan kapsam:** widget'ı ana ekrana koymak hâlâ adb ile sürülemiyor
+  (`appwidget` yalnızca `grantbind` destekliyor, `cmd appwidget` yok). Kalıcı
+  çözüm `FlameRenderer` için Kotlin/Robolectric birim testleri.
+- **Doğrulanan dolaylı kanıt:** `HomeWidgetPreferences.xml` içinde
+  `cumulativeFocusSeconds=1440000` (tam 400 saat) yazılı, yani Kotlin'in
+  okuduğu değer doğru; altı sağlayıcının hepsi `dumpsys appwidget`te kayıtlı.
+- **Kabul:** `FlameRenderer`ın on kademesi için çizim yolu en az bir kez
   çalıştırılmış.
 - **Boyut:** küçük–orta.
+
+---
+
+## 32. Son düzlükte meta satırı halkanın altına giriyor ⬜ başlanmadı
+
+**Sorun.** Madde 21'in emülatör doğrulamasında çıktı. Son düzlükte meta satırı
+üç parçaya çıkıyor ("11 GÜN • 20:59:41 • 20 Haziran 2027") ve satırın iki ucu
+halkanın çizgisinin **altına** giriyor: "11"in üstünden mor yay, "2027"nin
+üstünden mavi yay geçiyor. Kanıt `.verify/v28_metarow_zoom.png`.
+
+**Neden.** `countdown_screen.dart:540` satırdaki kapağı `SizedBox(width: 284)`
+ile koyuyor ve yorum 284'ü "halkanın 9px'lik izinin içinde kalan genişlik"
+diye gerekçelendiriyor. Ama 284 halkanın **yatay çapındaki** genişlik; satır
+merkezin ~60dp altında duruyor ve orada dairenin kirişi çok daha dar
+(iç kesik çizgili çember için ~189dp). Ölçülen satır ~240dp, yani kapağın
+altında kalıyor — `FittedBox(scaleDown)` hiç devreye girmiyor — ama kirişi
+aşıyor. İki parçalı normal durumda satır ~174dp, kirişin altında; bu yüzden
+hata yalnızca son düzlükte görünüyor.
+
+- **Kapsam:** üç seçenekten biri — (a) kapağı satırın dikey ofsetindeki
+  kirişe göre hesapla (metin küçülür), (b) satırı halkanın dışına al,
+  (c) son düzlükte tarihi kısalt. Tasarım kararı gerektiriyor.
+- **Kabul:** son düzlükte satırın hiçbir parçası halka çizgisiyle
+  kesişmiyor; iki parçalı normal durum bozulmuyor.
+- **Boyut:** küçük kod, küçük tasarım kararı.
 
 ---
 
@@ -869,7 +918,10 @@ seed'lenemediği için meşale widget'ı yalnızca K1'de gözlemlendi.
       hâlâ önerilir)*
 - [x] Android `--profile` / `--release` derlemesi geçiyor *(madde 11 — iki
       blocker düzeltildi)*
-- [ ] Launcher simgesi üretildi *(madde 11 — hâlâ Flutter varsayılanı)*
+- [x] Launcher simgesi üretildi *(kutu bayattı: `mipmap-anydpi-v26/ic_launcher.xml`
+      beş yoğunlukta foreground + monochrome katmanlarıyla duruyor, keyline
+      kararı dosyanın yorumunda; emülatörde Ayarlar'ın uygulama sayfasında
+      Flutter varsayılanı değil özel simge göründü)*
 - [ ] Yayın çıktısı gerçek anahtarla imzalı *(`key.properties` yok, AAB şu an
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor

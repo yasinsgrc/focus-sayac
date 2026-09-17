@@ -2122,6 +2122,57 @@ bir karşılama satırı. Tasarım:
   `domain/flame/flame_tier.dart`ı import ediyor — `domain/time` gibi saf bir
   yaprak olduğu için servisin `services/storage`den kaçınma kuralı bozulmuyor.
 
-**Doğrulanmadı:** emülatör doğrulaması yapılmadı — açık iş. Bildirimin cihazda
-üç gün sonra düşmesi ancak cihaz saati ileri alınarak ya da eşik geçici olarak
-düşürülerek gözlenebilir.
+**Doğrulandı (2026-09-17):** cihaz saati üç gün ileri alınarak gözlendi.
+`dumpsys alarm` bildirimi tam üç gün sonrasının 21:00 TSİ anına kurulu
+gösterdi; saat o ana geldiğinde bildirim `streak_risk` kanalında id `1006` ile
+düştü, uygulama açılınca karşılama şeridi çıktı, ilk odak tamamlanınca kapandı.
+Ayrıntı ve yöntem: "Madde 21-22-24-25-26 — emülatör doğrulaması".
+
+---
+
+## Madde 21-22-24-25-26 — emülatör doğrulaması
+
+Beş maddede birikmiş "emülatör doğrulaması yapılmadı" açık işi tek oturumda
+kapandı. Karar, **doğrulamayı ayrı bir AVD'ye taşımak** oldu.
+
+**Neden ayrı AVD.** Mevcut `Medium_Phone_API_36.1` `google_apis_playstore`
+imajı; Play Store imajları her zaman `user` build olduğu için `adb root`
+reddediliyor ve cihaz saati değiştirilemiyor. Ayrıca 6G'lik veri bölümü başka
+projelerin debug kurulumlarıyla %92 doluydu, 170 MB'lık debug APK sığmıyordu.
+Kullanıcının uygulamalarını silmek yerine `focussayac_verify` adında
+`android-36/google_apis` tabanlı, 8G veri bölümlü ayrı bir AVD açıldı — bu
+imaj `adb root` veriyor, dolayısıyla saat ileri alınabiliyor ve uygulama
+veritabanına doğrudan erişilebiliyor.
+
+**Zamanı sıçratmak seansı tamamlıyor.** Pomodoro bitişi duvar saatine bakan
+bir son tarihe bağlı; `date -s @<epoch>` ile saati ileri almak 25 dakikalık
+seansı anında tamamlıyor. Beş pomodoro döngüsü böyle dakikalar içinde koştu.
+Geriye alma zaten korumalı (SPEC DoD), ileriye alma meşru tamamlanma.
+
+**Geçmişi tohumlama.** `FlameTier` merdiveni 400 saate kadar çıkıyor; bu
+geçmiş elle üretilemez. Veritabanı `adb pull` ile çekiliyor, host'ta Python
+`sqlite3` ile `pomodoro_sessions`a tamamlanmış odak satırları yazılıyor
+(`break_extensions=99` işaretiyle, her turda silinip yeniden kuruluyor),
+`adb push` ile geri konuyor. Betik `.verify/seed_tier.py` — `.verify/`
+gitignore'da, depoya girmiyor.
+
+**Tuzak: `adb shell cat` ikili veriyi bozuyor.** Veritabanı ilk seferde
+`run-as <pkg> cat …` ile çekildi; dosya 28672 yerine 28673 bayt geldi ve
+sqlite `database disk image is malformed` dedi. Uygulama açılış ekranında
+kilitlendi ve kademe taraması sessizce **splash ekranını** fotoğrafladı —
+ekranda hata yok, uygulama sadece hiç açılmıyor. `adb pull` ikili güvenli;
+`integrity_check` ile teyit edilmeli.
+
+**Play Store'suz imajın yan etkisi faydalı çıktı.** `google_apis` imajında
+`com.android.vending` yok, bu yüzden `requestInAppReview` servise bağlanamıyor.
+Madde 25'in çakışma kararı tam da bu yüzden görünür oldu: mola sonunda önce
+değerlendirme istemi çağrıldı, düştü, sonra interstitial açıldı — yani
+`otherPromptShown` kapısı çalışıyor ve istem gösterilebilseydi reklam
+bastırılacaktı.
+
+**Çıkan hata.** Madde 21'in meta satırı son düzlükte halkanın altına giriyor —
+ROADMAP madde 32.
+
+**Kapanmayan.** Kotlin `FlameRenderer` hâlâ çalıştırılamadı: widget'ı ana
+ekrana koymak adb ile sürülemiyor (`appwidget` yalnızca `grantbind`
+destekliyor, `cmd appwidget` yok). ROADMAP madde 31 bu tek parçaya daraldı.
