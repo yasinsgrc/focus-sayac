@@ -164,7 +164,12 @@ void main() {
 
     expect(adService.bannerSizeRequests, 1);
     expect(adService.bannerRequests, 1);
-    expect(tester.getSize(find.byType(BannerAdSlot)).height, kBannerSlotFallbackHeight + 88);
+    // Ekran 02'nin aksine 88 eklenmiyor: Ekran 06'da alt çubuğun payı
+    // yuvanın `bottomMargin`inde değil yerleşimde (`_navBarFootprint`).
+    // Yuva reklam istenmediğinde tamamen kapandığı için o payı da
+    // götürüyordu ve kaydırılan içeriğin sonu çubuğun arkasına giriyordu
+    // (ROADMAP madde 29).
+    expect(tester.getSize(find.byType(BannerAdSlot)).height, kBannerSlotFallbackHeight);
 
     await _disposeTree(tester);
   });

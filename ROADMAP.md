@@ -871,17 +871,40 @@ yazılıydı, karar doğrudan alındı.
 
 ---
 
-## 29. Aylık ısı haritası (katkı ızgarası) ⬜ başlanmadı
+## 29. Aylık ısı haritası (katkı ızgarası) ✅ bitti
 
-**Sorun.** İstatistik ekranı tek bar grafiği. "Zinciri kırma"nın görsel
-karşılığı olan ızgara yok; piksel başına en çok hikâye anlatan grafik bu.
+416 test geçiyor (+19). Tasarım belgesi:
+`docs/superpowers/specs/2026-09-17-aylik-isi-haritasi-design.md`.
+Kararlar: `DECISIONS.md` "Madde 29".
 
-**Kanıt.** `heatmap` / `contributionGrid` kodda yok.
-
-- **Kapsam:** Ekran 06'ya aylık ızgara. Veri zaten `PomodoroSession`'da.
-- **Kabul:** boş ay, kısmi ay ve yoğun ay üç durumda da doğru çiziliyor;
-  ekran okuyucu karşılığı var.
-- **Boyut:** küçük–orta.
+- **Ekran 06'ya takvim ızgarası.** Sütunlar Pzt–Paz, satırlar haftalar; pencere
+  içinde bulunulan ay. Veri yeni bir alandan değil, mevcut `PomodoroSession`
+  kayıtlarından türüyor (`calculateMonthlyHeatmap`), göç yok.
+- **Seviye eşikleri mutlak** (1 / 25 / 50 / 90 dk), ayın en yoğun gününe göre
+  ölçeklenmiyor. Bar chart kendi haftasına göre ölçekleniyor ama ızgarada aynı
+  şey, ayda tek bir 5 dakikalık günü olan kullanıcıya o günü **en koyu** tonda
+  gösterirdi.
+- **Gelecek günler hiç çizilmiyor** ve ızgara bugünün satırında bitiyor. Önce
+  soluk bir dolgu denendi; emülatörde boş geçmiş günden ayırt edilemedi
+  (%9 ↔ %5 beyaz) ve kalan satırlar ölü alan bıraktı.
+- **Ekran 06 kaydırmaya geçti** (madde 24'te Ekran 02'ye uygulanan kalıp).
+  Gövde `_StatsBody`ye çıktı, banner kaydırma alanının dışında kaldı.
+- **Alt çubuğun payı yuvadan yerleşime taşındı (yan kazanım).**
+  `BannerAdSlot` reklam istenmediğinde (onay yok ya da premium) tamamen
+  kapanıyor ve `bottomMargin: 88`i de götürüyor; sabit yerleşimde farkı
+  `Spacer` yutuyordu, kaydırmalı gövdede ızgaranın alt iki satırı çubuğun
+  arkasında kalıyordu. Ekran 02'de aynı gizli kusur duruyor — orada içerik
+  henüz o kadar uzamıyor.
+- **Başlık ayın adı değil `BU AY`:** `DateFormat` ya 12 yeni ARB anahtarı ya da
+  karta `intl` bağımlılığı demek, oysa kart `initializeDateFormatting`
+  çağrılmadan da çizilmek zorunda.
+- **Kapsam dışı:** ay gezinme okları, hücreye dokunma/tooltip, yıllık pencere.
+- **Emülatör doğrulandı (2026-09-17).** Boş ay ızgarayı yine çiziyor ama toplam
+  metnini yazmıyor (`.verify/m29_g_bos_ay_koyu.png`); tohumlanmış 14 günlük
+  eylülde dört ton da ayırt ediliyor, bugünün ember çerçevesi yerinde, toplam
+  `14 saat 40 dakika` (`m29_e_dolu_ay_koyu.png`), açık temada rampa tersine
+  dönüyor (`m29_f_dolu_ay_acik.png`). `m29_c_dolu_ay.png` düzeltme **öncesi**
+  hâli: kartın alt satırları çubuğun arkasında.
 
 ---
 

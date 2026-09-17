@@ -2357,3 +2357,94 @@ rozet dialogundan açılan kart çubuksuz ve kapatma düğmeli (`m28_e_kart.png`
 "1080 × 1920 PNG" satırı artık hiçbir şeyin altında kalmıyor, kapatınca yine
 rozetlere döndü. `m28_b_veriler.png` veriler sekmesinin çubuğu: aktif hap
 genişleyince eylem yuvası sola kayıyor, oranlar bozulmuyor.
+
+---
+
+## Madde 29 — Aylık ısı haritası
+
+**Sorun.** İstatistik ekranının tek grafiği 7 günlük bar chart'tı. Kullanıcı
+kendi **ritmini** — hangi günler çalıştığını, boşluğun nerede açıldığını —
+hiçbir yerde göremiyordu. Veri zaten elde: `PomodoroSessions` tablosundaki
+tamamlanmış odak seansları. Yeni alan, agregat tablo, drift göçü gerekmedi.
+
+### 1. Neden takvim düzeni, GitHub tarzı değil
+
+Sütunlar Pzt–Paz, satırlar haftalar. GitHub'ın 7 satır × haftalar düzeni bir ay
+için yalnızca 4-5 sütun bırakıyor ve ızgara yatayda cılız kalıyor; o düzen asıl
+yıllık pencerede kazanıyor. Takvim düzeni "hangi gün" sorusunu doğrudan
+cevaplıyor, ayın başındaki boş hücreler de ayın şeklini veriyor.
+
+### 2. Seviye eşikleri neden mutlak
+
+`kHeatmapLevelThresholds = [1, 25, 50, 90]` dakika; ayın en yoğun gününe göre
+ölçeklenmiyor. `WeeklyFocusBarPainter` sütunları kendi haftasının en yüksek
+gününe göre ölçekliyor ("sabit bir tavan az çalışılan bir haftada tüm sütunları
+okunmaz kılardı") ama ızgarada aynı kural yanlış bir şey söylerdi: ayda tek bir
+5 dakikalık günü olan kullanıcı o günü **en koyu** tonda görürdü. Sınırlar 25
+dakikalık varsayılan pomodoronun 1 / 2 / 3+ katları ve dakikada sabit oldukları
+için iki ay birbiriyle karşılaştırılabiliyor.
+
+### 3. Gelecek günler neden hiç çizilmiyor
+
+Ayın henüz gelmemiş günleri, baştaki boşluklar gibi yalnızca yer tutuyor; ızgara
+da bugünün satırında bitiyor, ayın sonunda değil.
+
+Tasarımda önce soluk bir dolgu vardı (`fillFaint` gelecek, `fillSubtle` boş
+geçmiş gün). Emülatörde ikisi ayırt edilemedi — fark %5 ile %9 beyaz — ve ayın
+ortasında kartın altında iki satır yüksekliğinde ölü alan kaldı. Boş bırakmak
+hem kesin bir sinyal hem zaten tanıdık bir kalıp; kart ay ilerledikçe büyüyor.
+
+Kararın kökü ton: ayın 2'sinde kullanıcıya 28 boş kutu göstermek, henüz
+yaşanmamış günleri kaçırılmış gün gibi okuturdu.
+
+### 4. Başlık neden ayın adı değil, `BU AY`
+
+`DateFormat.yMMMM` ya 12 yeni ARB anahtarı ya da karta `intl` bağımlılığı demek.
+`shortDayNames`in yorumunda yazılı kısıt burada da geçerli: kart
+`initializeDateFormatting` çağrılmadan da çizilmek zorunda —
+`stats_screen_test`in üç testinden ikisi onu çağırmıyor. Kicker
+`statsWeeklyClosingLabel` ("BU HAFTA") ile aynı kalıpta duruyor.
+
+Ayın toplamı **boş ayda hiç yazılmıyor**: haftalık kapanış kartının gerekçesinin
+aynısı — "0 dakika" eşlik eden bir tondan ölçen bir tona geçiş. Izgaranın
+kendisi boş ayda da çiziliyor; doldurulmayı bekleyen ızgara maddenin asıl fikri.
+
+### 5. Neden `CustomPainter` değil widget ağacı
+
+42 hücre statik ve bir `RepaintBoundary` içinde; karşılığında her hücre
+`find.byKey` ile testten görünüyor. Madde 31 zaten bir painter'ın
+(`FlameRenderer`) doğrulanamamasından açık — ikinci bir doğrulama boşluğu
+açılmadı.
+
+### 6. Ekran okuyucu: tek özet cümle
+
+Izgaranın tamamı tek bir `Semantics` kabı (`_ComebackRow` / `_WeeklyGoalRow`
+kalıbı): *"Bu ay 30 günün 12 gününde odaklandın, toplam 3 saat 40 dakika."*
+Hücre hücre gezinme, TalkBack kullanıcısını tek bir karttan geçmek için 30
+durak aşmaya zorlardı ve boş günler de durak olurdu.
+
+### 7. Alt çubuğun payı `BannerAdSlot`tan yerleşime taşındı
+
+Ekran 06 bu maddede kaydırmaya geçti (madde 24'te Ekran 02'ye uygulanan kalıp:
+`Expanded` + `LayoutBuilder` + `ConstrainedBox(minHeight:)`, banner kaydırma
+alanının dışında). Kaydırma, gizli bir kusuru görünür yaptı.
+
+`BannerAdSlot` reklam **hiç istenmediğinde** (onay yok ya da premium) tamamen
+kapanıyor — ve `bottomMargin: 88`i, yani alt gezinme çubuğunun payını da
+götürüyor. Sabit yerleşimde bu farkı `Spacer` yutuyordu. Kaydırmalı gövdede ise
+içeriğin sonu çubuğun arkasına giriyor: emülatörde ızgaranın alt iki satırı
+görünmüyordu. Pay artık `StatsScreen._navBarFootprint` olarak yerleşimde,
+`BannerAdSlot` yalnızca kendi yüksekliğini ayırıyor.
+
+**Ekran 02'de aynı gizli kusur duruyor.** Orada içerik henüz çubuğun payı kadar
+uzamıyor, o yüzden bu maddede dokunulmadı.
+
+### 8. Kapsam dışı
+
+- **Ay gezinme okları.** Seçili ayı tutan bir durum, ilk seansın ayından önceye
+  ve gelecek aya geçişin kapatılması, üç yeni widget testi demek. Kabul ölçütü
+  (boş / kısmi / yoğun ay) içinde bulunulan ayla karşılanıyor.
+- **Hücreye dokunma, tooltip, gün detayı.** Izgaranın işi ritmi bir bakışta
+  vermek; gün başına sayı bar chart'ta zaten var.
+- **Yıllık pencere.** 7 satır × 52 sütun düzeni yatay kaydırma ve ayrı bir
+  yoğunluk ölçeği ister.

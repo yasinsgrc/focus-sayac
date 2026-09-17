@@ -90,17 +90,23 @@ Hücreler kartın genişliğine göre kendiliğinden kareleniyor.
 | Hâl | Renk |
 |---|---|
 | Seviye 1–4 | `Color.lerp(colors.skyDeep, colors.sky, level / kHeatmapLevels)` |
-| Boş **geçmiş** gün | `colors.divider` |
-| Ayın **gelecek** günü | Dolgu yok, `colors.hairline` çerçeve |
+| Boş **geçmiş** gün | `colors.fillSubtle` |
+| Ayın **gelecek** günü | Hücre hiç çizilmiyor |
 | Bugün | Seviyesinden bağımsız `colors.ember` çerçeve |
 
 `sky` tanımı gereği "veri, istatistik" (`app_colors.dart:188`) — bar chart da bu
 rampayı kullanıyor. Yeni tema alanı açılmıyor, iki tema da mevcut tokenlardan
-besleniyor.
+besleniyor. Boş gün için `divider` değil `fillSubtle`: ikisi de nötr bir
+bindirme ama dosyanın kendi ayrımıyla "`divider`/`hairline` çizgi, `fill*` ise
+alan kaplar".
 
-Gelecek günlerin dolgusuz olması bir ton kararı: ayın 2'sinde kullanıcıya 28
-tane boş kutu göstermek, henüz yaşanmamış günleri kaçırılmış gün gibi
-okuturdu. Bugünün ember çerçevesi bar chart'ın bugünü ember yapmasıyla aynı.
+Gelecek günlerin **hiç çizilmemesi** bir ton kararı: ayın 2'sinde kullanıcıya 28
+tane boş kutu göstermek, henüz yaşanmamış günleri kaçırılmış gün gibi okuturdu.
+Önce soluk bir dolgu (`fillFaint`) denendi ama emülatörde boş geçmiş günden
+ayırt edilemedi — iki token arasındaki fark %9 ↔ %5 beyaz. Baştaki boşlukların
+kalıbı hem kesin hem zaten tanıdık. Aynı sebeple ızgara **bugünün satırında**
+bitiyor, ayın sonunda değil: kalan satırlar ölü alan olurdu, kart ay ilerledikçe
+büyüyor. Bugünün ember çerçevesi bar chart'ın bugünü ember yapmasıyla aynı.
 
 ### Başlık ayın adı değil `BU AY`
 
@@ -140,6 +146,15 @@ sınırda. Yeni kart hiçbir düzenlemeyle sığmıyor.
 constraints.maxHeight)`. Banner kaydırma alanının **dışında** kalıyor — reklam
 kaydırılıp gözden kaybolmuyor, yuvası eskisi gibi altta duruyor. `minHeight`
 ekranın tamamı olduğu için uzun ekranlarda yerleşim birebir aynı kalıyor.
+
+Gövde `_StatsBody`ye çıkıyor (`_CountdownBody` kalıbı): `StatsScreen` kabuk
+olarak kaydırmayı, banner'ı ve çubuğu taşıyor.
+
+Alt çubuğun payı `BannerAdSlot`ın `bottomMargin`inden alınıp yerleşime
+taşınıyor. Yuva reklam istenmediğinde (onay yok ya da premium) **tamamen**
+kapanıyor ve o payı da götürüyor; sabit yerleşimde farkı `Spacer` yutuyordu,
+kaydırmalı gövdede ise içeriğin sonu çubuğun arkasına giriyor — emülatörde
+ızgaranın alt iki satırı görünmüyordu.
 
 Kart en alta, "en verimli aralık" satırının ardına giriyor; `RiseIn` gecikmesi
 sıradaki adım (`RiseIn.step * 7`).
