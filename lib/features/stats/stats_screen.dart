@@ -8,27 +8,24 @@ import '../../core/widgets/bottom_nav_bar.dart';
 import '../../core/widgets/rise_in.dart';
 import '../../core/widgets/rolling_number.dart';
 import '../../domain/stats/focus_stats.dart';
+import '../../domain/stats/monthly_heatmap.dart';
 import '../../domain/stats/stats_providers.dart';
 import '../../domain/stats/weekly_summary.dart';
 import '../../domain/time/duration_formatter.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/ads/banner_ad_slot.dart';
+import 'widgets/monthly_heatmap_card.dart';
 import 'widgets/weekly_focus_bar_painter.dart';
 
 /// Ekran 06 — istatistik. Prototip v2 satır 248-285 birebir. Prototipin
 /// `42 SAAT` / `1 sa 48 dk` / `11 GÜN` / `%86` / `%94` değerlerinin hiçbiri
 /// kodda yok; hepsi `PomodoroSession` kayıtlarından türetilir (SPEC.md DoD).
-class StatsScreen extends ConsumerWidget {
+class StatsScreen extends StatelessWidget {
   const StatsScreen({super.key});
 
-  /// Prototipin bar chart kartı yüksekliği (satır 259).
-  static const double _chartHeight = 162;
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    final FocusStats stats = ref.watch(focusStatsProvider);
 
     return Scaffold(
       backgroundColor: colors.bg,
@@ -52,109 +49,34 @@ class StatsScreen extends ConsumerWidget {
             ),
           ),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(26, 6, 26, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  const SizedBox(height: 8),
-                  RiseIn(
-                    child: Text(
-                      l10n.statsTotalFocus,
-                      style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  RiseIn(
-                    delay: RiseIn.step,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: ShaderMask(
-                        shaderCallback: (Rect bounds) => LinearGradient(
-                          colors: colors.chromeGradient,
-                          stops: AppColors.chromeGradientStops,
-                        ).createShader(bounds),
-                        child: RollingNumber(
-                          // Yön kaynağı ham saniye: metin `3 SAAT` ↔ `180
-                          // DAKİKA` arasında birim değiştirse de toplam odak
-                          // hep artıyor.
-                          value: stats.cumulativeSeconds,
-                          text: _cumulativeText(l10n, stats.cumulativeSeconds),
-                          style: AppTypography.counter(
-                            fontSize: AppTextSize.counterLg,
-                            color: Colors.white,
-                          ),
+            // Gövde **yalnızca sığmadığında** kayıyor (madde 24'te Ekran 02'ye
+            // uygulanan kalıbın aynısı): `minHeight` ekranın tamamı olduğu için
+            // uzun ekranlarda içerik eskisi gibi yerleşiyor. Banner kaydırma
+            // alanının dışında — reklam kaydırılıp gözden kaybolmuyor.
+            //
+            // Aylık ısı haritası (madde 29) eklenince gerekti: kart en sıkı
+            // hâliyle ~250px istiyor, oysa ekran 390x844'te `Spacer`ı sıfıra
+            // inmiş hâlde zaten sınırdaydı.
+            child: Column(
+              children: <Widget>[
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints constraints) {
+                      return SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                          child: const _StatsBody(),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 6),
-                  RiseIn(
-                    delay: RiseIn.step * 2,
-                    child: Text(
-                      l10n.statsWeeklyAverage(_averageText(l10n, stats.dailyAverageSeconds)),
-                      style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral500),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  // Haftalık kapanış: pazar akşamı gönderilen bildirimin
-                  // uygulamadaki karşılığı. Bildirim bir "dönüş sebebi"
-                  // olabilsin diye dönülecek bir yer gerekiyordu — aynı iki sayı
-                  // burada her gün duruyor (`weeklySummaryProvider`).
-                  RiseIn(delay: RiseIn.step * 3, child: const _WeeklyClosingCard()),
-                  const SizedBox(height: 12),
-                  RiseIn(
-                    delay: RiseIn.step * 4,
-                    child: _Card(
-                      padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
-                      child: RepaintBoundary(
-                        child: CustomPaint(
-                          size: const Size(double.infinity, _chartHeight),
-                          painter: WeeklyFocusBarPainter(week: stats.lastWeek, colors: colors, l10n: l10n),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RiseIn(
-                    delay: RiseIn.step * 5,
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: _MetricCard(
-                            label: l10n.statsLongestStreak,
-                            value: stats.longestStreak,
-                            valueText: '${stats.longestStreak}',
-                            unit: l10n.statsDaysUnit,
-                            valueColor: colors.ember,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _MetricCard(
-                            label: l10n.statsCompletion,
-                            value: stats.completionPercent ?? 0,
-                            valueText: stats.completionPercent == null
-                                ? l10n.commonEmptyValue
-                                : l10n.statsCompletionPercent(stats.completionPercent!),
-                            valueColor: colors.mint,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (stats.productiveWindow != null) ...<Widget>[
-                    const SizedBox(height: 12),
-                    RiseIn(
-                      delay: RiseIn.step * 6,
-                      child: _ProductiveWindowCard(window: stats.productiveWindow!),
-                    ),
-                  ],
-                  const Spacer(),
-                  // SPEC.md §7.1: banner yalnızca Ekran 02 ve Ekran 06.
-                  const BannerAdSlot(bottomMargin: 88),
-                ],
-              ),
+                ),
+                // SPEC.md §7.1: banner yalnızca Ekran 02 ve Ekran 06.
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 26),
+                  child: BannerAdSlot(bottomMargin: 88),
+                ),
+              ],
             ),
           ),
           Positioned(
@@ -166,6 +88,135 @@ class StatsScreen extends ConsumerWidget {
               onSelect: (AppNavTab tab) => navigateToNavTab(context, tab, current: AppNavTab.stats),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ekran 06'nın kaydırılabilir gövdesi — prototip v2 satır 248-285 birebir.
+/// Prototipin `42 SAAT` / `1 sa 48 dk` / `11 GÜN` / `%86` / `%94` değerlerinin
+/// hiçbiri kodda yok; hepsi `PomodoroSession` kayıtlarından türer (SPEC.md DoD).
+class _StatsBody extends ConsumerWidget {
+  const _StatsBody();
+
+  /// Prototipin bar chart kartı yüksekliği (satır 259).
+  static const double _chartHeight = 162;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final FocusStats stats = ref.watch(focusStatsProvider);
+    final MonthlyHeatmap heatmap = ref.watch(monthlyHeatmapProvider);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(26, 6, 26, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          const SizedBox(height: 8),
+          RiseIn(
+            child: Text(
+              l10n.statsTotalFocus,
+              style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600),
+            ),
+          ),
+          const SizedBox(height: 8),
+          RiseIn(
+            delay: RiseIn.step,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: ShaderMask(
+                shaderCallback: (Rect bounds) => LinearGradient(
+                  colors: colors.chromeGradient,
+                  stops: AppColors.chromeGradientStops,
+                ).createShader(bounds),
+                child: RollingNumber(
+                  // Yön kaynağı ham saniye: metin `3 SAAT` ↔ `180
+                  // DAKİKA` arasında birim değiştirse de toplam odak
+                  // hep artıyor.
+                  value: stats.cumulativeSeconds,
+                  text: _cumulativeText(l10n, stats.cumulativeSeconds),
+                  style: AppTypography.counter(
+                    fontSize: AppTextSize.counterLg,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          RiseIn(
+            delay: RiseIn.step * 2,
+            child: Text(
+              l10n.statsWeeklyAverage(_averageText(l10n, stats.dailyAverageSeconds)),
+              style: AppTypography.body(fontSize: AppTextSize.md, color: colors.neutral500),
+            ),
+          ),
+          const SizedBox(height: 14),
+          // Haftalık kapanış: pazar akşamı gönderilen bildirimin
+          // uygulamadaki karşılığı. Bildirim bir "dönüş sebebi"
+          // olabilsin diye dönülecek bir yer gerekiyordu — aynı iki sayı
+          // burada her gün duruyor (`weeklySummaryProvider`).
+          RiseIn(delay: RiseIn.step * 3, child: const _WeeklyClosingCard()),
+          const SizedBox(height: 12),
+          RiseIn(
+            delay: RiseIn.step * 4,
+            child: _Card(
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  size: const Size(double.infinity, _chartHeight),
+                  painter: WeeklyFocusBarPainter(week: stats.lastWeek, colors: colors, l10n: l10n),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          RiseIn(
+            delay: RiseIn.step * 5,
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: _MetricCard(
+                    label: l10n.statsLongestStreak,
+                    value: stats.longestStreak,
+                    valueText: '${stats.longestStreak}',
+                    unit: l10n.statsDaysUnit,
+                    valueColor: colors.ember,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MetricCard(
+                    label: l10n.statsCompletion,
+                    value: stats.completionPercent ?? 0,
+                    valueText: stats.completionPercent == null
+                        ? l10n.commonEmptyValue
+                        : l10n.statsCompletionPercent(stats.completionPercent!),
+                    valueColor: colors.mint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (stats.productiveWindow != null) ...<Widget>[
+            const SizedBox(height: 12),
+            RiseIn(
+              delay: RiseIn.step * 6,
+              child: _ProductiveWindowCard(window: stats.productiveWindow!),
+            ),
+          ],
+          const SizedBox(height: 12),
+          // Aylık ısı haritası (ROADMAP madde 29): bar chart son yedi günün
+          // dakikalarını veriyor, ızgara ise ritmi — hangi günler çalışıldığını
+          // ve boşluğun nerede açıldığını.
+          RiseIn(
+            delay: RiseIn.step * 7,
+            child: MonthlyHeatmapCard(heatmap: heatmap),
+          ),
+          const SizedBox(height: 12),
         ],
       ),
     );

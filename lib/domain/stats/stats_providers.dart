@@ -5,6 +5,7 @@ import '../../services/storage/app_database.dart';
 import '../pomodoro/pomodoro_stats_providers.dart';
 import '../settings/settings_providers.dart';
 import 'focus_stats.dart';
+import 'monthly_heatmap.dart';
 import 'weekly_goal.dart';
 import 'weekly_summary.dart';
 
@@ -15,6 +16,18 @@ final Provider<FocusStats> focusStatsProvider = Provider<FocusStats>((Ref ref) {
   final List<PomodoroSession> sessions =
       ref.watch(allSessionsProvider).value ?? const <PomodoroSession>[];
   return calculateFocusStats(sessions: sessions, nowUtc: DateTime.now().toUtc());
+});
+
+/// Ekran 06'nın aylık ısı haritası (ROADMAP madde 29).
+///
+/// Ayrı bir sağlayıcı ama aynı akıştan: ızgaranın ay toplamı ekranın kümülatif
+/// odağıyla ve bar chart'ın günleriyle sapamaz. `focusStatsProvider`ın içine
+/// alan olarak girmedi — ızgara kendi eşiklerini ve kendi takvim yerleşimini
+/// getiriyor, `focus_stats.dart` zaten altı metrik taşıyor.
+final Provider<MonthlyHeatmap> monthlyHeatmapProvider = Provider<MonthlyHeatmap>((Ref ref) {
+  final List<PomodoroSession> sessions =
+      ref.watch(allSessionsProvider).value ?? const <PomodoroSession>[];
+  return calculateMonthlyHeatmap(sessions: sessions, nowUtc: DateTime.now().toUtc());
 });
 
 /// Belirli bir sınav için biriken odak süresi (saniye) — Ekran 02'nin son

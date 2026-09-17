@@ -442,6 +442,20 @@
   "statsWeekdaySat": "Cmt",
   "statsWeekdaySun": "Paz",
 
+  "statsHeatmapLabel": "BU AY",
+  "statsHeatmapSemantics": "Bu ay {dayCount} günün {activeDays} gününde odaklandın, toplam {duration}.",
+  "@statsHeatmapSemantics": {
+    "description": "Aylık ısı haritasının ekran okuyucu karşılığı (ROADMAP madde 29). Izgaranın tamamı tek bir durak olarak okunuyor; hücre hücre gezinme 30 durak demek olurdu. duration uzun hâliyle yazılmış ay toplamı.",
+    "placeholders": {
+      "dayCount": { "type": "int" },
+      "activeDays": { "type": "int" },
+      "duration": { "type": "String" }
+    }
+  },
+  "statsHeatmapEmptySemantics": "Bu ay henüz odak yok.",
+  "statsHeatmapLegendLow": "az",
+  "statsHeatmapLegendHigh": "çok",
+
   "settingsTitle": "AYARLAR",
   "settingsLoadError": "Ayarlar okunamadı.",
   "settingsDurationsSection": "SÜRELER",
