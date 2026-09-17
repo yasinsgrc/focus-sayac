@@ -2176,3 +2176,70 @@ ROADMAP madde 32.
 **Kapanmayan.** Kotlin `FlameRenderer` hâlâ çalıştırılamadı: widget'ı ana
 ekrana koymak adb ile sürülemiyor (`appwidget` yalnızca `grantbind`
 destekliyor, `cmd appwidget` yok). ROADMAP madde 31 bu tek parçaya daraldı.
+
+---
+
+## Madde 27 — Geri sayım halkasının emek ekseni
+
+**Sorun.** Halka `clamp(1 - days/400, 0.06, 1)` ile çiziliyordu: sınava 300 gün
+kalan kullanıcıda aylarca ~%25'te duruyor. 40 saat çalışsa da kıpırdamıyor —
+geçen zamanı gösteriyor, harcanan emeği değil.
+
+**Asıl karar: halkayı değiştirmek değil, ikinci bir eksen eklemek.** ROADMAP üç
+yol bırakmıştı (halkayı emeğe bağla / ikinci eksen / ölçeği yeniden eşle).
+
+- **Halkayı tamamen emeğe bağlamak** "hedef saat" diye yepyeni bir kural icat
+  etmeyi gerektiriyordu (kalan gün × günlük tempo gibi) ve ekran sınava kalan
+  zamanı görsel olarak anlatmayı bırakırdı. Uygulamanın adı geri sayım.
+- **Ölçeği yeniden eşlemek** (sınavın eklendiği andan sınav gününe oranla) en
+  küçük koddu ama şikâyetin özünü hiç çözmüyordu: halka yine yalnızca geçen
+  zamanı gösterirdi, emek hiçbir dalda içeri girmezdi.
+- **İkinci eksen** ikisini de koruyor: zaman yayı aynen duruyor, emeğin kendi
+  yayı oluyor.
+
+**Emeğin paydası haftalık hedef — çünkü kullanıcının koyduğu tek emek hedefi
+o.** Madde 24 zaten `AppSettings.weeklyGoalMinutes`i ve
+`weeklyGoalProgressProvider`ı kurmuştu. Yeni ayar, yeni kolon, drift göçü ve
+ikinci bir hesap yok; halkanın yayı ile `BUGÜN` kartının çubuğu **aynı**
+`WeeklyGoalProgress` örneğinden besleniyor, yani iki yüzey ayrışamaz. Bunun
+bedeli bilinçli: pencere kayan yedi gün olduğu için yay ileri gittiği gibi geri
+de gidebiliyor (eski seanslar pencereden düşerse). Bu dürüst — kartın çubuğu da
+tam olarak bunu yapıyor ve iki yüzeyin farklı davranması daha kötü olurdu.
+
+**Hedef kapalıyken `null`, `0.0` değil.** Yay da izi de hiç çizilmiyor. Boş bir
+yay "hedefinin %0'ındasın" der; oysa kullanıcının koyduğu bir hedef yok.
+`_WeeklyGoalRow`un kapalı hedefte satırı tamamen gizlemesiyle aynı karar —
+kapatılamayan bir gösterge "eşlik eden" tonu "ölçen" tona çevirir.
+
+**Prototipin hiçbir ölçüsü değişmedi.** Emek yayı var olan boş banda yerleşti:
+zaman izinin iç kenarı 125.5 (130 − 9/2), kesikli dekoratif çember 112. Yay
+r=119, kalınlık 4 (117–121) → iki komşuya da ~4.5px. Zaman yayının yarıçapı,
+9px kalınlığı ve üç duraklı gradyanı aynen korundu.
+
+**Emek yayı gradyansız.** Zaman yayı `sky → accent400 → ember` gradyanıyla
+dekoratif; emek yayı tek düz ton. İkisi aynı boyayı paylaşsaydı göz onları tek
+bir göstergenin iki parçası sanırdı — oysa bunlar iki ayrı eksen. Ton
+`_WeeklyGoalRow`unkiyle aynı: hedefe giderken `ember`, dolunca `mint`
+(uygulamanın tamamlanma dili).
+
+**Sıfır uzunluklu yay çizilmiyor.** `StrokeCap.round` ile sıfır süpürme açısı
+ekranda açıklanamayan bir nokta bırakırdı; haftanın başında iz zaten ekseni
+gösteriyor.
+
+**Yeni ekran okuyucu etiketi yok — bilerek.** Yay, `BUGÜN` kartındaki
+`_WeeklyGoalRow`un zaten seslendirdiği sayıların görsel yankısı ("Bu hafta 2
+saat, haftalık hedef 5 saat"). İkinci kez duyurmak ekran okuyucu kullanıcısına
+aynı bilgiyi iki kez okutmak olurdu. Yay dekoratif katmanda kalıyor, bilgi
+kaybı yok.
+
+**İki tween, tek painter.** Zaman oranı gün dönümünde, emek oranı her seans
+bitişinde değişiyor; tek `TweenAnimationBuilder` iki değeri taşıyamaz. Emek
+tween'inin süresi ve eğrisi `_WeeklyGoalRow`unkiyle aynı (`AppMotion.slow` +
+`AppMotion.standard`), böylece halkanın yayı ile kartın çubuğu aynı hızda
+yürüyor.
+
+**Kapsam dışı.** Ana ekran widget'ının Kotlin ikizi `RingRenderer.kt` bu eksene
+dokunmadı: widget yalnızca zaman yayını çiziyor. Emek yayını oraya taşımak
+payload'a haftalık hedef verisi eklemeyi gerektirir ve "türetilmiş değer
+Dart'tan okunmaz" kuralı gereği oranın Kotlin'de hesaplanmasını ister — ayrı
+madde olmalı.

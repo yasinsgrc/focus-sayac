@@ -492,16 +492,34 @@ class _CountdownBody extends ConsumerWidget {
                                       duration: AppMotion.respectingMotion(context, AppMotion.slow),
                                       curve: AppMotion.standard,
                                       builder: (BuildContext context, double animatedRatio, Widget? _) {
-                                        return AnimatedBuilder(
-                                          animation: dashController,
-                                          builder: (BuildContext context, Widget? child) {
-                                            return CustomPaint(
-                                              size: const Size(316, 316),
-                                              painter: CountdownRingPainter(
-                                                progressRatio: animatedRatio,
-                                                dashRotation: dashController.value * 2 * math.pi,
-                                                colors: colors,
-                                              ),
+                                        // Emek ekseni ayrı bir tween'de (ROADMAP
+                                        // madde 27): iki oran bambaşka anlarda
+                                        // değişiyor — zaman gün dönümünde, emek
+                                        // her seans bitişinde — ve tek tween iki
+                                        // değeri taşıyamaz. Süre/eğri
+                                        // `_WeeklyGoalRow`unkiyle aynı, böylece
+                                        // halkanın yayı ile kartın çubuğu aynı
+                                        // hızda yürüyor.
+                                        return TweenAnimationBuilder<double>(
+                                          tween: Tween<double>(end: weeklyGoal.ratio),
+                                          duration: AppMotion.respectingMotion(context, AppMotion.slow),
+                                          curve: AppMotion.standard,
+                                          builder: (BuildContext context, double animatedEffort, Widget? _) {
+                                            return AnimatedBuilder(
+                                              animation: dashController,
+                                              builder: (BuildContext context, Widget? child) {
+                                                return CustomPaint(
+                                                  size: const Size(316, 316),
+                                                  painter: CountdownRingPainter(
+                                                    progressRatio: animatedRatio,
+                                                    effortRatio:
+                                                        weeklyGoal.isOff ? null : animatedEffort,
+                                                    effortReached: weeklyGoal.isReached,
+                                                    dashRotation: dashController.value * 2 * math.pi,
+                                                    colors: colors,
+                                                  ),
+                                                );
+                                              },
                                             );
                                           },
                                         );

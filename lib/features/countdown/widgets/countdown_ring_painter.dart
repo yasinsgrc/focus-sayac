@@ -10,11 +10,27 @@ import '../../../core/theme/app_colors.dart';
 class CountdownRingPainter extends CustomPainter {
   const CountdownRingPainter({
     required this.progressRatio,
+    required this.effortRatio,
+    required this.effortReached,
     required this.dashRotation,
     required this.colors,
   });
 
+  /// Zaman ekseni: `clamp(1 - days/400, 0.06, 1)`. Sınava yaklaştıkça dolar.
   final double progressRatio;
+
+  /// Emek ekseni (ROADMAP madde 27): bu haftanın odağının haftalık hedefe oranı.
+  ///
+  /// `null` = hedef kapalı, yay **hiç çizilmiyor** — izi de dahil. Kasten `0.0`
+  /// değil: boş bir yay "hedefinin %0'ındasın" der, oysa kullanıcının koyduğu
+  /// bir hedef yok. `_WeeklyGoalRow`un kapalı hedefte satırı tamamen
+  /// gizlemesiyle aynı karar.
+  final double? effortRatio;
+
+  /// Hedef doldu mu — ton közden naneye dönüyor (`mint` uygulamanın tamamlanma
+  /// dili; haftalık hedef çubuğu da aynı iki tonu kullanıyor).
+  final bool effortReached;
+
   final double dashRotation;
 
   /// Painter'ın `BuildContext`i yok; palet çağıran ekrandan geçiriliyor.
@@ -27,6 +43,13 @@ class CountdownRingPainter extends CustomPainter {
   static const double _outerRadius = 142;
   static const double _trackRadius = 130;
   static const double _dashedRadius = 112;
+
+  /// Emek yayı prototipin **boş bandına** yerleşiyor: zaman izinin iç kenarı
+  /// 125.5 (130 − 9/2), kesikli çember 112. 119 yarıçap ve 4px kalınlıkla
+  /// (117–121) iki komşuya da ~4.5px kalıyor, yani prototipin hiçbir ölçüsü
+  /// değişmeden ikinci eksen sığıyor.
+  static const double _effortRadius = 119;
+  static const double _effortStrokeWidth = 4;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -61,6 +84,40 @@ class CountdownRingPainter extends CustomPainter {
     const double startAngle = -math.pi / 2;
     final double sweepAngle = 2 * math.pi * progressRatio.clamp(0.0, 1.0);
     canvas.drawArc(progressRect, startAngle, sweepAngle, false, progress);
+
+    // Emek ekseni (ROADMAP madde 27). Zaman yayı sınava 300 gün kalan
+    // kullanıcıda aylarca ~%25'te duruyordu: geçen zamanı gösteriyor, harcanan
+    // emeği değil. Bu yay her tamamlanan seansta kıpırdıyor ve haftalık hedef
+    // dolunca kapanıyor.
+    //
+    // Gradyan **yok**: zaman yayı üç duraklı gradyanla dekoratif, emek yayı tek
+    // düz tonla anlamsal. İkisi aynı boyayı paylaşsaydı göz onları tek bir
+    // göstergenin iki parçası sanırdı — oysa bunlar iki ayrı eksen.
+    final double? effort = effortRatio;
+    if (effort != null) {
+      final Paint effortTrack = Paint()
+        ..color = colors.fillSubtle
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _effortStrokeWidth * scale;
+      canvas.drawCircle(center, _effortRadius * scale, effortTrack);
+
+      // Sıfır uzunluklu yay yuvarlak uçla nokta bırakırdı; haftanın başında
+      // ekranda açıklanamayan bir leke olurdu — iz zaten ekseni gösteriyor.
+      if (effort > 0) {
+        final Paint effortProgress = Paint()
+          ..color = effortReached ? colors.mint : colors.ember
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = _effortStrokeWidth * scale
+          ..strokeCap = StrokeCap.round;
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: _effortRadius * scale),
+          startAngle,
+          2 * math.pi * effort.clamp(0.0, 1.0),
+          false,
+          effortProgress,
+        );
+      }
+    }
 
     final Paint dashed = Paint()
       ..color = colors.ember.withValues(alpha: 0.35)
@@ -106,6 +163,8 @@ class CountdownRingPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CountdownRingPainter oldDelegate) {
     return oldDelegate.progressRatio != progressRatio ||
+        oldDelegate.effortRatio != effortRatio ||
+        oldDelegate.effortReached != effortReached ||
         oldDelegate.dashRotation != dashRotation ||
         oldDelegate.colors != colors;
   }

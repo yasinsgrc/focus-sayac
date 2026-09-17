@@ -780,19 +780,45 @@ bir yüzey yok — döndüğünde onu suçlayan bir sıfır tablosu karşılıyo
 
 ---
 
-## 27. Geri sayım halkasının ölü aralığı ⬜ başlanmadı
+## 27. Geri sayım halkasının ölü aralığı ✅ bitti
 
 **Sorun.** Halka formülü `clamp(1 - days/400, 0.06, 1)`: sınava 300 gün kalan
 kullanıcıda halka aylarca ~%25'te duruyor. Kullanıcı 40 saat çalışsa da halka
 kıpırdamıyor — geçen zamanı gösteriyor, harcanan emeği değil. Madde 21 (son
 düzlük) doğru içgüdüydü ama yalnızca sonda devreye giriyor.
 
-- **Kapsam:** ya halkayı emeğe bağla, ya ikinci bir eksen ekle, ya da uzak
-  tarihlerde ölçeği yeniden eşle. Karar gerektiren bir tasarım işi — önce
-  seçenekleri yaz, sonra uygula.
-- **Kabul:** 300 gün kalan ve haftada 10 saat çalışan bir kullanıcıda halka
-  hafta hafta gözle görülür şekilde değişiyor.
-- **Boyut:** küçük kod, orta tasarım kararı.
+395 test geçiyor (+1). Kararlar: `DECISIONS.md` "Madde 27 — Geri sayım
+halkasının emek ekseni". Ayrı tasarım belgesi yok: üç seçenek ROADMAP'te zaten
+yazılıydı, karar doğrudan alındı.
+
+- **Seçilen yol: ikinci eksen.** Halkayı tamamen emeğe bağlamak "hedef saat"
+  diye yeni bir kural icat etmeyi gerektiriyordu ve ekran sınava kalan zamanı
+  görsel olarak anlatmayı bırakırdı; ölçeği yeniden eşlemek ise şikâyetin
+  özünü çözmezdi (halka yine yalnızca zamanı gösterirdi). Zaman yayı aynen
+  duruyor, emeğin kendi yayı oldu.
+- **Emek ekseni = bu haftanın odağı / haftalık hedef.** Madde 24'ün
+  `weeklyGoalProgressProvider`ı okunuyor — yeni ayar, yeni kolon, drift göçü ve
+  ikinci bir hesap yok. Halkanın yayı ile `BUGÜN` kartının çubuğu aynı
+  `WeeklyGoalProgress` örneğinden besleniyor, ayrışamazlar.
+- **Hedef kapalıyken yay hiç çizilmiyor** (`effortRatio` `0.0` değil `null`):
+  boş bir yay "hedefinin %0'ındasın" derdi, oysa kullanıcının hedefi yok.
+- **Prototipin hiçbir ölçüsü değişmedi.** Yay var olan boş banda yerleşti
+  (r=119, kalınlık 4; zaman izinin iç kenarı 125.5, kesikli çember 112).
+  Zaman yayının yarıçapı, kalınlığı ve gradyanı aynen korundu.
+- **Ton `_WeeklyGoalRow` ile aynı:** hedefe giderken `ember`, dolunca `mint`.
+  Gradyan yok — iki eksen aynı boyayı paylaşsaydı tek gösterge sanılırdı.
+- **Yeni ekran okuyucu etiketi yok:** yay, kartın zaten seslendirdiği
+  sayıların görsel yankısı; ikinci kez duyurmak aynı bilgiyi iki kez okuturdu.
+- **Kabul karşılandı** ve fazlası: halka artık hafta hafta değil **her
+  tamamlanan seansta** kıpırdıyor. Karşılığı, paydanın kayan yedi gün olması —
+  yay ileri gittiği gibi geri de gidebiliyor; kartın çubuğu da aynısını yapıyor
+  ve iki yüzeyin farklı davranması daha kötü olurdu.
+- **Kapsam dışı:** ana ekran widget'ının Kotlin ikizi `RingRenderer.kt` yalnızca
+  zaman yayını çiziyor; emek yayını oraya taşımak payload'a haftalık hedef
+  verisi eklemeyi gerektirir, ayrı madde olmalı.
+- **Açık iş:** emülatör doğrulaması. Bu tamamen görsel bir değişiklik; test
+  painter'ın sözleşmesini çiviliyor ama yayın cihazda nasıl durduğunu
+  göstermiyor.
 
 ---
 
