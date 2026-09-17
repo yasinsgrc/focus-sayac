@@ -47,20 +47,24 @@ class ComebackStatus {
 }
 
 ComebackStatus calculateComebackStatus({
-  required int completedFocusCount,
-  required DateTime? lastCompletedFocusUtc,
+  required List<DateTime> completedFocusStartedAtUtc,
   required DateTime nowUtc,
 });
 ```
 
+İmza `calculateStreakStatus` ile birebir aynı: üç çağıranın (sağlayıcı,
+`main.dart`, denetleyici) hiçbiri "sonuncu seansı bul" mantığını kopyalamıyor
+ve DAO listesinin sıralı geldiği varsayılmıyor — en büyük zaman damgası
+hesaplayıcının içinde bulunuyor.
+
 Kurallar:
 
-1. `completedFocusCount < kComebackMinCompletedFocusSessions` (= 3) veya
-   `lastCompletedFocusUtc == null` → `ComebackStatus.none`: ne şerit ne
+1. Liste `kComebackMinCompletedFocusSessions`'tan (= 3) kısaysa →
+   `ComebackStatus.none`: ne şerit ne
    bildirim. Eşik `AppReviewService.minCompletedFocusSessions` ile aynı sayı ve
    aynı gerekçe — uygulamayı bir kez deneyip bırakana geri çağrı göndermek,
    ürünün kaçındığı "seni geri istiyoruz" tonuna kayar.
-2. `absentDays = currentAppDayKey(nowUtc) − appDayKey(lastCompletedFocusUtc)`,
+2. `absentDays = currentAppDayKey(nowUtc) − appDayKey(en son seans)`,
    gün cinsinden. Gün sınırı 04:00 TSİ — §5.3'ün kullandığı `app_day.dart`'ın
    aynısı, ikinci bir gün tanımı kurulmuyor.
 3. `welcomeDue = absentDays >= kComebackAbsentDays` (= 3).
@@ -119,8 +123,10 @@ kaydırılabilir.
 - Görünürlük: yeni `comebackStatusProvider`
   (`pomodoro_stats_providers.dart`, `allSessionsProvider` üzerinden türetilmiş)
   `welcomeDue` derse.
-- Yerleşim: seri satırının **yerine değil üstüne**. Kırık seri zaten
-  görünürken tek olumlu gerçeği ekler; veriyi gizlemek yerine bağlamını verir.
+- Yerleşim: `BUGÜN` kartının içinde, haftalık hedef satırının hemen üstünde
+  (`_WeeklyGoalRow` ile aynı ayırıcı kalıbı). Halkanın içindeki seri rozetine
+  **dokunulmuyor**: kırık seri zaten görünürken şerit tek olumlu gerçeği
+  ekliyor, veriyi gizlemek yerine bağlamını veriyor.
 - Metin: `TEKRAR HOŞ GELDİN` kicker'ı + *"Ocak kademen ve 47 saat yerinde
   duruyor."* Kademe ve süre bildirimle **aynı kaynaktan** gelir: kümülatif
   odak saniyesi → `flameTierFor(...)` + `spellFocusDuration(...)`. İki yüzey
