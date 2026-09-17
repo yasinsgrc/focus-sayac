@@ -7,6 +7,10 @@ import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../core/l10n/l10n_providers.dart';
+// Dönüş bildirimi kademe adını Ekran 02'nin şeridiyle aynı kaynaktan kuruyor;
+// `domain/flame` de `domain/time` gibi saf bir yaprak (yalnızca ARB'ye bağlı),
+// o yüzden bu bağımlılık da aşağıdaki sınırı çiğnemiyor.
+import '../../domain/flame/flame_tier.dart';
 // Bildirim gövdesi "Bu hafta 6 saat odaklandın" cümlesini hikâye kartıyla aynı
 // kaynaktan kuruyor; `domain/time` saf bir yaprak olduğu için bu bağımlılık
 // `NotificationPreferences`in `services/storage`den kaçındığı sınıfa girmiyor.
@@ -129,6 +133,7 @@ class NotificationService {
   static const int _streakRiskNotificationId = 1003;
   static const int _breakEndNotificationId = 1004;
   static const int _weeklySummaryNotificationId = 1005;
+  static const int _comebackNotificationId = 1006;
 
   /// Haftalık kapanış bildirimine basıldığında açılacak ekran. Dokunuş
   /// `WidgetLaunchScope` ile aynı dili konuşuyor: yük, `RoutePaths` ile birebir
@@ -438,6 +443,50 @@ class NotificationService {
       id: _streakRiskNotificationId,
       title: _l10n.notificationStreakRiskTitle,
       body: _l10n.notificationStreakRiskBody(streak),
+      scheduledDate: target,
+      notificationDetails: NotificationDetails(
+        android: preferences.soundEnabled ? _streakRiskAndroidDetails : _streakRiskSilentAndroidDetails,
+      ),
+    );
+  }
+
+  /// ROADMAP madde 26 "Dönüş yolu" — üç gün hiç odaklanmayan kullanıcıya tek
+  /// bir çağrı. Diğer iki zamanlı bildirimden tek farkı hedefin bugünün içinde
+  /// değil ileride olması: bu bildirim tanımı gereği kullanıcı uygulamayı
+  /// **açmazken** düşmeli, o yüzden son değerlendirme noktasında önden kurulur
+  /// ve kullanıcı dönüp bir odak tamamladığında yeniden hesaplanır.
+  ///
+  /// [reminderAtUtc] `calculateComebackStatus`tan gelir; `null` "kurma"
+  /// demektir. Pencere tek gün olduğu için uzun yokluklarda bildirim
+  /// birikmiyor.
+  ///
+  /// Kapı `streakReminderEnabled`: ikisi de aynı sözü veriyor (seri/alışkanlık
+  /// hatırlatması) ve Android kanalı da ortak — ayrı kanal, kullanıcının
+  /// kapattığı kategoriyi ikiye bölerdi.
+  Future<void> rescheduleComebackReminder({
+    required DateTime? reminderAtUtc,
+    required int cumulativeFocusSeconds,
+  }) async {
+    final FlutterLocalNotificationsPlugin? plugin = _plugin;
+    if (plugin == null) return;
+    // İptal kapıdan önce (`rescheduleStreakRiskReminder` ile aynı gerekçe):
+    // ayar kapatıldıktan sonraki ilk çağrı kurulmuş bildirimi de temizler.
+    await plugin.cancel(id: _comebackNotificationId);
+    final NotificationPreferences? preferences = await _allowedPreferences();
+    if (preferences == null || !preferences.streakReminderEnabled) return;
+    if (reminderAtUtc == null) return;
+    final tz.TZDateTime target = tz.TZDateTime.from(reminderAtUtc, _location);
+    if (!target.isAfter(tz.TZDateTime.now(_location))) return;
+
+    final FlameTierStatus tierStatus = flameTierFor(cumulativeFocusSeconds);
+    await _zonedSchedule(
+      plugin,
+      id: _comebackNotificationId,
+      title: _l10n.notificationComebackTitle,
+      body: _l10n.notificationComebackBody(
+        tierStatus.tier.name(_l10n),
+        spellFocusDuration(_l10n, cumulativeFocusSeconds),
+      ),
       scheduledDate: target,
       notificationDetails: NotificationDetails(
         android: preferences.soundEnabled ? _streakRiskAndroidDetails : _streakRiskSilentAndroidDetails,

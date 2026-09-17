@@ -191,4 +191,86 @@ void main() {
     expect(calls.where((MethodCall call) => call.method == 'cancel').map(_idOf), <int>[1003]);
     expect(sends(), isEmpty);
   });
+
+  group('dönüş bildirimi', () {
+    /// Dönüş bildiriminin kapısı `streakReminderEnabled`; testler iki anahtarı
+    /// ayrı ayrı çevirebilsin diye dosyanın `serviceWith` yardımcısı yerine bu
+    /// yerel kurulum kullanılıyor.
+    Future<NotificationService> comebackService({
+      bool notificationsEnabled = true,
+      bool streakReminderEnabled = true,
+    }) async {
+      final NotificationService service = NotificationService(
+        l10n: testL10n,
+        readPreferences: () async => NotificationPreferences(
+          notificationsEnabled: notificationsEnabled,
+          soundEnabled: true,
+          streakReminderEnabled: streakReminderEnabled,
+        ),
+      );
+      await service.initialize();
+      calls.clear();
+      return service;
+    }
+
+    test('ileri tarihli an için kuruluyor', () async {
+      final NotificationService service = await comebackService();
+
+      await service.rescheduleComebackReminder(
+        reminderAtUtc: DateTime.now().toUtc().add(const Duration(days: 3)),
+        cumulativeFocusSeconds: 47 * 3600,
+      );
+
+      expect(
+        calls.where((MethodCall call) => call.method == 'zonedSchedule').map(_idOf),
+        <int>[1006],
+      );
+      // Kurulumdan önce her hâlde iptal ediliyor.
+      expect(calls.first.method, 'cancel');
+    });
+
+    test('an null ise yalnızca iptal ediliyor', () async {
+      final NotificationService service = await comebackService();
+
+      await service.rescheduleComebackReminder(
+        reminderAtUtc: null,
+        cumulativeFocusSeconds: 47 * 3600,
+      );
+
+      expect(calls.map((MethodCall call) => call.method), <String>['cancel']);
+    });
+
+    test('seri hatırlatması kapalıyken kurulmuyor', () async {
+      final NotificationService service = await comebackService(streakReminderEnabled: false);
+
+      await service.rescheduleComebackReminder(
+        reminderAtUtc: DateTime.now().toUtc().add(const Duration(days: 3)),
+        cumulativeFocusSeconds: 47 * 3600,
+      );
+
+      expect(calls.map((MethodCall call) => call.method), <String>['cancel']);
+    });
+
+    test('ana anahtar kapalıyken kurulmuyor', () async {
+      final NotificationService service = await comebackService(notificationsEnabled: false);
+
+      await service.rescheduleComebackReminder(
+        reminderAtUtc: DateTime.now().toUtc().add(const Duration(days: 3)),
+        cumulativeFocusSeconds: 47 * 3600,
+      );
+
+      expect(calls.map((MethodCall call) => call.method), <String>['cancel']);
+    });
+
+    test('geçmiş bir an kurulmuyor', () async {
+      final NotificationService service = await comebackService();
+
+      await service.rescheduleComebackReminder(
+        reminderAtUtc: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
+        cumulativeFocusSeconds: 47 * 3600,
+      );
+
+      expect(calls.map((MethodCall call) => call.method), <String>['cancel']);
+    });
+  });
 }
