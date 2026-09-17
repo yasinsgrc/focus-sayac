@@ -2273,3 +2273,87 @@ ucu başlangıç açısının biraz gerisine taşıyor ve gradyanı ~360°'de, y
 `ember` durağında örnekliyor. Kaynağı kesin, çünkü hedef kapalı karesinde emek
 yayı hiç çizilmediği hâlde leke duruyor. Bu maddede düzeltilmedi — zaman
 yayının boyasına dokunmak madde 27'nin kapsamı değil, ayrı madde olmalı.
+
+---
+
+## Madde 28 — Alt gezinme çubuğunun bilgi mimarisi
+
+**Sorun.** Beş kalıcı yuvadan birini `storyCard` tutuyordu: nadiren kullanılan
+bir dışa aktarma aracı. Karşılığında uygulamanın **birincil eylemi** —odak
+seansı başlatmak— yalnızca Ekran 02'deydi; rozetler, veriler ya da ayarlar
+ekranındaki kullanıcı önce sayaca dönmek zorundaydı.
+
+**Asıl karar: yuva silinmedi, eyleme dönüştü.** Dörde inmek en küçük değişiklikti
+ama yol haritasının kabulü "slot birincil bir eyleme geçmiş" diyordu ve dörde
+inmek boşluğu yalnızca genişletirdi. Yuva yerinde duruyor, artık bir yere
+**gitmiyor**, bir şey **yapıyor**.
+
+- **Sekme değil eylem.** `AppNavTab` dört üyeye indi (`countdown`, `badges`,
+  `stats`, `settings`); eylem yuvasının enum üyesi yok, aktif hâli yok, hapı
+  yok, `Hero` uçuşuna katılmıyor. "Aktif sekme" bir konum bildirir; odak ekranı
+  zaten çubuğu göstermeyen bir üst kat olduğu için bu yuvanın "buradasın" hâli
+  hiçbir zaman doğru olmazdı.
+- **Boyası Ekran 02'nin düğmesinin küçültülmüş hâli** — köz kenarlık, yukarıdan
+  aşağı sönen `emberDeep` gradyanı, dolu `play` ikonu. Aynı eylem iki yüzeyde
+  aynı görünsün diye: kullanıcı yuvanın ne yaptığını öğrenmek zorunda kalmıyor.
+  Etiketi yok (beşte birlik payda `ODAKLAN` okunmaz boyuta iniyordu); adı
+  `Semantics` ile veriliyor, pasif sekmelerdeki kalıbın aynısı. Dokunma hedefi
+  sekmelerle aynı 48px, görünen kutu aktif hapla aynı 46px.
+- **Prototipin ölçüleri korundu:** beş yuva, aktif `flex:16`, diğerleri
+  `flex:10`. Çubuğun geometrisinde tek piksel değişmedi.
+- **Kural tek yerde: `startFocusFromNav`.** Sekmelerin `navigateToNavTab`ı gibi
+  eylem de `bottom_nav_bar.dart`ta duruyor ve `BottomNavBar` bunun için
+  `ConsumerWidget` oldu. Dört ekrana ayrı ayrı `onStartFocus` bağlamak aynı
+  kararı dörde kopyalamak olurdu; kuralın çubuğun kendi dosyasında durması,
+  gezinme kurallarının zaten orada olmasıyla tutarlı.
+- **Faz boş değilse `startFocus` çağrılmıyor.** Süren bir seansın (ya da molanın)
+  üstünde ikinci kez çağırmak sayacı sıfırlardı; o durumda yuva "devam et"
+  düğmesine dönüşüp yalnızca odak ekranını açıyor — Ekran 02'nin aktif seansı
+  kurtaran yönlendirmesiyle aynı davranış.
+- **Rota `push`, `pushReplacement` değil.** Odak ekranı bir sekme değil,
+  bulunulan ekranın üstüne binen bir kat: seans bitip `pop` edildiğinde kullanıcı
+  başladığı yere dönüyor. Emülatörde rozetler ekranından başlatılan seans iptal
+  edilince kullanıcı sayaca değil rozetlere düştü.
+
+**Ekran 05 artık kazanım anına bağlı bir üst kat.**
+
+- Rotası `_tabPage` yerine `_pushedPage`: geçiş dili de sekme dilinden çıkıp
+  Ekran 11 ve odak seansıyla aynı "aşağıdan yukarı" hâline geldi.
+- Çubuğu kaldırıldı; sol üstte Ekran 11'in kapatma düğmesinin **birebir aynısı**
+  var (38px daire, `fillMedium` kenarlık, `x` ikonu). İki ekran da alt çubuğu
+  olmayan, üste binen bir kat — farklı görünmeleri için sebep yok. Alt boşluk
+  `kBottomNavReservedSpace`ten 26px'e indi.
+- Girişleri madde 19'da zaten kurulmuştu ve aynen duruyor: rozet dialogundaki
+  "BAŞARI KARTINI OLUŞTUR", rozet açılışı kutlaması, seri eşiği kutlaması (SERİ
+  şablonunu önermeye devam ediyor). Rozet dialogunun geri düşüşü
+  `navigateToNavTab` yerine düz `context.push` oldu — kart sekme olmadığı için
+  "kökün tek kat üstünde dur" kuralı ona uymuyor; kapatma düğmesi kullanıcıyı
+  rozetlere bırakıyor, sekmeyken yığında rozetlerin **yerini** alıyordu.
+- `navStoryCard` ("BAŞARI") ARB'den çıktı, yerine `navFocus` ("ODAKLAN") geldi.
+
+**Kademe atlama kutlaması kapsam dışı bırakıldı.** Yol haritasının kapsam
+cümlesi üç kazanım anı sayıyordu; ikisi (rozet, seri) madde 19'dan hazır,
+üçüncüsü **hiç yok** — yeni bir `SessionCelebration` türü, kalıcı "son kutlanan
+kademe" anahtarı, yeni dialog ve rozetle çakışma kuralı demek. Maddenin kabul
+ölçütlerinin hiçbiri bunu istemiyor; ROADMAP madde 34 olarak ayrıldı.
+
+**Test altyapısı: veritabanı `runAsync` içinde kurulmalı.** Yeni gezinme
+testleri tek başına geçip takımda düşüyordu. İz sürünce sebep çıktı:
+`countdown_navigation_test`in `_pumpApp`ı `AppDatabase.forTesting(NativeDatabase.memory())`i
+**sahte zaman kuşağında** kuruyordu ve dosyanın ilk testinden sonraki her taze
+veritabanı hiç açılmıyor, tek-seferlik ilk `Future` (`startFocus()`ün ayar
+okuması) sonsuza kadar bekliyordu. Kare sayısını artırmak da, dokunuştan sonra
+`runAsync` ile beklemek de çözmedi — kurulumun kendisi gerçek kuşakta olmalı.
+Depodaki `story_card_screen_test` aynı şeyi zaten yapıyordu (`_newDatabase` →
+`tester.runAsync`), kalıp oradan alındı. Ekranlar bugüne kadar yalnızca `watch`
+akışlarıyla çizildiği için hata görünmemişti.
+
+**Emülatör doğrulaması (2026-09-17, `emulator-5554`, 1080×2400).** Kabul
+ölçütleri tek tek: çubuk açık temada `.verify/m28_a_sayac.png`, koyu temada
+`m28_f_koyu.png` (köz kenarlık iki temada da okunuyor); rozetler ekranından
+ODAKLAN 25:00'lık seansı açtı (`m28_c_odak.png` — ilk seansın 5 dakikası değil,
+ayardaki süre); iptal kullanıcıyı rozetlere geri bıraktı (`m28_d_donus.png`);
+rozet dialogundan açılan kart çubuksuz ve kapatma düğmeli (`m28_e_kart.png`),
+"1080 × 1920 PNG" satırı artık hiçbir şeyin altında kalmıyor, kapatınca yine
+rozetlere döndü. `m28_b_veriler.png` veriler sekmesinin çubuğu: aktif hap
+genişleyince eylem yuvası sola kayıyor, oranlar bozulmuyor.

@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_typography.dart';
@@ -331,7 +333,7 @@ const Key kBadgeUnlockHaloKey = Key('badge_unlock_halo');
 /// Prototip satır 200-210 — rozete tıklayınca açılan detay/açılış dialogu.
 /// Kilitli bir rozete tıklamak da bu dialogu açar ("Nasıl açılır: ..." metni).
 /// [onOpenStoryCard] verilmezse "BAŞARI KARTINI OLUŞTUR" Ekran 04'ten gelmiş
-/// gibi davranır (alt çubuğun sekme kuralı). Dialog artık **Ekran 03/09'dan da**
+/// gibi davranır (Ekran 05'i bu ekranın üstüne `push` eder). Dialog artık **Ekran 03/09'dan da**
 /// açılıyor — rozet tam açıldığı anda, kutlama yerinde. O bağlamda aktif bir
 /// sekme yok, o yüzden gezinme kararı çağırana bırakılıyor.
 Future<void> showBadgeUnlockDialog(
@@ -458,11 +460,9 @@ class _BadgeUnlockDialog extends StatelessWidget {
                 // Dialog önce kapanıyor: açık kalsaydı Ekran 05'ten geri
                 // dönüldüğünde kullanıcıyı yine kendi üstünde bulurdu.
                 //
-                // Geçiş `navigateToNavTab` üzerinden: düz `push` yığını
-                // sayaç→rozetler→başarı kartı diye üç kata çıkarıyordu, oysa
-                // `bottom_nav_bar.dart`taki kural sekmelerin kökün **tek** kat
-                // üstünde durması. Çubuktan gelen geçişle aynı yolu kullanmak
-                // ikisini de tek kuralda tutuyor.
+                // Geçiş düz `push` (madde 28): Ekran 05 artık bir sekme değil,
+                // rozetlerin üstüne binen bir kat. Kartın kapatma düğmesi de
+                // buraya, yani kullanıcının geldiği yere geri bırakıyor.
                 onPressed: () {
                   final VoidCallback? openStoryCard = onOpenStoryCard;
                   Navigator.of(context).pop();
@@ -470,7 +470,7 @@ class _BadgeUnlockDialog extends StatelessWidget {
                     openStoryCard();
                     return;
                   }
-                  navigateToNavTab(context, AppNavTab.storyCard, current: AppNavTab.badges);
+                  unawaited(context.push(RoutePaths.storyCard));
                 },
                 weight: FontWeight.w600,
               ),

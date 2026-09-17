@@ -7,7 +7,10 @@
 
   "navCountdown": "SAYAÇ",
   "navStats": "VERİLER",
-  "navStoryCard": "BAŞARI",
+  "navFocus": "ODAKLAN",
+  "@navFocus": {
+    "description": "Alt çubuktaki eylem yuvasının ekran okuyucu adı (madde 28). Görsel karşılığı yok: yuva yalnızca ikon, etiket beşte birlik paya sığmıyor."
+  },
 
   "onboardingKicker": "Y2K · ODAK PROTOKOLÜ",
   "onboardingTitle": "MEŞALE\nSENDE",

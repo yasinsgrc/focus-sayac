@@ -834,20 +834,40 @@ yazılıydı, karar doğrudan alındı.
 
 ---
 
-## 28. Alt gezinme çubuğunun bilgi mimarisi ⬜ başlanmadı
+## 28. Alt gezinme çubuğunun bilgi mimarisi ✅ bitti
 
-**Sorun.** `storyCard` beş kalıcı slottan birini tutuyor. Nadiren kullanılan
-bir export aracı, birincil eylem değil.
+397 test geçiyor (+2). Kararlar: `DECISIONS.md` "Madde 28".
 
-**Kanıt.** `lib/core/widgets/bottom_nav_bar.dart:42-46` — sekmeler
-`countdown`, `storyCard`, `badges`, `stats`, `settings`.
-
-- **Kapsam:** kart export'unu kalıcı slottan çıkar; kazanım anında (rozet
-  açılışı, kademe atlama, seri kilometre taşı) kendiliğinden önerilsin —
-  madde 19'da paylaşım anı zaten kurulmuştu, bu onun devamı.
-- **Kabul:** kart hâlâ ulaşılabilir, slot birincil bir eyleme geçmiş,
-  gezinme testleri güncel.
-- **Boyut:** küçük.
+- **Boşalan yuva odak eylemine geçti.** `storyCard` sekmesi kalktı, yerine
+  ikinci yuvada "ODAKLAN" düğmesi duruyor: `AppNavTab` artık dört üyeli ve
+  `startFocusFromNav` çubuktan seans başlatıyor. Uygulamanın birincil eylemi
+  bugüne kadar yalnızca Ekran 02'deydi — rozetler/veriler/ayarlar ekranındaki
+  kullanıcı seans başlatmak için önce sayaca dönmek zorundaydı.
+- **Yuva bir sekme değil.** Aktif hâli, hapı, `Hero` uçuşu yok; boyası Ekran
+  02'nin birincil düğmesinin küçültülmüş hâli (köz kenarlık, sönen `emberDeep`
+  gradyanı, dolu `play`). Beş yuva ve flex oranları (16/10) prototipten
+  değişmedi, dokunma hedefi sekmelerle aynı 48px.
+- **Seans sürerken yeniden başlatmıyor:** `startFocus` yalnızca faz `idle` iken
+  çağrılıyor, aksi hâlde yuva "devam et" gibi davranıp odak ekranını açıyor.
+- **Ekran 05 üste binen bir kat oldu.** Rotası `_tabPage` değil `_pushedPage`,
+  çubuğu yok, sol üstte Ekran 11'in kapatma düğmesinin aynısı var. Girişleri
+  madde 19'dan devralındı: rozet dialogu, rozet açılışı kutlaması, seri eşiği
+  kutlaması. Kapatma kullanıcıyı **geldiği** ekrana bırakıyor; sekmeyken yığında
+  o ekranın yerini alıyordu.
+- **Kademe atlama kutlaması bu maddeye girmedi** — `SessionCelebration`a yeni
+  bir tür, kalıcı "son kutlanan kademe" anahtarı ve yeni bir dialog demek.
+  Madde 34 olarak ayrıldı.
+- **Test altyapısı düzeltmesi (yan kazanım):** `countdown_navigation_test`
+  veritabanını artık `tester.runAsync` içinde kuruyor. Sahte zaman kuşağında
+  kurulan `NativeDatabase` dosyanın **ilk** testinden sonra hiç açılmıyordu ve
+  tek-seferlik her `Future` (ör. `startFocus()`ün ayar okuması) sonsuza kadar
+  bekliyordu; yeni testler bu yüzden tek başına geçip takımda düşüyordu.
+- **Emülatör doğrulandı (2026-09-17).** Yeni çubuk açık ve koyu temada
+  (`.verify/m28_a_sayac.png`, `m28_f_koyu.png`); rozetler ekranından ODAKLAN
+  25:00'lık seansı açtı (`m28_c_odak.png`), iptal kullanıcıyı sayaca değil
+  **rozetlere** geri bıraktı (`m28_d_donus.png`); rozet dialogundan açılan
+  başarı kartı çubuksuz ve kapatma düğmeli (`m28_e_kart.png`), kapatınca yine
+  rozetlere döndü.
 
 ---
 
@@ -962,6 +982,30 @@ yayı hiç çizilmediği hâlde leke duruyor.
 
 ---
 
+## 34. Kademe atlama kutlaması ⬜ başlanmadı
+
+**Sorun.** Madde 28'den ayrıldı. Kazanım anları kutlanıyor ama **kademe
+atlama** kutlanmıyor: alev K1'den K10'a çıkarken (`flame_tier.dart`) kullanıcı
+bunu ancak rozetler ekranına kendi girerse görüyor. Rozet açılışı ve seri eşiği
+madde 19'da kutlanmıştı, kademe o listede yoktu.
+
+**Kanıt.** `lib/domain/celebration/session_celebration.dart` — `SessionCelebration`
+yalnızca `BadgeCelebration` ve `StreakCelebration`.
+
+- **Kapsam:** üçüncü bir `SessionCelebration` türü; `PomodoroController`
+  `_completeFocus`ta kademe geçişini saptasın; kalıcı "son kutlanan kademe"
+  anahtarı (seri eşiğindeki `kCelebratedStreakMilestonePrefsKey` kalıbı — aksi
+  hâlde aynı kademe her seansta yeniden kutlanır ve "Verileri sıfırla" bunu da
+  temizlemeli); kutlama dialogu başarı kartını önersin (madde 28'de kartın
+  girişleri kazanım anlarına bağlandı, bu onların üçüncüsü).
+- **Çakışma kuralı gerekiyor:** kutlama tek yuva — aynı seansta hem rozet hem
+  kademe düşerse hangisinin öne geçtiğine karar verilmeli.
+- **Kabul:** kademe atlayan seansta kutlama bir kez açılıyor, aynı kademede
+  ikinci kez açılmıyor, kart oradan ulaşılabiliyor.
+- **Boyut:** küçük–orta.
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı
@@ -990,7 +1034,7 @@ yayı hiç çizilmediği hâlde leke duruyor.
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(395 test, `flutter test`)*
+- [x] Testler geçiyor *(397 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

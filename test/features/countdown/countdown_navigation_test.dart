@@ -55,7 +55,17 @@ Future<void> _pumpApp(WidgetTester tester, {Map<String, Object> initialPrefs = c
   _stubWakelockChannel();
 
   await initializeDateFormatting('tr_TR');
-  final AppDatabase database = AppDatabase.forTesting(NativeDatabase.memory());
+  // Veritabanı **gerçek** kuşakta kuruluyor ve orada bir kez sorgulanıyor.
+  // `runAsync` olmadan yalnızca dosyanın ilk testi çalışıyordu: sonraki
+  // testlerin taze `NativeDatabase`i sahte zamanda hiç açılmıyor, ilk
+  // tek-seferlik `Future` (ör. `startFocus()`ün ayar okuması) sonsuza kadar
+  // bekliyordu. Depodaki diğer DB'li testler de (`story_card_screen_test`)
+  // aynı sebeple `runAsync` kullanıyor.
+  late AppDatabase database;
+  await tester.runAsync(() async {
+    database = AppDatabase.forTesting(NativeDatabase.memory());
+    await database.appSettingsDao.getSettings();
+  });
   SharedPreferences.setMockInitialValues(initialPrefs);
   final SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -84,6 +94,18 @@ Future<void> _pumpApp(WidgetTester tester, {Map<String, Object> initialPrefs = c
 Future<void> _settleTransition(WidgetTester tester) async {
   for (int i = 0; i < 8; i++) {
     await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
+/// [finder] ağaca girene kadar kare pompalar (ya da [maxFrames] biter).
+///
+/// Sabit bir kare sayısı yetmiyor: `pump` **sanal** zamanı ilerletiyor ama
+/// `startFocus()`ün veritabanı yazımı gerçek asenkron iş ve kaçıncı karede
+/// biteceği koşumun o anki yüküne bağlı. Tek başına çalışan test 10 karede
+/// geçip tüm takımda düşüyordu; burada ölçüt kare sayısı değil sonucun kendisi.
+Future<void> _pumpUntilFound(WidgetTester tester, Finder finder, {int maxFrames = 60}) async {
+  for (int i = 0; i < maxFrames && finder.evaluate().isEmpty; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
   }
 }
 
@@ -138,22 +160,45 @@ void main() {
     await _disposeTree(tester);
   });
 
-  // Regresyon: "alev" ve "madalya" yuvalarının ikisi de `AppNavTab.badges`e
-  // bağlıydı — beş ikonun dördü dolu, biri aynı ekranın kopyasıydı. Yuvaların
-  // ekran okuyucu adları aynı zamanda hedeflerinin tek ayırt edicisi olduğu
-  // için test hem yönlendirmeyi hem etiketleri birlikte doğruluyor.
-  testWidgets('alt çubuktaki "alev" yuvası başarı kartını, "madalya" rozetleri açar', (WidgetTester tester) async {
+  // Madde 28: ikinci yuva artık Ekran 05'e giden bir sekme değil, odak
+  // seansını başlatan **eylem**. Yuvaların ekran okuyucu adları aynı zamanda
+  // hedeflerinin tek ayırt edicisi olduğu için test hem eylemi hem etiketi
+  // birlikte doğruluyor. (Eski regresyon buradaydı: "alev" ve "madalya"
+  // yuvalarının ikisi de `AppNavTab.badges`e bağlıydı.)
+  testWidgets('alt çubuktaki "odak" yuvası seansı, "madalya" rozetleri açar', (WidgetTester tester) async {
     // `addTearDown` kullanılmıyor: tutamağın bırakılıp bırakılmadığı test
     // gövdesi biter bitmez, teardown'lardan **önce** denetleniyor.
     final SemanticsHandle handle = tester.ensureSemantics();
     await _pumpApp(tester);
 
-    await tester.tap(find.bySemanticsLabel('BAŞARI KARTI'));
-    for (int i = 0; i < 4; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
-    expect(find.byType(StoryCardScreen, skipOffstage: false), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('ODAKLAN'));
+    // Yuva önce `startFocus()`ü bekliyor (DB yazımı), `push` ondan sonra.
+    await _pumpUntilFound(tester, find.byType(FocusSessionScreen, skipOffstage: false));
+    expect(find.byType(FocusSessionScreen, skipOffstage: false), findsOneWidget);
     expect(find.byType(BadgesScreen, skipOffstage: false), findsNothing);
+
+    await _disposeTree(tester);
+    handle.dispose();
+  });
+
+  // Yuvanın asıl kazancı: birincil eylem artık Ekran 02'ye hapsolmuş değil.
+  // Seans bulunulan sekmenin **üstüne** biniyor; bitişteki tek `pop`
+  // kullanıcıyı geldiği sekmeye bırakıyor.
+  testWidgets('odak yuvası diğer sekmelerden de seans başlatıyor', (WidgetTester tester) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await _pumpApp(tester);
+
+    await tester.tap(find.bySemanticsLabel('VERİLER'));
+    await _settleTransition(tester);
+    expect(find.byType(StatsScreen), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(of: find.byType(StatsScreen), matching: find.bySemanticsLabel('ODAKLAN')),
+    );
+    await _pumpUntilFound(tester, find.byType(FocusSessionScreen, skipOffstage: false));
+
+    expect(find.byType(FocusSessionScreen, skipOffstage: false), findsOneWidget);
+    expect(find.byType(StatsScreen, skipOffstage: false), findsOneWidget, reason: 'seans verilerin üstüne bindi');
 
     await _disposeTree(tester);
     handle.dispose();
@@ -165,8 +210,9 @@ void main() {
 
     // Regresyon: `InkWell` `Row`un gevşek dikey sınırı altında 21px'lik ikonun
     // boyuna küçülüyordu; 64px'lik çubukta dokunulabilir şerit ikonun kendisi
-    // kadardı. Materyal'in en küçük dokunma hedefi 48px.
-    for (final String label in <String>['BAŞARI KARTI', 'ROZETLER', 'AYARLAR']) {
+    // kadardı. Materyal'in en küçük dokunma hedefi 48px. Eylem yuvası da aynı
+    // ölçüde: görünen kutusu 46px ama dokunma alanı sekmelerle aynı.
+    for (final String label in <String>['ODAKLAN', 'ROZETLER', 'AYARLAR']) {
       expect(tester.getSize(find.bySemanticsLabel(label)).height, 48, reason: label);
     }
 
@@ -174,9 +220,39 @@ void main() {
     handle.dispose();
   });
 
+  // Madde 28'in kabulü: kart kalıcı yuvadan çıktı ama **ulaşılabilir** kaldı.
+  // Girişi rozet dialogu; kapatma düğmesi kullanıcıyı geldiği ekrana bırakıyor
+  // (sekme olsaydı yığında rozetlerin yerini alırdı ve geri dönüş Ekran 02'ye
+  // düşerdi).
+  testWidgets('başarı kartı sekme değil: rozet dialogundan açılıp rozetlere dönüyor',
+      (WidgetTester tester) async {
+    final SemanticsHandle handle = tester.ensureSemantics();
+    await _pumpApp(tester);
+
+    expect(find.bySemanticsLabel('BAŞARI KARTI'), findsNothing, reason: 'çubukta kalıcı yuvası yok');
+
+    await tester.tap(find.bySemanticsLabel('ROZETLER'));
+    await _settleTransition(tester);
+    await tester.tap(find.text('İlk Kıvılcım'));
+    await _settleTransition(tester);
+    await tester.tap(find.text('BAŞARI KARTINI OLUŞTUR'));
+    await _settleTransition(tester);
+
+    expect(find.byType(StoryCardScreen), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('Kapat'));
+    await _settleTransition(tester);
+
+    expect(find.byType(BadgesScreen), findsOneWidget);
+    expect(find.byType(StoryCardScreen, skipOffstage: false), findsNothing);
+
+    await _disposeTree(tester);
+    handle.dispose();
+  });
+
   // Çubuk uzun süre yalnızca Ekran 02 ve 06'daydı: diğer üç sekme oraya
   // götürüyor ama geri getirmiyordu, yani gezinme tek yönlüydü.
-  testWidgets('alt çubuk beş sekmenin hepsinde görünüyor', (WidgetTester tester) async {
+  testWidgets('alt çubuk dört sekmenin hepsinde görünüyor', (WidgetTester tester) async {
     final SemanticsHandle handle = tester.ensureSemantics();
     await _pumpApp(tester);
     expect(find.byType(BottomNavBar), findsOneWidget);
@@ -187,7 +263,6 @@ void main() {
     // bilemiyor.
     Type current = CountdownScreen;
     for (final (String, Type) tab in <(String, Type)>[
-      ('BAŞARI KARTI', StoryCardScreen),
       ('ROZETLER', BadgesScreen),
       ('VERİLER', StatsScreen),
       ('AYARLAR', SettingsScreen),
@@ -223,7 +298,6 @@ void main() {
       ('ROZETLER', BadgesScreen),
       ('AYARLAR', SettingsScreen),
       ('VERİLER', StatsScreen),
-      ('BAŞARI KARTI', StoryCardScreen),
     ]) {
       await tester.tap(
         find.descendant(of: find.byType(current), matching: find.bySemanticsLabel(tab.$1)),
@@ -242,8 +316,8 @@ void main() {
     }
 
     // Kökün üstünde tek bir kat kaldı: gezilen ara ekranlar yığında değil.
-    expect(find.byType(StoryCardScreen, skipOffstage: false), findsOneWidget);
-    for (final Type screen in <Type>[BadgesScreen, SettingsScreen, StatsScreen]) {
+    expect(find.byType(StatsScreen, skipOffstage: false), findsOneWidget);
+    for (final Type screen in <Type>[BadgesScreen, SettingsScreen]) {
       expect(find.byType(screen, skipOffstage: false), findsNothing, reason: '$screen');
     }
 

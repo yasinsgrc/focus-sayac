@@ -1,18 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
+import '../../domain/pomodoro/pomodoro_controller.dart';
+import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../router/route_paths.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_typography.dart';
 
-enum AppNavTab { countdown, storyCard, badges, stats, settings }
+enum AppNavTab { countdown, badges, stats, settings }
 
 /// Aktif hapı rota geçişinde bir yuvadan diğerine uçuran ortak `Hero` etiketi.
 ///
-/// Beş sekmenin her biri **ayrı bir rota** ve çubuk her rotada sıfırdan
+/// Dört sekmenin her biri **ayrı bir rota** ve çubuk her rotada sıfırdan
 /// kuruluyor; hap bu yüzden basit bir `AnimatedPositioned` ile kayamıyor.
 /// `Hero` iki rotadaki hapı eşleştirip aradaki dikdörtgeni kendisi
 /// enterpole ediyor — yuvaların genişliği de değişiyor (`flex: 16` ↔ `flex: 10`).
@@ -23,7 +28,7 @@ const String _kActivePillHeroTag = 'app-nav-active-pill';
 /// kadar boşluk bırakır, yoksa son öğe çubuğun altında kalıyor.
 const double kBottomNavReservedSpace = 96;
 
-/// Bir sekme seçimini rota işlemine çevirir. Beş ekran da aynı çubuğu
+/// Bir sekme seçimini rota işlemine çevirir. Dört ekran da aynı çubuğu
 /// gösterdiği için kural tek yerde duruyor: Ekran 02 (geri sayım) yığının
 /// kökü, diğer sekmeler onun üstünde **tek** bir kat. Kökte değilken
 /// `pushReplacement` kullanılması sekmeler arasında dolaşırken yığının
@@ -40,7 +45,6 @@ void navigateToNavTab(BuildContext context, AppNavTab tab, {required AppNavTab c
   final String path = switch (tab) {
     // Yukarıda erken dönülüyor; `switch` yine de her dalı istiyor.
     AppNavTab.countdown => RoutePaths.countdown,
-    AppNavTab.storyCard => RoutePaths.storyCard,
     AppNavTab.badges => RoutePaths.badges,
     AppNavTab.stats => RoutePaths.stats,
     AppNavTab.settings => RoutePaths.settings,
@@ -52,26 +56,53 @@ void navigateToNavTab(BuildContext context, AppNavTab tab, {required AppNavTab c
   }
 }
 
+/// Çubuktaki odak yuvasının eylemi: seans yoksa başlatır, sürüyorsa üstüne
+/// çıkar (madde 28).
+///
+/// Sekmelerin kuralı gibi bu da tek yerde duruyor — dört ekranın dördü de aynı
+/// çubuğu gösterdiği için eylemi her birine ayrı ayrı bağlamak aynı kararı
+/// dörde kopyalamak olurdu.
+///
+/// `startFocus` yalnızca faz **boştayken** çağrılıyor: sürmekte olan bir seansın
+/// (ya da molanın) üstünde ikinci kez çağırmak sayacı sıfırlardı. Boş değilken
+/// yuva bir "devam et" düğmesine dönüşüyor; Ekran 02'nin aktif seansı kurtaran
+/// yönlendirmesiyle aynı davranış.
+///
+/// Rota `push` — `pushReplacement` değil: odak ekranı bir sekme değil, bulunulan
+/// ekranın üstüne binen bir kat. Seans bitip `pop` edildiğinde kullanıcı
+/// başladığı yere (rozetler, veriler, ayarlar) geri düşüyor.
+Future<void> startFocusFromNav(BuildContext context, WidgetRef ref) async {
+  if (ref.read(pomodoroControllerProvider) is PomodoroIdle) {
+    await ref.read(pomodoroControllerProvider.notifier).startFocus();
+  }
+  if (context.mounted) await context.push(RoutePaths.focusSession);
+}
+
 /// Ekranlar arası ortak yüzen alt gezinme çubuğu. Prototipte yalnızca
 /// Ekran 02 ve Ekran 06'da vardı; o iki ekran diğer üçüne götürüp geri
-/// getirmediği için gezinme tek yönlü kalıyordu. Artık beş sekmenin
+/// getirmediği için gezinme tek yönlü kalıyordu. Artık dört sekmenin
 /// hepsinde görünüyor, dolayısıyla her yuvanın aktif hâli için bir "hap"
 /// tanımı var.
-class BottomNavBar extends StatelessWidget {
+///
+/// Beş yuvanın dördü sekme, biri **eylem** (madde 28): eski `storyCard`
+/// yuvasının yerinde artık odak seansını başlatan düğme duruyor. `Consumer`
+/// olmasının tek sebebi bu — eylem `pomodoroControllerProvider`ı okuyor,
+/// bkz. [startFocusFromNav].
+class BottomNavBar extends ConsumerWidget {
   const BottomNavBar({required this.active, super.key, this.onSelect});
 
   final AppNavTab active;
   final ValueChanged<AppNavTab>? onSelect;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     final AppLocalizations l10n = AppLocalizations.of(context);
 
     // Prototip v2 satır 108-115 / 277-283: 5 yuva, aktif olan `flex:1.6`,
-    // diğerleri `flex:1`. Prototipin ikon dizilimi (timer/flame/medal/chart/gear)
-    // birebir korunuyor; her yuvanın **ayrı** bir hedefi var — "alev" ve
-    // "madalya" bir dönem ikisi de rozetlere gidiyordu, bkz. `label` yorumu.
+    // diğerleri `flex:1`. Yuva sayısı ve flex oranları madde 28'de de
+    // korunuyor — değişen tek şey ikinci yuvanın ne yaptığı: "alev" artık
+    // Ekran 05'e giden bir sekme değil, odak seansını başlatan eylem.
     final List<_NavSlot> slots = <_NavSlot>[
       _NavSlot(
         tab: AppNavTab.countdown,
@@ -85,25 +116,6 @@ class BottomNavBar extends StatelessWidget {
           deep: colors.accent900,
           darkStart: colors.accent400.withValues(alpha: 0.55),
           darkForeground: const Color(0xFFF5F4FF),
-        ),
-      ),
-      // "Alev" = seri. Ekran 05 (başarı kartı) serinin paylaşılabilir yüzü ve
-      // tek girişi rozet dialogundaki düğmeydi; yuva hem tekrarı bitiriyor
-      // hem o ekranı yüzeye çıkarıyor. Hapın etiketi başlığın kendisi değil
-      // (`BAŞARI KARTI` beşte birlik paya sığmayıp okunmaz boyuta iniyordu),
-      // ARB'deki kısa `navStoryCard`.
-      _NavSlot(
-        tab: AppNavTab.storyCard,
-        icon: PhosphorIconsRegular.flame,
-        label: l10n.storyCardTitle,
-        pill: _PillStyle.forRole(
-          colors: colors,
-          label: l10n.navStoryCard,
-          icon: PhosphorIconsFill.flame,
-          role: colors.ember,
-          deep: colors.emberDeep,
-          darkStart: colors.ember.withValues(alpha: 0.5),
-          darkForeground: const Color(0xFFFFE7C4),
         ),
       ),
       _NavSlot(
@@ -166,20 +178,84 @@ class BottomNavBar extends StatelessWidget {
         type: MaterialType.transparency,
         child: Row(
           children: <Widget>[
-            for (final _NavSlot slot in slots)
-              if (slot.tab == active)
-                Expanded(flex: 16, child: _heroPill(context, slot.pill))
-              else
-                Expanded(
-                  flex: 10,
-                  child: _NavIcon(
-                    icon: slot.icon,
-                    label: slot.label,
-                    colors: colors,
-                    onTap: onSelect == null ? null : () => onSelect!(slot.tab),
-                  ),
-                ),
+            // Sayaç yuvası, sonra eylem, sonra kalan üç sekme: prototipteki
+            // sıra (timer/alev/madalya/grafik/dişli) olduğu gibi duruyor.
+            _tabSlot(context, slots.first, colors),
+            Expanded(
+              flex: 10,
+              child: _FocusActionSlot(
+                colors: colors,
+                label: l10n.navFocus,
+                onTap: () => unawaited(startFocusFromNav(context, ref)),
+              ),
+            ),
+            for (final _NavSlot slot in slots.skip(1)) _tabSlot(context, slot, colors),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Bir sekme yuvası: aktifse hap (`flex:16`), değilse ikon (`flex:10`).
+  Widget _tabSlot(BuildContext context, _NavSlot slot, AppColors colors) {
+    if (slot.tab == active) {
+      return Expanded(flex: 16, child: _heroPill(context, slot.pill));
+    }
+    return Expanded(
+      flex: 10,
+      child: _NavIcon(
+        icon: slot.icon,
+        label: slot.label,
+        colors: colors,
+        onTap: onSelect == null ? null : () => onSelect!(slot.tab),
+      ),
+    );
+  }
+}
+
+/// Çubuğun tek eylem yuvası — odak seansını başlatır (madde 28).
+///
+/// Boyası Ekran 02'nin birincil düğmesinin küçültülmüş hâli: köz kenarlık,
+/// yukarıdan aşağı sönen `emberDeep` gradyanı, dolu `play` ikonu. Aynı eylemin
+/// iki yüzeyde aynı görünmesi kasıtlı — kullanıcı çubuktaki yuvayı tanımak için
+/// öğrenmek zorunda kalmıyor.
+///
+/// Etiketi yok: yuva payı beşte bir ve `ODAKLAN` orada okunmaz boyuta inerdi.
+/// Ekran okuyucuya adı `Semantics` ile veriliyor, pasif sekmelerdeki kalıbın
+/// aynısı.
+class _FocusActionSlot extends StatelessWidget {
+  const _FocusActionSlot({required this.colors, required this.label, required this.onTap});
+
+  final AppColors colors;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        // Dokunma hedefi `_NavIcon` ile aynı 48px; görünen kutu dikey 1px'lik
+        // kenar payıyla aktif hapın 46px'ine iniyor.
+        child: SizedBox(
+          height: _NavIcon.minTapHeight,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: colors.ember),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[colors.emberDeep, colors.emberDeep.withValues(alpha: 0)],
+              ),
+            ),
+            child: Icon(PhosphorIconsFill.play, size: 19, color: colors.ember),
+          ),
         ),
       ),
     );
@@ -335,7 +411,8 @@ class _NavIcon extends StatelessWidget {
   /// Materyal'in en küçük dokunma hedefi. `Row` çapraz eksende gevşek sınır
   /// verdiği için `InkWell` daha önce 21px'lik ikonun boyuna küçülüyordu:
   /// 64px'lik çubuğun ortasında yalnızca 21px'lik bir şerit dokunuyordu.
-  static const double _minTapHeight = 48;
+  /// Odak eylemi de aynı ölçüyü kullanıyor ([_FocusActionSlot]).
+  static const double minTapHeight = 48;
 
   @override
   Widget build(BuildContext context) {
@@ -349,7 +426,7 @@ class _NavIcon extends StatelessWidget {
         // veriliyor. İkon boyutu (21px) prototipteki gibi kalıyor, büyüyen tek
         // şey görünmeyen dokunma alanı.
         child: SizedBox(
-          height: _minTapHeight,
+          height: minTapHeight,
           child: Icon(icon, size: 21, color: colors.neutral600),
         ),
       ),

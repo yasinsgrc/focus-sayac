@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -11,7 +12,6 @@ import '../../core/theme/app_typography.dart';
 import '../../core/time/app_day.dart';
 import '../../core/widgets/app_pressable.dart';
 import '../../core/widgets/app_toast.dart';
-import '../../core/widgets/bottom_nav_bar.dart';
 import '../../core/widgets/rise_in.dart';
 import '../../domain/countdown/countdown_math.dart';
 import '../../domain/exams/exam_providers.dart';
@@ -24,9 +24,16 @@ import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_providers.dart';
 import 'widgets/story_card_view.dart';
 
-/// Ekran 05 — başarı kartı. Prototip v2 satır 214-245 birebir. Ekran 04'ün
-/// rozet dialogundaki "BAŞARI KARTINI OLUŞTUR" düğmesinden ve alt gezinme
-/// çubuğunun "alev" yuvasından açılıyor.
+/// Ekran 05 — başarı kartı. Prototip v2 satır 214-245 birebir.
+///
+/// Madde 28'e kadar alt çubuğun bir sekmesiydi; artık **kazanım anına bağlı**
+/// bir üst kat: Ekran 04'ün rozet dialogundan, rozet açılışı kutlamasından ve
+/// seri eşiği kutlamasından açılıyor. Nadiren kullanılan bir dışa aktarma
+/// aracının beş kalıcı yuvadan birini tutması, birincil eylemin (odak seansı)
+/// yalnızca Ekran 02'den ulaşılabilir kalmasına mal oluyordu.
+///
+/// Sekme olmadığı için çubuğu da yok: üstüne binen her kat gibi sol üstte
+/// kapatma düğmesiyle geldiği yere dönüyor (Ekran 11 ile aynı kalıp).
 class StoryCardScreen extends ConsumerStatefulWidget {
   const StoryCardScreen({super.key, this.initialTemplate});
 
@@ -111,115 +118,138 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
 
     return Scaffold(
       backgroundColor: colors.bg,
-      body: Stack(
-        children: <Widget>[
-          SafeArea(
-            child: Padding(
-              // Alt boşluk yüzen çubuğun kapladığı alan kadar: "1080×1920"
-              // bilgisi çubuğun altında kalmamalı.
-              padding: const EdgeInsets.fromLTRB(26, 6, 26, kBottomNavReservedSpace),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  RiseIn(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        l10n.storyCardTitle,
-                        style: AppTypography.display(fontSize: AppTextSize.titleLg, color: colors.text),
-                      ),
+      body: SafeArea(
+        child: Padding(
+          // Alt boşluk artık çubuğun payı kadar değil: çubuk bu ekranda yok,
+          // "1080×1920" bilgisi Ekran 11'deki gibi 26px'lik kenarda duruyor.
+          padding: const EdgeInsets.fromLTRB(26, 6, 26, 26),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              RiseIn(
+                child: Row(
+                  children: <Widget>[
+                    _CloseButton(colors: colors, label: l10n.commonClose),
+                    const SizedBox(width: 14),
+                    Text(
+                      l10n.storyCardTitle,
+                      style: AppTypography.display(fontSize: AppTextSize.titleLg, color: colors.text),
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  RiseIn(
-                    delay: RiseIn.step,
-                    child: Center(
-                      child: SizedBox(
-                        width: kStoryCardPreviewWidth,
-                        height: kStoryCardPreviewWidth * kStoryCardHeight / kStoryCardWidth,
-                        // Kart her zaman 270×480 mantıksal boyutta çiziliyor;
-                        // önizleme onu prototipin 248px'ine küçültüyor. Dışa aktarım
-                        // `RepaintBoundary`nin kendi katmanından alındığı için bu
-                        // ölçekten etkilenmiyor — PNG yine tam 1080×1920.
-                        child: FittedBox(
-                          child: StoryCardView(template: template, text: text, boundaryKey: _cardKey),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  RiseIn(
-                    delay: RiseIn.step * 2,
-                    child: _TemplatePicker(
-                      selected: template,
-                      onSelect: (StoryCardTemplate value) {
-                        // Kullanıcı seçti: kutlamanın önerisi bitti, bundan
-                        // sonra kayıtlı tercih geçerli.
-                        setState(() => _templateOverride = null);
-                        unawaited(
-                          ref
-                              .read(appSettingsDaoProvider)
-                              .updateSettings(
-                                AppSettingsTableCompanion(selectedTemplateIndex: Value<int>(value.index)),
-                              ),
-                        );
-                      },
-                    ),
-                  ),
-                  const Spacer(),
-                  RiseIn(
-                    delay: RiseIn.step * 3,
-                    child: _ShareButton(
-                      enabled: !_busy,
-                      onPressed: () => _run(
-                        // Paylaşım metni kartla aynı kaynaktan üretiliyor:
-                        // şablon değişince metin de kendiliğinden değişiyor.
-                        (GlobalKey key) => exporter.share(key, text: buildStoryCardShareText(l10n, text)),
-                        _Messages(failed: l10n.storyCardShareFailed),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  RiseIn(
-                    delay: RiseIn.step * 4,
-                    child: _SecondaryButton(
-                      icon: PhosphorIconsRegular.downloadSimple,
-                      label: l10n.storyCardSave,
-                      roleColor: colors.mint,
-                      enabled: !_busy,
-                      onPressed: () => _run(
-                        exporter.saveToGallery,
-                        _Messages(
-                          success: l10n.storyCardSaved,
-                          permissionDenied: l10n.storyCardSavePermissionDenied,
-                          failed: l10n.storyCardSaveFailed,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RiseIn(
-                    delay: RiseIn.step * 5,
-                    child: Text(
-                      l10n.storyCardExportSize,
-                      textAlign: TextAlign.center,
-                      style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral700),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 18),
+              RiseIn(
+                delay: RiseIn.step,
+                child: Center(
+                  child: SizedBox(
+                    width: kStoryCardPreviewWidth,
+                    height: kStoryCardPreviewWidth * kStoryCardHeight / kStoryCardWidth,
+                    // Kart her zaman 270×480 mantıksal boyutta çiziliyor;
+                    // önizleme onu prototipin 248px'ine küçültüyor. Dışa aktarım
+                    // `RepaintBoundary`nin kendi katmanından alındığı için bu
+                    // ölçekten etkilenmiyor — PNG yine tam 1080×1920.
+                    child: FittedBox(
+                      child: StoryCardView(template: template, text: text, boundaryKey: _cardKey),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              RiseIn(
+                delay: RiseIn.step * 2,
+                child: _TemplatePicker(
+                  selected: template,
+                  onSelect: (StoryCardTemplate value) {
+                    // Kullanıcı seçti: kutlamanın önerisi bitti, bundan
+                    // sonra kayıtlı tercih geçerli.
+                    setState(() => _templateOverride = null);
+                    unawaited(
+                      ref
+                          .read(appSettingsDaoProvider)
+                          .updateSettings(
+                            AppSettingsTableCompanion(selectedTemplateIndex: Value<int>(value.index)),
+                          ),
+                    );
+                  },
+                ),
+              ),
+              const Spacer(),
+              RiseIn(
+                delay: RiseIn.step * 3,
+                child: _ShareButton(
+                  enabled: !_busy,
+                  onPressed: () => _run(
+                    // Paylaşım metni kartla aynı kaynaktan üretiliyor:
+                    // şablon değişince metin de kendiliğinden değişiyor.
+                    (GlobalKey key) => exporter.share(key, text: buildStoryCardShareText(l10n, text)),
+                    _Messages(failed: l10n.storyCardShareFailed),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              RiseIn(
+                delay: RiseIn.step * 4,
+                child: _SecondaryButton(
+                  icon: PhosphorIconsRegular.downloadSimple,
+                  label: l10n.storyCardSave,
+                  roleColor: colors.mint,
+                  enabled: !_busy,
+                  onPressed: () => _run(
+                    exporter.saveToGallery,
+                    _Messages(
+                      success: l10n.storyCardSaved,
+                      permissionDenied: l10n.storyCardSavePermissionDenied,
+                      failed: l10n.storyCardSaveFailed,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              RiseIn(
+                delay: RiseIn.step * 5,
+                child: Text(
+                  l10n.storyCardExportSize,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral700),
+                ),
+              ),
+            ],
           ),
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 18,
-            child: BottomNavBar(
-              active: AppNavTab.storyCard,
-              onSelect: (AppNavTab tab) => navigateToNavTab(context, tab, current: AppNavTab.storyCard),
-            ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Ekranı kapatıp geldiği yere dönen düğme. Ölçüleri ve boyası Ekran 11'in
+/// (sınav ekleme) kapatma düğmesiyle birebir aynı: ikisi de alt çubuğu olmayan,
+/// üste binen bir kat ve farklı görünmeleri için bir sebep yok.
+class _CloseButton extends StatelessWidget {
+  const _CloseButton({required this.colors, required this.label});
+
+  final AppColors colors;
+
+  /// Ekran okuyucunun okuduğu ad; düğmenin görünen bir metni yok.
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: InkWell(
+        onTap: () => context.pop(),
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: colors.fillMedium),
           ),
-        ],
+          child: Icon(PhosphorIconsRegular.x, size: 16, color: colors.neutral400),
+        ),
       ),
     );
   }

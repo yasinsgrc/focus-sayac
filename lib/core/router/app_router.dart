@@ -142,14 +142,17 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
         pageBuilder: (BuildContext context, GoRouterState state) =>
             _tabPage(context, state, const BadgesScreen()),
       ),
+      // Ekran 05 madde 28'den beri bir sekme değil, kazanım anında üste binen
+      // bir kat: geçişi de sekme dilinde değil `push` dilinde (aşağıdan yukarı),
+      // Ekran 11 ve odak seansıyla aynı.
       GoRoute(
         path: RoutePaths.storyCard,
         pageBuilder: (BuildContext context, GoRouterState state) {
-          // `extra` yalnızca kutlamadan gelen geçişte dolu (seri eşiği SERİ
-          // şablonunu öneriyor); alt çubuğun sekme geçişi bir şey vermiyor ve
-          // `as ...?` onu `null`a düşürüyor — Ekran 02'nin `autoOpenSheet`
-          // bayrağıyla aynı kalıp.
-          return _tabPage(
+          // `extra` yalnızca seri eşiği kutlamasından gelen geçişte dolu (SERİ
+          // şablonunu öneriyor); rozet dialogu bir şey vermiyor ve `as ...?`
+          // onu `null`a düşürüyor — Ekran 02'nin `autoOpenSheet` bayrağıyla
+          // aynı kalıp.
+          return _pushedPage(
             context,
             state,
             StoryCardScreen(initialTemplate: state.extra as StoryCardTemplate?),
