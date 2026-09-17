@@ -2074,3 +2074,54 @@ Madde 24'ün Kabul listesinde de yok.
 
 **Doğrulanmadı:** emülatörde gerçek reklamla görsel doğrulama yapılmadı —
 açık iş.
+
+---
+
+## Madde 26 — Dönüş yolu
+
+Üç gün odaklanmayan kullanıcıya tek bir bildirim ve döndüğünde onu suçlamayan
+bir karşılama satırı. Tasarım:
+`docs/superpowers/specs/2026-09-17-donus-yolu-design.md`.
+
+- **Bildirim neden ileriye kuruluyor.** Mevcut iki zamanlı bildirim (seri
+  riski, haftalık özet) bugünün içinde bir ana kuruluyor; yokluk çağrısı ise
+  tanımı gereği kullanıcı uygulamayı **açmazken** düşmeli. SPEC §1 backend/cloud
+  sync'i ve dolayısıyla geleceğe dönük bir arka plan işini yasakladığı için tek
+  yol, son değerlendirme noktasında (açılış + her odak tamamlanışı) üç gün
+  sonrasına önden kurmak. Altyapı değişmedi: `_zonedSchedule` zaten ileri
+  tarihli tek seferlik kurulum yapıyor, "iptal et → kapılar → kur" kalıbı da
+  aynen korundu.
+- **Pencere neden tek gün.** `reminderAtUtc` son seans gününün üç gün
+  sonrasının 21:00 TSİ anıdır; o an geçmişse `null` döner ve bildirim
+  kurulmaz. Böylece on gün yok olan kullanıcı, uygulamayı açtığında birikmiş
+  bir bildirim yığınıyla karşılaşmıyor. Winback dizisi (3./7./14. gün) bilerek
+  yazılmadı: ürünün tonu "geri dön" diye üstelemek değil.
+- **Eşik neden üç tamamlanmış seans.** `AppReviewService`in
+  `minCompletedFocusSessions`i ile aynı sayı ve aynı gerekçe. Uygulamayı bir
+  kez deneyip bırakan kullanıcıya geri çağrı göndermek, ürünün kaçındığı
+  winback tonuna kayardı; üç seans "alışkanlık kurmayı gerçekten denedi"
+  eşiğinin zaten kabul edilmiş karşılığı.
+- **Ayar neden paylaşılıyor.** Kapı `streakReminderEnabled`, kanal mevcut
+  `streakRisk` (ve sessiz ikizi). İkisi de aynı sözü veriyor — seri/alışkanlık
+  hatırlatması — ve günlük hatırlatmayı kapatan kullanıcının üç gün sonra
+  rahatsız edilmek istediğini varsaymak için sebep yok. Ayrı bir anahtar drift
+  v6 göçü + Ekran 07'de dördüncü satır demekti; ayrı bir Android kanalı ise
+  kullanıcının kapattığı kategoriyi ikiye bölerdi.
+- **Şerit neden bayraksız.** `_ComebackRow` görünürlüğünü
+  `comebackStatusProvider` üzerinden geçmişten türetiyor: ilk odak tamamlandığı
+  anda `absentDays` sıfırlanır ve satır ağaçtan çıkar. "Gösterildi mi" bayrağı,
+  kapatma butonu ve yeni kalıcı alan yok — `streak_calculator.dart`ın telafi
+  hakkıyla aynı ilke (aynı geçmiş her zaman aynı sonucu verir).
+- **Şerit nereye kondu.** `BUGÜN` kartının içinde, haftalık hedef satırının
+  üstünde. Ayrı bir kart Ekran 02'nin birincil eylemini ekran dışına iterdi;
+  tam ekran bir dönüş hâli ise dönen kullanıcının "bir pomodoro"ya giden
+  yoluna kapatma adımı eklerdi.
+- **Kademe ve süre tek kaynaktan.** Hem bildirim gövdesi hem şerit
+  `flameTierFor(kümülatif) + spellFocusDuration` kullanıyor; iki yüzey aynı
+  anda farklı sayı söyleyemiyor. Bunun için `notification_service.dart`
+  `domain/flame/flame_tier.dart`ı import ediyor — `domain/time` gibi saf bir
+  yaprak olduğu için servisin `services/storage`den kaçınma kuralı bozulmuyor.
+
+**Doğrulanmadı:** emülatör doğrulaması yapılmadı — açık iş. Bildirimin cihazda
+üç gün sonra düşmesi ancak cihaz saati ileri alınarak ya da eşik geçici olarak
+düşürülerek gözlenebilir.

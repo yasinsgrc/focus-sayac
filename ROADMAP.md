@@ -721,23 +721,45 @@ yeri". SPEC.md §7.2 ve Ekran 09 binding tablosu güncellendi.
 
 ---
 
-## 26. Dönüş yolu — 3 gün yokluk sonrası ⬜ başlanmadı
+## 26. Dönüş yolu — 3 gün yokluk sonrası ✅ bitti
 
 **Sorun.** Seri koparsa kullanıcıyı geri çağıran ya da karşılayan hiçbir an
 yok. Seri koruma mekaniği (SPEC §5.3) zaten var ama kullanıcıya bunu söyleyen
 bir yüzey yok — döndüğünde onu suçlayan bir sıfır tablosu karşılıyor.
 
-**Kanıt.** `comeback` / `winback` / `dormant` / `absent` — hiçbiri kodda yok.
+394 test geçiyor (+16). Tasarım:
+`docs/superpowers/specs/2026-09-17-donus-yolu-design.md`, plan:
+`docs/superpowers/plans/2026-09-17-donus-yolu.md`. Kararlar: `DECISIONS.md`
+"Madde 26 — Dönüş yolu".
 
-- **Kapsam:** N gün (3?) hareketsizlikten sonra tek bir bildirim + dönüşte
-  suçlamayan bir karşılama hâli. Ton: "meşalen seni bekliyor, K6'dasın" —
-  kaybedileni değil korunanı göster. Kademe avatarı (madde 23) tam da bunun
-  için elverişli: kademe düşmüyor, yani söylenecek olumlu bir gerçek var.
-- Bildirim altyapısı hazır (`notification_service.dart`), yeni kanal + planlama
-  meselesi.
-- **Kabul:** hareketsizlik eşiği aşılınca bildirim planlanıyor, seans
-  başlayınca iptal ediliyor; dönüş ekranı testle çivilenmiş.
-- **Boyut:** orta.
+- **Saf katman `comeback_status.dart`:** `streak_calculator.dart` ile aynı imza
+  ve aynı felsefe — saklanan bayrak yok, yokluk tamamlanmış odak seanslarının
+  geçmişinden türetiliyor. Üç çıktı: `absentDays`, `welcomeDue`,
+  `reminderAtUtc`.
+- **Bildirim ileriye kuruluyor.** Mevcut iki zamanlı bildirimden tek farkı bu:
+  yokluk çağrısı tanımı gereği kullanıcı uygulamayı **açmazken** düşmeli, o
+  yüzden son değerlendirme noktasında (açılış + her odak tamamlanışı) üç gün
+  sonrasının 21:00 TSİ anına kurulup dönüşte yeniden hesaplanıyor. Arka plan
+  işi yok, "iptal et → kapılar → kur" kalıbı aynen korundu.
+- **Pencere tek gün.** Hedef an kaçarsa ileriye taşınmıyor: on gün yok olan
+  kullanıcı bildirim yığınıyla karşılaşmıyor. Winback dizisi (3./7./14. gün)
+  bilinçli olarak kapsam dışı.
+- **Eşik üç tamamlanmış seans** — `AppReviewService.minCompletedFocusSessions`
+  ile aynı sayı ve aynı gerekçe: uygulamayı bir kez deneyip bırakana geri çağrı
+  göndermek ürünün kaçındığı tona kayardı.
+- **Yeni ayar anahtarı yok.** `streakReminderEnabled` ve `streakRisk` kanalı
+  paylaşılıyor; ikisi de aynı sözü veriyor ve ayrı kanal kullanıcının kapattığı
+  kategoriyi ikiye bölerdi. Drift göçü gerekmedi.
+- **Karşılama şeridi bayraksız.** `BUGÜN` kartında, haftalık hedef satırının
+  üstünde; korunanı söylüyor ("Kandil kademen ve 3 saat yerinde duruyor") ve
+  ilk odak tamamlandığı anda `absentDays` sıfırlandığı için kendiliğinden
+  kapanıyor — "gösterildi mi" bayrağı ya da kapatma butonu yok.
+- **Kabul karşılandı:** eşik aşılınca bildirim planlanıyor, odak tamamlanınca
+  iptal edilip ileriye yeniden kuruluyor, şerit ve eşik altı kapsam dışılığı
+  testle çivili.
+- **Emülatör doğrulaması yapılmadı** — açık iş (madde 25 ile aynı durum).
+  Bildirimin cihazda üç gün sonra düşmesi ancak saat ileri alınarak ya da eşik
+  geçici düşürülerek gözlenebilir.
 
 ---
 
@@ -852,7 +874,7 @@ seed'lenemediği için meşale widget'ı yalnızca K1'de gözlemlendi.
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(296 test, `flutter test`)*
+- [x] Testler geçiyor *(394 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.
