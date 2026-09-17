@@ -20,12 +20,14 @@ import '../../core/widgets/rolling_number.dart';
 import '../../domain/countdown/countdown_math.dart';
 import '../../domain/exams/exam_picker_request.dart';
 import '../../domain/exams/exam_providers.dart';
+import '../../domain/flame/flame_tier.dart';
 import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
 import '../../domain/settings/settings_providers.dart';
 import '../../domain/stats/stats_providers.dart';
 import '../../domain/stats/weekly_goal.dart';
+import '../../domain/streak/comeback_status.dart';
 import '../../domain/streak/streak_calculator.dart';
 import '../../domain/time/duration_formatter.dart';
 import '../../l10n/gen/app_localizations.dart';
@@ -365,6 +367,7 @@ class _CountdownBody extends ConsumerWidget {
     final FocusDurationParts todayParts = formatFocusDuration(todayStats.totalSeconds);
     final int cycleDots = todayStats.completedCount.clamp(0, 4);
     final WeeklyGoalProgress weeklyGoal = ref.watch(weeklyGoalProgressProvider);
+    final ComebackStatus comeback = ref.watch(comebackStatusProvider);
 
     // Süre `AppSettings.focusMinutes`ten gelir (`startFocus()` de aynı ayarı
     // okur); ayar akışı ilk değerini yayınlamadan önceki tek karede sayı
@@ -753,6 +756,17 @@ class _CountdownBody extends ConsumerWidget {
                                 // eksik bildirimi olurdu, ama haftalık çubuğun pazartesi
                                 // sabahı %0'da olması eksiklik değil, haftanın başıdır.
                                 // Tek gizlenme koşulu hedefin kapalı olması.
+                                // Dönüş şeridi (ROADMAP madde 26): üç gün
+                                // odaklanmayan kullanıcı döndüğünde kartın
+                                // sıfırlarını okumadan önce korunanı görüyor.
+                                if (comeback.welcomeDue) ...<Widget>[
+                                  const SizedBox(height: 12),
+                                  Divider(height: 1, thickness: 1, color: colors.hairline),
+                                  const SizedBox(height: 10),
+                                  _ComebackRow(
+                                    cumulativeSeconds: ref.watch(focusStatsProvider).cumulativeSeconds,
+                                  ),
+                                ],
                                 if (!weeklyGoal.isOff) ...<Widget>[
                                   const SizedBox(height: 12),
                                   Divider(height: 1, thickness: 1, color: colors.hairline),
@@ -839,6 +853,59 @@ const Key kWeeklyGoalProgressKey = Key('weekly-goal-progress');
 /// ikinci bir kart birincil eylemi ekranın dışına iterdi. Hedefin haftası
 /// Ekran 06'nın kartıyla ve pazar bildirimiyle aynı pencere
 /// (`domain/stats/weekly_goal.dart`).
+/// Dönüş şeridi anahtarı — testler kartın hangi satırına baktığını bununla
+/// söylüyor.
+const Key kComebackRowKey = Key('comeback-row');
+
+/// `BUGÜN` kartının dönüş satırı (ROADMAP madde 26).
+///
+/// Üç gün hiç odaklanmayan kullanıcı döndüğünde onu bir sıfır tablosu
+/// karşılıyordu. Satır kaybedileni değil **korunanı** söylüyor: meşale kademesi
+/// asla küçülmüyor ve kümülatif saat duruyor, yani seri kırılmış olsa bile
+/// söylenecek doğru ve olumlu bir gerçek var.
+///
+/// Kapanışı da veriden geliyor: ilk odak tamamlandığı anda `absentDays`
+/// sıfırlanır ve satır ağaçtan çıkar — "gösterildi mi" bayrağı, kapatma butonu,
+/// yeni kalıcı alan yok.
+class _ComebackRow extends StatelessWidget {
+  const _ComebackRow({required this.cumulativeSeconds});
+
+  /// Tüm zamanların tamamlanmış odak saniyesi (`FocusStats.cumulativeSeconds`).
+  final int cumulativeSeconds;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    // Kademe ve süre bildirimle aynı kaynaktan: iki yüzey aynı anda farklı sayı
+    // söyleyemez.
+    final String tierName = flameTierFor(cumulativeSeconds).tier.name(l10n);
+    final String spelled = spellFocusDuration(l10n, cumulativeSeconds);
+
+    return Semantics(
+      key: kComebackRowKey,
+      container: true,
+      excludeSemantics: true,
+      label: l10n.countdownComebackSemantics(tierName, spelled),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            l10n.countdownComebackKicker,
+            style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            l10n.countdownComebackBody(tierName, spelled),
+            style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.ember),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _WeeklyGoalRow extends StatelessWidget {
   const _WeeklyGoalRow({required this.progress});
 
