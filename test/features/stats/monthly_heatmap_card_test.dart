@@ -59,7 +59,7 @@ BoxDecoration _cellDecoration(WidgetTester tester, int dayOfMonth) {
 }
 
 void main() {
-  testWidgets('kısmi ay: seviyeler renge, gelecek günler soluk dolguya çevriliyor',
+  testWidgets('kısmi ay: seviyeler renge çevriliyor, gelecek günler çizilmiyor',
       (WidgetTester tester) async {
     await _pumpCard(tester, <PomodoroSession>[
       _september(2, minutes: 10), // seviye 1
@@ -68,9 +68,13 @@ void main() {
       _september(16, minutes: 120), // seviye 4
     ]);
 
-    // Ayın tamamı çiziliyor: 30 hücre.
-    for (int day = 1; day <= 30; day++) {
+    // Yaşanmış her gün bir hücre: ayın 1'inden bugüne (17 Eylül).
+    for (int day = 1; day <= 17; day++) {
       expect(find.byKey(heatmapDayCellKey(day)), findsOneWidget, reason: '$day. gün hücresi');
+    }
+    // Ayın gelecek günleri baştaki boşluklar gibi yer tutuyor ama çizilmiyor.
+    for (int day = 18; day <= 30; day++) {
+      expect(find.byKey(heatmapDayCellKey(day)), findsNothing, reason: '$day. gün hücresi');
     }
     expect(find.byKey(heatmapDayCellKey(31)), findsNothing);
 
@@ -78,11 +82,8 @@ void main() {
     expect(_cellDecoration(tester, 9).color, heatmapLevelColor(_colors, 2));
     expect(_cellDecoration(tester, 14).color, heatmapLevelColor(_colors, 3));
     expect(_cellDecoration(tester, 16).color, heatmapLevelColor(_colors, 4));
-    // Geçmişte kalan boş gün: dolu bir hücreden zayıf, gelecekten güçlü.
+    // Doldurulmamış gün nötr dolguda — bir sonraki tona benzemiyor.
     expect(_cellDecoration(tester, 3).color, _colors.fillSubtle);
-    // Gelecek gün: yaşanmamış gün kaçırılmış gün gibi okunmasın.
-    expect(_cellDecoration(tester, 18).color, _colors.fillFaint);
-    expect(_cellDecoration(tester, 30).color, _colors.fillFaint);
 
     // Bugünün çerçevesi seviyesinden bağımsız.
     expect(_cellDecoration(tester, 17).border, isNotNull);
@@ -107,16 +108,16 @@ void main() {
     await _pumpCard(tester, const <PomodoroSession>[]);
 
     expect(find.byKey(heatmapDayCellKey(1)), findsOneWidget);
-    expect(find.byKey(heatmapDayCellKey(30)), findsOneWidget);
+    expect(find.byKey(heatmapDayCellKey(30)), findsNothing);
     expect(find.text('BU AY'), findsOneWidget);
     // "0 dakika" ölçen bir ton olurdu (haftalık kapanış kartıyla aynı gerekçe).
     expect(find.textContaining('dakika'), findsNothing);
     expect(find.bySemanticsLabel('Bu ay henüz odak yok.'), findsOneWidget);
 
-    // Geçmiş günler boş dolguda, gelecek günler soluk.
+    // Yaşanmış günlerin hepsi boş dolguda; bugün yine çerçeveli.
     expect(_cellDecoration(tester, 1).color, _colors.fillSubtle);
     expect(_cellDecoration(tester, 17).color, _colors.fillSubtle);
-    expect(_cellDecoration(tester, 18).color, _colors.fillFaint);
+    expect(_cellDecoration(tester, 17).border, isNotNull);
   });
 
   testWidgets('yoğun ay: her gün en üst seviyede', (WidgetTester tester) async {

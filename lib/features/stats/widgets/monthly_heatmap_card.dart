@@ -131,8 +131,12 @@ class MonthlyHeatmapCard extends StatelessWidget {
   /// Takvim satırları. İlk satır [MonthlyHeatmap.leadingBlanks] kadar boş
   /// hücreyle başlıyor, son satırın artanı da boş kalıyor: günler
   /// sütunlarıyla hizalı duruyor.
+  ///
+  /// Izgara **bugünün satırında** bitiyor, ayın sonunda değil: gelecek günler
+  /// çizilmediği için kalan satırlar ölü alan olurdu (emülatörde ayın
+  /// ortasında iki boş satır yüksekliği). Kart ay ilerledikçe büyüyor.
   List<Widget> _rows(AppColors colors) {
-    final int cellCount = heatmap.leadingBlanks + heatmap.days.length;
+    final int cellCount = heatmap.leadingBlanks + _todayIndex + 1;
     final int rowCount = (cellCount / _columns).ceil();
 
     return <Widget>[
@@ -155,13 +159,20 @@ class MonthlyHeatmapCard extends StatelessWidget {
     ];
   }
 
-  /// [index] ızgaradaki düz konum; ayın 1'inden önceki ve son gününden sonraki
-  /// konumlar hiç çizilmiyor (yalnızca yer tutuyor).
+  /// [index] ızgaradaki düz konum. Üç konum hiç çizilmiyor, yalnızca yer
+  /// tutuyor: ayın 1'inden önceki hücreler, son gününden sonraki hücreler ve
+  /// **ayın henüz gelmemiş günleri**.
+  ///
+  /// Gelecek günlerin boş bırakılması bir ton kararı: ayın 2'sinde 28 kutu
+  /// çizmek, yaşanmamış günleri kaçırılmış gün gibi okuturdu. Soluk bir dolgu
+  /// da denendi ama emülatörde boş geçmiş günden ayırt edilemedi (%9 ↔ %5
+  /// beyaz); baştaki boşlukların kalıbı hem kesin hem zaten tanıdık.
   Widget _cell(AppColors colors, int index) {
     final int dayIndex = index - heatmap.leadingBlanks;
     if (dayIndex < 0 || dayIndex >= heatmap.days.length) return const SizedBox.shrink();
 
     final HeatmapDay day = heatmap.days[dayIndex];
+    if (day.isFuture) return const SizedBox.shrink();
     return DecoratedBox(
       key: heatmapDayCellKey(day.dayKey.day),
       decoration: BoxDecoration(
@@ -183,13 +194,10 @@ class MonthlyHeatmapCard extends StatelessWidget {
     return -1;
   }
 
-  /// Üç basamaklı bir merdiven: gelecek gün < boş geçmiş gün < dolu gün.
-  /// Gelecek günlerin en soluk olması bir ton kararı — ayın 2'sinde 28 boş
-  /// kutu, yaşanmamış günleri kaçırılmış gün gibi okuturdu.
-  Color _cellColor(AppColors colors, HeatmapDay day) {
-    if (day.level > 0) return heatmapLevelColor(colors, day.level);
-    return day.isFuture ? colors.fillFaint : colors.fillSubtle;
-  }
+  /// Yalnızca yaşanmış günler için çağrılıyor: doldurulmamış gün nötr bir
+  /// dolgu, dolu gün yoğunluk rampası.
+  Color _cellColor(AppColors colors, HeatmapDay day) =>
+      day.level > 0 ? heatmapLevelColor(colors, day.level) : colors.fillSubtle;
 
   /// Rampanın okuma anahtarı: `az ▢▣▤▥ çok`.
   Widget _legend(AppColors colors, AppLocalizations l10n) {

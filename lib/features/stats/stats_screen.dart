@@ -23,6 +23,10 @@ import 'widgets/weekly_focus_bar_painter.dart';
 class StatsScreen extends StatelessWidget {
   const StatsScreen({super.key});
 
+  /// Yüzen alt gezinme çubuğunun kapladığı yükseklik: aşağıdaki
+  /// `Positioned(bottom: 18)` + çubuğun kendi yüksekliği.
+  static const double _navBarFootprint = 88;
+
   @override
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
@@ -74,8 +78,14 @@ class StatsScreen extends StatelessWidget {
                 // SPEC.md §7.1: banner yalnızca Ekran 02 ve Ekran 06.
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 26),
-                  child: BannerAdSlot(bottomMargin: 88),
+                  child: BannerAdSlot(),
                 ),
+                // Alt gezinme çubuğunun yeri, `BannerAdSlot`ın `bottomMargin`i
+                // yerine burada ayrılıyor: yuva kapandığında (reklam onayı yok
+                // ya da premium) o pay da kalkıyor ve kaydırılan içeriğin sonu
+                // çubuğun arkasına giriyordu — emülatörde ısı haritasının alt
+                // iki satırı görünmüyordu.
+                const SizedBox(height: _navBarFootprint),
               ],
             ),
           ),
