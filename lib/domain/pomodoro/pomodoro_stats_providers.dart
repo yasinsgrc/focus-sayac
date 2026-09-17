@@ -4,6 +4,7 @@ import '../../core/time/app_day.dart';
 import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
+import '../streak/comeback_status.dart';
 import '../streak/streak_calculator.dart';
 
 /// Tüm seans kayıtları — Ekran 02'nin "bugün" kartı ve seri, bu tek akıştan
@@ -64,3 +65,18 @@ final Provider<StreakStatus> streakStatusProvider = Provider<StreakStatus>((Ref 
 /// değişip sayı aynı kaldığında onları yeniden çizdirmiyor.
 final Provider<int> streakProvider =
     Provider<int>((Ref ref) => ref.watch(streakStatusProvider).days);
+
+/// Dönüş durumu (ROADMAP madde 26) — `streakStatusProvider` ile aynı akıştan
+/// türetiliyor, yani Ekran 02'nin karşılama şeridi ile dönüş bildiriminin
+/// sayıları birbirinden sapamaz.
+final Provider<ComebackStatus> comebackStatusProvider = Provider<ComebackStatus>((Ref ref) {
+  final List<PomodoroSession> sessions = ref.watch(allSessionsProvider).value ?? const <PomodoroSession>[];
+  final List<DateTime> completedFocusStarts = sessions
+      .where((PomodoroSession s) => s.completed && s.type == SessionType.focus)
+      .map((PomodoroSession s) => s.startedAt)
+      .toList(growable: false);
+  return calculateComebackStatus(
+    completedFocusStartedAtUtc: completedFocusStarts,
+    nowUtc: DateTime.now().toUtc(),
+  );
+});
