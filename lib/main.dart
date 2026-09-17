@@ -12,6 +12,7 @@ import 'core/theme/app_theme.dart';
 import 'core/time/app_day.dart';
 import 'domain/settings/settings_providers.dart';
 import 'domain/stats/weekly_summary.dart';
+import 'domain/streak/comeback_status.dart';
 import 'domain/streak/streak_calculator.dart';
 import 'l10n/gen/app_localizations.dart';
 import 'services/ads/ad_service.dart';
@@ -67,6 +68,7 @@ Future<void> main() async {
   }
   unawaited(_rescheduleStreakRiskReminder(database, notificationService));
   unawaited(_rescheduleWeeklySummary(database, notificationService));
+  unawaited(_rescheduleComebackReminder(database, notificationService));
   // SPEC.md §7: UMP onayı Ekran 01'de toplanıyor, reklam isteğinin kapısı
   // `AdService.canRequestAds` (onay + `isPremium`). SDK'nın başlatılması
   // reklam istemek değil, o yüzden açılışta ve onaydan bağımsız yapılıyor;
@@ -169,6 +171,33 @@ Future<void> _rescheduleWeeklySummary(
     sendAtUtc: sendAtUtc,
     seconds: summary.seconds,
     previousSeconds: summary.previousSeconds,
+  );
+}
+
+/// Dönüş bildirimini açılışta kurar (ROADMAP madde 26) — `PomodoroController`
+/// her odak tamamlanışında aynı işi tekrar yapıyor, bu çağrı uygulamayı açıp
+/// hiç seans yapmayan günleri kapsıyor. Diğer ikisinden farkı hedefin ileride
+/// olması: bildirim tanımı gereği kullanıcı uygulamayı açmazken düşmeli, o
+/// yüzden burada önden kurulur.
+///
+/// Riverpod ağacı kurulmadığı için DAO doğrudan okunuyor
+/// (`_rescheduleStreakRiskReminder` ile aynı gerekçe).
+Future<void> _rescheduleComebackReminder(
+  AppDatabase database,
+  NotificationService notificationService,
+) async {
+  final List<PomodoroSession> sessions = await database.pomodoroSessionDao.getAllCompletedFocusSessions();
+  final ComebackStatus comeback = calculateComebackStatus(
+    completedFocusStartedAtUtc:
+        sessions.map((PomodoroSession s) => s.startedAt).toList(growable: false),
+    nowUtc: DateTime.now().toUtc(),
+  );
+  await notificationService.rescheduleComebackReminder(
+    reminderAtUtc: comeback.reminderAtUtc,
+    cumulativeFocusSeconds: sessions.fold<int>(
+      0,
+      (int sum, PomodoroSession s) => sum + s.plannedDurationSec,
+    ),
   );
 }
 

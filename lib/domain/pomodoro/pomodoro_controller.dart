@@ -15,6 +15,7 @@ import '../celebration/session_celebration.dart';
 import '../exams/exam_providers.dart';
 import '../review/app_review_service.dart';
 import '../stats/weekly_summary.dart';
+import '../streak/comeback_status.dart';
 import '../streak/streak_calculator.dart';
 import 'pomodoro_math.dart';
 import 'pomodoro_phase.dart';
@@ -387,6 +388,7 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     final List<PomodoroSession> completedFocus =
         await ref.read(pomodoroSessionDaoProvider).getAllCompletedFocusSessions();
     await _rescheduleWeeklySummary(completedFocus);
+    await _rescheduleComebackReminder(completedFocus);
     await _offerCelebration(unlockedBadges, completedFocus);
     await _haptic();
     // Interstitial burada **değil**: yol haritası madde 25 ile mola
@@ -410,6 +412,26 @@ class PomodoroController extends Notifier<PomodoroPhase> {
       sendAtUtc: sendAtUtc,
       seconds: summary.seconds,
       previousSeconds: summary.previousSeconds,
+    );
+  }
+
+  /// Dönüş bildirimini ileriye yeniden kurar (ROADMAP madde 26). Her odak
+  /// tamamlanışında çağrılıyor: yokluk sayacı bu anla sıfırlandığı için hedef
+  /// an da üç gün ileri kayıyor.
+  Future<void> _rescheduleComebackReminder(List<PomodoroSession> completedFocus) async {
+    final ComebackStatus comeback = calculateComebackStatus(
+      completedFocusStartedAtUtc:
+          completedFocus.map((PomodoroSession s) => s.startedAt).toList(growable: false),
+      nowUtc: DateTime.now().toUtc(),
+    );
+    await _notifications.rescheduleComebackReminder(
+      reminderAtUtc: comeback.reminderAtUtc,
+      // `focus_stats.dart`'ın `cumulativeSeconds` kuralıyla birebir aynı:
+      // tamamlanan seans planlanan süresini tam çalışmıştır.
+      cumulativeFocusSeconds: completedFocus.fold<int>(
+        0,
+        (int sum, PomodoroSession s) => sum + s.plannedDurationSec,
+      ),
     );
   }
 

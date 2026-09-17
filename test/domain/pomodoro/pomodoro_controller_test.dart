@@ -93,6 +93,20 @@ class _RecordingNotifications extends NotificationService {
   Future<void> cancelBreakEnd() async {
     breakEndCancels++;
   }
+
+  /// Dönüş bildiriminin (ROADMAP madde 26) her yeniden değerlendirmesi.
+  final List<({DateTime? reminderAtUtc, int cumulativeFocusSeconds})> comebackCalls =
+      <({DateTime? reminderAtUtc, int cumulativeFocusSeconds})>[];
+
+  @override
+  Future<void> rescheduleComebackReminder({
+    required DateTime? reminderAtUtc,
+    required int cumulativeFocusSeconds,
+  }) async {
+    comebackCalls.add(
+      (reminderAtUtc: reminderAtUtc, cumulativeFocusSeconds: cumulativeFocusSeconds),
+    );
+  }
 }
 
 void main() {
@@ -409,5 +423,32 @@ void main() {
     }
 
     expect(adService.interstitialRequests, 1);
+  });
+
+  test('odak tamamlanışı dönüş bildirimini yeniden kuruyor', () async {
+    final _RecordingNotifications notifications = _RecordingNotifications();
+    final ProviderContainer container = await _buildContainer(notifications: notifications);
+    addTearDown(container.dispose);
+    final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
+
+    // Üç tamamlanmış odak seansı: dönüş çağrısının eşiği
+    // (`kComebackMinCompletedFocusSessions`) tam burada doluyor.
+    for (int cycle = 1; cycle <= 3; cycle++) {
+      await controller.startFocus();
+      // Odak da mola da planned=0s olduğu için tek `tick()` odak → mola → idle
+      // zincirini kapatıyor (yukarıdaki döngü testiyle aynı kalıp).
+      await controller.tick();
+      await _waitForSessionCount(container, cycle * 2);
+    }
+
+    // Her odak tamamlanışında bir kez çağrılıyor.
+    expect(notifications.comebackCalls, hasLength(3));
+    // İlk çağrıda eşik henüz dolmamıştı: kurulacak bir an yok. (`isNull`/
+    // `isNotNull` burada kullanılamıyor: drift de aynı adları dışa veriyor.)
+    expect(notifications.comebackCalls.first.reminderAtUtc, equals(null));
+    // Üçüncüsünde eşik dolu ve son seans bugün → hedef an üç gün ileride.
+    final DateTime? last = notifications.comebackCalls.last.reminderAtUtc;
+    expect(last, isA<DateTime>());
+    expect(last!.isAfter(DateTime.now().toUtc()), isTrue);
   });
 }
