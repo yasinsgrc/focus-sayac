@@ -2560,3 +2560,104 @@ denge iki satıra alındı, ipucu kısaltılıp esnek yapıldı.
 
 Ders başına hedef, ders bazlı rozet, geçmiş seansın dersini sonradan düzenleme,
 kullanıcının kendi dersini yazması, ders bazlı bildirim.
+
+---
+
+## Madde 31 — `FlameRenderer` doğrulaması
+
+Tasarım: `docs/superpowers/specs/2026-09-18-flame-renderer-dogrulama-design.md`
+
+### 1. Neden ekran görüntüsü değil test
+
+Madde 23'ten devreden boşluk Kotlin `FlameRenderer`ın hiç çalıştırılmamış
+olmasıydı ve **emülatörle kapanamıyordu**: widget'ı ana ekrana koymak adb ile
+sürülemiyor (`appwidget` kabuk komutu yalnızca `grantbind` destekliyor, `cmd
+appwidget` yok). Çizim yolunu kodla çağırmak tek yol. `render` gerçek
+`Bitmap`/`Canvas`/`Paint`/`Shader` istediği için düz JVM testi de yetmiyor —
+stub `android.jar` hepsinde `RuntimeException("Stub!")` atar.
+
+### 2. İki koşum evi, tek iddia gövdesi
+
+Robolectric (`src/test`, NATIVE grafik kipi) cihazsız kalıcı kapı; instrumented
+test (`src/androidTest`) bu maddenin emülatör kanıtı. İddiaların ikisinde de
+ayrı yazılması zamanla ayrışma demekti, o yüzden hepsi
+`src/sharedTest/kotlin/.../FlameRendererContract.kt`te ve `build.gradle.kts` bu
+dizini iki kaynak kümesine de ekliyor. `@GraphicsMode` Robolectric'e özel
+olduğu için sözleşmede değil koşucuda — `androidTest` classpath'ine Robolectric
+girmiyor.
+
+### 3. Altın görüntü değil, merdivene bağlı piksel sondası
+
+Robolectric'in native grafiği ile gerçek cihazın yığını bayt bayt uzlaşmaz; iki
+koşum evi bir altın görüntüde anlaşamaz. Bunun yerine her iddia geometriyi
+`FlameTierLadder`a bağlıyor: gövde tepesi ≈ `heightPx * (1 - scale)`, köz
+sondası ⇔ `emberBase`, hâle sondası ⇔ `haloOpacity > 0`, kıvılcım sayısı =
+`sparkCount`.
+
+Kıvılcım iddiası **konumdan bağımsız**: gövdenin dışındaki şeritte birbirine
+bağlı lekeler taşma doldurmayla sayılıyor. Formülü tekrar etmek testi
+düzeltmenin aynasına çevirirdi; leke sayımı merdivenin *sözünü* ("K6'dan sonra
+kıvılcımlar") sınıyor.
+
+Alfa eşikleri renderer'ın kendi alfalarından türüyor. Dikkat: shader kurulurken
+`paint.color`un alfası duruyor ve shader'ı süzüyor — köz çizildikten sonra
+gövde `emberBase` kademelerinde 0xB3 ile modüleleniyor, kozsuz kademelerde
+0xFF. Hâle ise en fazla `0.34 * 255`; eşikler hâleyi gerçek çizimlerden
+ayıracak şekilde seçildi.
+
+### 4. Bulunan hata: üst kademelerde kıvılcımlar sessizce kırpılıyordu
+
+Dart'ta şekil kutusu 64×98, gövde 44×86 ve tabana yapışık — tepede 12px hava
+var. Kotlin'de `bodyHeight = heightPx * tier.scale`, yani `scale == 1.0`da
+gövde kareyi tamamen yiyor, `top` sıfıra iniyor ve `if (y > 0f)` kıvılcımları
+atıyordu. Üretim ölçüsünde (60×64dp ≈ 157×168px) **K8'de 3'ün 2'si, K9'da 4'ün
+1'i, K10'da 5'in hiçbiri** çizilmiyordu. Hiç çalıştırılmamış kod olduğu için
+kimse görmemiş; test ilk koşumunda üçünü birlikte bildirdi.
+
+Düzeltme tek satır: kıvılcımlar tepeden **yukarı** yığılmak yerine tepeden
+**aşağı** iniyor (`y = top + sparkRadius + bodyHeight * 0.08f * i`). Gövdenin
+iki yanındaki dizilim her ölçekte kare içinde kalıyor.
+
+**Gövde boyutuna dokunulmadı.** Dart'ın 12px havasını Kotlin'e taşımak
+(`* 86f / 98f`) tüm kademelerde alevi %12 küçültür ve K10'da yine 5 kıvılcımın
+2'sine yer açardı — hem görsel regresyon hem yarım çözüm. Kotlin dosya başında
+belgeli bir sadeleştirme, Dart'la piksel paritesi hedef değil.
+
+### 5. Türkçe yerel ayarı Robolectric'i açılışta düşürüyordu
+
+İlk koşum `UnsatisfiedLinkError: no conscrypt_openjdk_jni-wındows-x86_64`
+verdi — noktasız `ı`. Robolectric açılışta conscrypt yüklüyor, conscrypt de
+kütüphane adını **varsayılan yerel ayarla** küçültüyor; tr-TR'de
+`"Windows".lowercase()` → `wındows` ve pakette o adda kitaplık yok. Test JVM'i
+bu yüzden `-Duser.language=en -Duser.country=US` ile koşuyor
+(`tasks.withType<Test>`). Uygulamanın diliyle ilgisi yok, yalnızca JNI ad
+çözümlemesi.
+
+### 6. Emülatör doğrulandı (2026-09-18)
+
+`focussayac_verify` AVD'sinde (Android 16) cihaz testinin üç testi de geçti,
+sıfır hata. On bitmap PNG olarak döküldü ve `.verify/m31_k1..k10.png` olarak
+çekildi; kontak sayfası `.verify/m31_tum_kademeler.png`. Gözle: K1–K3 sade,
+K4'ten köz tabanı, K6/K7'de 2 ve 3 kıvılcım, K8'den hâle, K8/K9/K10'da
+3/4/5 kıvılcım — merdivenle birebir.
+
+Dökümü çekmek iki tuzak barındırıyor, ikisi de teşhisi yanlış yöne çekiyor:
+
+- **AGP koşum sonunda iki APK'yı da kaldırıyor**, uygulamaya özel dış dizin de
+  onunla siliniyor. `-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true`
+  şart, yoksa test yeşil ama PNG yok.
+- `/sdcard/Android/data/<pkg>` **root kabukta bile** görünmüyor (FUSE kapsam
+  kısıtı); dosyalar `/data/media/0/Android/data/<pkg>/files/` altından
+  çekiliyor. Ayrıca Git Bash `/data/...` argümanını Windows yoluna çeviriyor ve
+  `adb pull` "No such file or directory" diyor — `MSYS_NO_PATHCONV=1` gerekli.
+
+Kontak sayfasını üretirken `format=rgb24` alfayı **harmanlamıyor, atıyor**:
+Android'in ARGB_8888 PNG'si premultiplied değil, saydam pikselin RGB'si duruyor
+ve hâle dolu turuncu kare gibi görünüyor. Koyu zemine `overlay` ile harmanlamak
+gerekiyor — ilk montaj bu yüzden okunamaz çıktı.
+
+### 7. Kapsam dışı
+
+Widget'ı ana ekrana adb ile yerleştirmek (hâlâ mümkün değil), diğer
+renderer'lar (`RingRenderer`, `StripRenderer`, `SparkRenderer`), Dart ↔ Kotlin
+piksel paritesi.

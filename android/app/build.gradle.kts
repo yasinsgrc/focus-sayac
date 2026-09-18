@@ -43,6 +43,22 @@ android {
         targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // `FlameRenderer`in iddialari `src/sharedTest` altinda TEK yerde duruyor;
+    // iki kosum evi (Robolectric + cihaz) ayni dosyayi derliyor. Ayri ayri
+    // yazilsalar zamanla ayrisirlardi, ayrisma da tam bu maddenin kapatmaya
+    // calistigi bosluk.
+    sourceSets {
+        getByName("test").java.srcDir("src/sharedTest/kotlin")
+        getByName("androidTest").java.srcDir("src/sharedTest/kotlin")
+    }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
     }
 
     signingConfigs {
@@ -63,6 +79,15 @@ android {
     }
 }
 
+// Robolectric acilirken conscrypt'i yukluyor, conscrypt de kutuphane adini
+// VARSAYILAN yerel ayarla kucultuyor: tr-TR'de "Windows".lowercase() ->
+// "wındows" (noktasiz i) ve paketteki "conscrypt_openjdk_jni-windows-x86_64"
+// bulunamiyor, test UnsatisfiedLinkError ile duser. Test JVM'i bu yuzden
+// Ingilizce yerel ayarda kosuyor - uygulamanin diliyle ilgisi yok.
+tasks.withType<Test>().configureEach {
+    jvmArgs("-Duser.language=en", "-Duser.country=US")
+}
+
 flutter {
     source = "../.."
 }
@@ -74,4 +99,16 @@ dependencies {
     // Flutter gomulusu androidx.core getiriyor ama gecisli bagimlilik
     // sessizce degisebilir; dogrudan bildiriliyor.
     implementation("androidx.core:core-ktx:1.13.1")
+
+    // Robolectric'in NATIVE grafik kipi gercek Bitmap/Canvas/Shader kosturuyor;
+    // stub android.jar bunlarin hepsinde "Stub!" atardi, yani duz JVM testi
+    // FlameRenderer'i cagirmaya yetmiyor.
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.test:core:1.6.1")
+    testImplementation("org.robolectric:robolectric:4.14.1")
+
+    androidTestImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
 }

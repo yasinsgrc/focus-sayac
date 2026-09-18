@@ -948,28 +948,45 @@ Kararlar: `DECISIONS.md` "Madde 30".
 
 ---
 
-## 31. `FlameRenderer` doğrulama boşluğu ⬜ başlanmadı
+## 31. `FlameRenderer` doğrulama boşluğu ✅ bitti
 
-**Sorun.** Madde 23'ten devredilen açık iş. **2026-09-17'de yarısı kapandı:**
-Dart tarafı (`FlameWidget` + `FlameAvatarCard`) on kademenin onunda da cihazda
-çizdirildi — K1 Kıvılcım'dan K10 Güneş'e, ölçek artışı, K6'dan sonra
-kıvılcımlar, K8'den sonra hâle. Kanıt `.verify/tiers_all.png`. Kotlin
-`FlameRenderer` hâlâ hiçbir yerde çalıştırılmadı ve birim testi yok.
+Madde 23'ten devredilen açık iş kapandı. Tasarım belgesi:
+`docs/superpowers/specs/2026-09-18-flame-renderer-dogrulama-design.md`.
+Kararlar: `DECISIONS.md` "Madde 31".
 
-- **Seed sorunu çözüldü.** Ayrı bir doğrulama AVD'si (`focussayac_verify`,
-  `android-36/google_apis`, 8G veri bölümü) `adb root` veriyor; geçmiş, drift
-  veritabanına host tarafında Python `sqlite3` ile yazılıp `adb push` ile geri
-  konuyor. **`adb shell cat` ile çekme ikili veriyi bozuyor** — `adb pull`
-  şart.
-- **Kalan kapsam:** widget'ı ana ekrana koymak hâlâ adb ile sürülemiyor
-  (`appwidget` yalnızca `grantbind` destekliyor, `cmd appwidget` yok). Kalıcı
-  çözüm `FlameRenderer` için Kotlin/Robolectric birim testleri.
-- **Doğrulanan dolaylı kanıt:** `HomeWidgetPreferences.xml` içinde
-  `cumulativeFocusSeconds=1440000` (tam 400 saat) yazılı, yani Kotlin'in
-  okuduğu değer doğru; altı sağlayıcının hepsi `dumpsys appwidget`te kayıtlı.
-- **Kabul:** `FlameRenderer`ın on kademesi için çizim yolu en az bir kez
-  çalıştırılmış.
-- **Boyut:** küçük–orta.
+- **Ekran görüntüsüyle kapanamıyordu:** widget'ı ana ekrana koymak adb ile
+  sürülemiyor (`appwidget` yalnızca `grantbind` destekliyor, `cmd appwidget`
+  yok), `render` de gerçek `Bitmap`/`Canvas`/`Shader` istediği için düz JVM
+  testi "Stub!" atıyor. Çizim yolunu kodla çağırmak tek yoldu.
+- **İki koşum evi, tek iddia gövdesi:** Robolectric (`src/test`, NATIVE grafik
+  kipi) cihazsız kalıcı kapı, instrumented test (`src/androidTest`) emülatör
+  kanıtı. İddiaların tamamı `src/sharedTest/.../FlameRendererContract.kt`te;
+  `build.gradle.kts` bu dizini iki kaynak kümesine de ekliyor, böylece iki
+  koşum evi zamanla ayrışamıyor.
+- **Altın görüntü yok:** iki grafik yığını bayt bayt uzlaşmaz. İddialar
+  geometriyi merdivene bağlıyor; kıvılcım sayımı konumdan bağımsız, gövdenin
+  dışındaki şeritte taşma doldurmayla leke sayıyor.
+- **Hiç çalıştırılmamış kodda hata çıktı:** `bodyHeight = heightPx * scale`
+  yüzünden üst kademelerde gövdenin tepesinde hava kalmıyor ve `if (y > 0f)`
+  kıvılcımları sessizce atıyordu — K8'de 3'ün 2'si, K9'da 4'ün 1'i, K10'da
+  5'in hiçbiri çizilmiyordu. Kıvılcımlar tepeden yukarı yerine tepeden aşağı
+  inecek şekilde düzeltildi; gövde boyutuna dokunulmadı.
+- **Türkçe yerel ayarı tuzağı:** Robolectric açılışta conscrypt yüklüyor,
+  conscrypt kütüphane adını varsayılan yerel ayarla küçültüyor ve tr-TR'de
+  `wındows` (noktasız ı) arıyor. Test JVM'i `-Duser.language=en` ile koşuyor.
+- **Kapsam dışı:** widget'ı adb ile yerleştirmek, diğer renderer'lar
+  (`RingRenderer`, `StripRenderer`, `SparkRenderer`), Dart ↔ Kotlin piksel
+  paritesi.
+- **Emülatör doğrulandı (2026-09-18).** `focussayac_verify` (Android 16)
+  üzerinde cihaz testinin üçü de geçti; on bitmap `.verify/m31_k1..k10.png`
+  olarak çekildi, kontak sayfası `.verify/m31_tum_kademeler.png`. K1–K3 sade,
+  K4'ten köz, K6/K7'de 2 ve 3 kıvılcım, K8'den hâle, K8/K9/K10'da 3/4/5
+  kıvılcım. PNG dökümünü çekmek için
+  `-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true` şart
+  (AGP koşum sonunda APK'ları kaldırıp dış dizini siliyor) ve dosyalar
+  `/data/media/0/...` altından, `MSYS_NO_PATHCONV=1` ile çekiliyor.
+- **Kalan bağlı iş yok.** Dart tarafının cihaz kanıtı 2026-09-17'de alınmıştı
+  (`.verify/tiers_all.png`).
 
 ---
 

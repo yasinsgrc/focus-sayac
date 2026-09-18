@@ -100,11 +100,20 @@ object FlameRenderer {
 
         // Kivilcimlar deterministik konumda - rastgelelik her yenilemede
         // widget'i zipatirdi.
+        //
+        // Tepeden YUKARI degil, tepeden ASAGI yigiliyorlar. Dart'ta sekil
+        // kutusunun (64x98) tepesinde govdenin (44x86) ustunde 12px hava var,
+        // kivilcimlar oraya tasabiliyor; burada `bodyHeight = heightPx * scale`
+        // oldugu icin ust kademelerde o hava hic yok - K10'da govde kareyi
+        // tamamen dolduruyor, `top` sifira iniyor ve merdivenin en tepesindeki
+        // kivilcimlar SESSIZCE kirpiliyordu (K8'de 3'un 2'si, K9'da 4'un 1'i,
+        // K10'da 5'in hicbiri cizilmiyordu). Govdenin iki yaninda asagi inen
+        // dizilim her olcekte kare icinde kaliyor.
         paint.color = withAlpha(SPARK, 0xCC)
         val sparkRadius = bodyWidth * 0.08f
         for (i in 0 until tier.sparkCount) {
             val offsetX = if (i % 2 == 0) -bodyWidth * 0.6f else bodyWidth * 0.6f
-            val y = top - bodyHeight * 0.06f * i - sparkRadius
+            val y = top + sparkRadius + bodyHeight * 0.08f * i
             if (y > 0f) canvas.drawCircle(centerX + offsetX, y, sparkRadius, paint)
         }
 
