@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/features/stats/stats_screen.dart';
+import 'package:focussayac/features/stats/widgets/monthly_heatmap_card.dart';
 import 'package:focussayac/features/stats/widgets/weekly_focus_bar_painter.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
@@ -79,6 +80,29 @@ Future<void> _addFocusSession(
     await database.pomodoroSessionDao.finishSession(
       id: id,
       completed: completed,
+      endedAt: startedAt.add(Duration(minutes: minutes)),
+    );
+  });
+}
+
+/// Belirli bir ana düşen tamamlanmış odak seansı — ısı haritasının geçmiş ay
+/// penceresi için (ROADMAP madde 35).
+Future<void> _addFocusSessionAt(
+  WidgetTester tester,
+  AppDatabase database, {
+  required DateTime startedAt,
+  required int minutes,
+}) {
+  return _read(tester, () async {
+    final int id = await database.pomodoroSessionDao.startSession(
+      examId: null,
+      type: SessionType.focus,
+      startedAt: startedAt,
+      plannedDurationSec: minutes * 60,
+    );
+    await database.pomodoroSessionDao.finishSession(
+      id: id,
+      completed: true,
       endedAt: startedAt.add(Duration(minutes: minutes)),
     );
   });
@@ -176,6 +200,49 @@ void main() {
     // Hiç seans yokken oran tanımsız — `%0` yanıltıcı olurdu.
     expect(findRollingNumber('—'), findsOneWidget);
     expect(find.textContaining('En verimli aralığın'), findsNothing);
+
+    await _disposeTree(tester);
+  });
+
+  testWidgets('ısı haritası: geri ok geçen ayı açıyor, hücre günü söylüyor (madde 35)',
+      (WidgetTester tester) async {
+    _usePhoneSurface(tester);
+    final AppDatabase database = await _newDatabase(tester);
+    // Geçen ayın 15'i, 12:00 UTC = 15:00 TSİ — gün sınırından uzak.
+    final DateTime now = DateTime.now().toUtc();
+    await _addFocusSessionAt(
+      tester,
+      database,
+      startedAt: DateTime.utc(now.year, now.month - 1, 15, 12),
+      minutes: 45,
+    );
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      _appWith(database, prefs, localizedTestApp(const StatsScreen())),
+    );
+    await _settle(tester);
+
+    await tester.scrollUntilVisible(find.byKey(heatmapPrevMonthKey), 200);
+    await _settle(tester);
+    expect(find.text('BU AY'), findsOneWidget);
+
+    // Geçen ayın seansı geri oku açıyor.
+    await tester.tap(find.byKey(heatmapPrevMonthKey));
+    await _settle(tester);
+    expect(find.text('BU AY'), findsNothing);
+
+    // Ayın 15'i o ayın ızgarasında ve dolu; dokununca dakikası yazılıyor.
+    await tester.tap(find.byKey(heatmapDayCellKey(15)));
+    await _settle(tester);
+    expect(find.textContaining('45dk'), findsOneWidget);
+
+    // İleri ok bu aya döndürüyor ve seçimi bırakmıyor.
+    await tester.tap(find.byKey(heatmapNextMonthKey));
+    await _settle(tester);
+    expect(find.text('BU AY'), findsOneWidget);
+    expect(find.textContaining('45dk'), findsNothing);
 
     await _disposeTree(tester);
   });

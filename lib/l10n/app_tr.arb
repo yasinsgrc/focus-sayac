@@ -474,6 +474,25 @@
   "statsHeatmapEmptySemantics": "Bu ay henüz odak yok.",
   "statsHeatmapLegendLow": "az",
   "statsHeatmapLegendHigh": "çok",
+  "statsHeatmapPreviousMonth": "Önceki ay",
+  "statsHeatmapNextMonth": "Sonraki ay",
+  "statsHeatmapNoFocus": "odak yok",
+  "statsHeatmapDayDetail": "{date} • {duration}",
+  "@statsHeatmapDayDetail": {
+    "description": "Izgarada seçilen günün efsane satırındaki karşılığı (ROADMAP madde 35), ör. '18 Eyl • 45dk'. date MaterialLocalizations.formatShortMonthDay'den, duration kısa hâlden (compactFocusDuration) ya da statsHeatmapNoFocus'tan geliyor.",
+    "placeholders": {
+      "date": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "statsHeatmapDaySelectedSemantics": "Seçili gün {date}: {duration}.",
+  "@statsHeatmapDaySelectedSemantics": {
+    "description": "Seçili günün ekran okuyucu karşılığı; ızgaranın özet cümlesinin sonuna ekleniyor. duration uzun hâlde yazılmış süre (spellFocusDuration) ya da 'odak yok' — kısaltma harf harf okunurdu.",
+    "placeholders": {
+      "date": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
 
   "subjectMath": "Matematik",
   "subjectGeometry": "Geometri",

@@ -31,8 +31,12 @@ PomodoroSession _session({
 PomodoroSession _september(int day, {int minutes = 25, bool completed = true}) =>
     _session(startedAt: DateTime.utc(2026, 9, day, 12), minutes: minutes, completed: completed);
 
-MonthlyHeatmap _heatmap(List<PomodoroSession> sessions, {DateTime? nowUtc}) =>
-    calculateMonthlyHeatmap(sessions: sessions, nowUtc: nowUtc ?? _nowUtc);
+MonthlyHeatmap _heatmap(List<PomodoroSession> sessions, {DateTime? nowUtc, int monthOffset = 0}) =>
+    calculateMonthlyHeatmap(
+      sessions: sessions,
+      nowUtc: nowUtc ?? _nowUtc,
+      monthOffset: monthOffset,
+    );
 
 /// Izgaradaki belirli bir günün hücresi.
 HeatmapDay _day(MonthlyHeatmap heatmap, int day) =>
@@ -254,6 +258,110 @@ void main() {
       expect(heatmap.leadingBlanks, 5);
       // Ayın son günü "bugün": hiçbir gün gelecek değil.
       expect(heatmap.days.any((HeatmapDay d) => d.isFuture), isFalse);
+    });
+  });
+
+  group('ay gezinme (madde 35)', () {
+    test('bu ay: pencere eylülde, ileri gidilecek ay yok', () {
+      final MonthlyHeatmap heatmap = _heatmap(<PomodoroSession>[_september(10)]);
+
+      expect(heatmap.month, DateTime.utc(2026, 9, 1));
+      expect(heatmap.isCurrentMonth, isTrue);
+      expect(heatmap.hasLater, isFalse);
+    });
+
+    test('bir ay geri: pencere ağustosa kayıyor, yerleşim o ayın 1\'ine göre', () {
+      final MonthlyHeatmap heatmap = _heatmap(
+        <PomodoroSession>[
+          _session(startedAt: DateTime.utc(2026, 8, 3, 12), minutes: 45),
+          _september(10, minutes: 120),
+        ],
+        monthOffset: -1,
+      );
+
+      expect(heatmap.month, DateTime.utc(2026, 8, 1));
+      expect(heatmap.isCurrentMonth, isFalse);
+      expect(heatmap.hasLater, isTrue);
+      expect(heatmap.days, hasLength(31));
+      expect(heatmap.days.first.dayKey, DateTime.utc(2026, 8, 1));
+      // 1 Ağustos 2026 cumartesi → beş hücre boşluk.
+      expect(heatmap.leadingBlanks, 5);
+      // Eylülün seansı ağustosun toplamına girmiyor.
+      expect(heatmap.totalMinutes, 45);
+      expect(_day(heatmap, 3).minutes, 45);
+    });
+
+    test('geçmiş ayın hiçbir günü gelecek değil: ızgara ay sonuna kadar dolu', () {
+      final MonthlyHeatmap heatmap = _heatmap(const <PomodoroSession>[], monthOffset: -1);
+
+      expect(heatmap.days.any((HeatmapDay d) => d.isFuture), isFalse);
+      expect(heatmap.days.last.dayKey, DateTime.utc(2026, 8, 31));
+    });
+
+    test('yıl sınırı: ocakta bir ay geri gitmek geçen yılın aralığı', () {
+      final MonthlyHeatmap heatmap = _heatmap(
+        <PomodoroSession>[_session(startedAt: DateTime.utc(2025, 12, 24, 12), minutes: 60)],
+        nowUtc: DateTime.utc(2026, 1, 10, 12),
+        monthOffset: -1,
+      );
+
+      expect(heatmap.month, DateTime.utc(2025, 12, 1));
+      expect(heatmap.days, hasLength(31));
+      // 1 Aralık 2025 pazartesi → boşluk yok.
+      expect(DateTime.utc(2025, 12, 1).weekday, DateTime.monday);
+      expect(heatmap.leadingBlanks, 0);
+      expect(heatmap.totalMinutes, 60);
+    });
+
+    group('hasEarlier', () {
+      test('yalnızca bu ayın seansları varken geri gidilecek ay yok', () {
+        expect(_heatmap(<PomodoroSession>[_september(10)]).hasEarlier, isFalse);
+      });
+
+      test('önceki bir ayda tamamlanmış odak varsa geri gidiliyor', () {
+        final MonthlyHeatmap heatmap = _heatmap(<PomodoroSession>[
+          _session(startedAt: DateTime.utc(2026, 5, 3, 12), minutes: 30),
+          _september(10),
+        ]);
+
+        expect(heatmap.hasEarlier, isTrue);
+      });
+
+      test('ölçüt ızgaranınkiyle aynı: iptal ve mola geri oku açmıyor', () {
+        // Ağustosta yalnızca yarım kalmış bir odak ve bir mola var; geri
+        // gidilse boş bir ızgara görünürdü.
+        final MonthlyHeatmap heatmap = _heatmap(<PomodoroSession>[
+          _session(startedAt: DateTime.utc(2026, 8, 3, 12), minutes: 40, completed: false),
+          _session(
+            startedAt: DateTime.utc(2026, 8, 4, 12),
+            minutes: 15,
+            type: SessionType.longBreak,
+          ),
+          _september(10),
+        ]);
+
+        expect(heatmap.hasEarlier, isFalse);
+      });
+
+      test('geçmiş aya gidildiğinde ölçüt o ayın başına göre', () {
+        final List<PomodoroSession> sessions = <PomodoroSession>[
+          _session(startedAt: DateTime.utc(2026, 8, 3, 12), minutes: 45),
+        ];
+
+        // Ağustostayken daha eski bir seans yok → geri ok kapalı.
+        expect(_heatmap(sessions, monthOffset: -1).hasEarlier, isFalse);
+        // Eylüldeyken ağustosun seansı geri oku açıyor.
+        expect(_heatmap(sessions).hasEarlier, isTrue);
+      });
+
+      test('gün sınırı 04:00 TSİ burada da geçerli', () {
+        // 00:30 UTC = 03:30 TSİ → uygulama günü 31 Ağustos, yani eylülden önce.
+        final MonthlyHeatmap heatmap = _heatmap(<PomodoroSession>[
+          _session(startedAt: DateTime.utc(2026, 9, 1, 0, 30), minutes: 40),
+        ]);
+
+        expect(heatmap.hasEarlier, isTrue);
+      });
     });
   });
 }

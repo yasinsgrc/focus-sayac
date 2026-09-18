@@ -20,16 +20,26 @@ final Provider<FocusStats> focusStatsProvider = Provider<FocusStats>((Ref ref) {
   return calculateFocusStats(sessions: sessions, nowUtc: DateTime.now().toUtc());
 });
 
-/// Ekran 06'nın aylık ısı haritası (ROADMAP madde 29).
+/// Ekran 06'nın aylık ısı haritası (ROADMAP madde 29), ay kaydırmasıyla
+/// anahtarlanmış (madde 35): 0 bu ay, −1 geçen ay.
 ///
 /// Ayrı bir sağlayıcı ama aynı akıştan: ızgaranın ay toplamı ekranın kümülatif
 /// odağıyla ve bar chart'ın günleriyle sapamaz. `focusStatsProvider`ın içine
 /// alan olarak girmedi — ızgara kendi eşiklerini ve kendi takvim yerleşimini
 /// getiriyor, `focus_stats.dart` zaten altı metrik taşıyor.
-final Provider<MonthlyHeatmap> monthlyHeatmapProvider = Provider<MonthlyHeatmap>((Ref ref) {
+///
+/// Geçmiş ay ek bir sorgu değil: `allSessionsProvider` zaten tüm kayıtları
+/// tutuyor, aile aynı listeden başka bir pencere kesiyor. Tip açıkça
+/// yazılmıyor — `examFocusSecondsProvider`ınkiyle aynı gerekçe
+/// (`ProviderFamily` dışa verilmiyor).
+final monthlyHeatmapProvider = Provider.family<MonthlyHeatmap, int>((Ref ref, int monthOffset) {
   final List<PomodoroSession> sessions =
       ref.watch(allSessionsProvider).value ?? const <PomodoroSession>[];
-  return calculateMonthlyHeatmap(sessions: sessions, nowUtc: DateTime.now().toUtc());
+  return calculateMonthlyHeatmap(
+    sessions: sessions,
+    nowUtc: DateTime.now().toUtc(),
+    monthOffset: monthOffset,
+  );
 });
 
 /// Ekran 06'nın ders dağılımı (ROADMAP madde 30).

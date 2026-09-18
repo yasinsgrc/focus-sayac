@@ -3001,3 +3001,145 @@ Kademe için yeni bir başarı kartı şablonu, kademe atlamasının bildirimi
 (kutlama uygulama içi bir an; `SessionCelebrationQueue` bilinçli olarak kalıcı
 değil), widget'ın kademe görselinin yeniden çekilmesi (madde 31'de
 doğrulanmıştı, bu madde çizimi değiştirmiyor).
+
+---
+
+## Madde 35 — Isı haritasında ay gezinme + gün seçimi
+
+Tasarım belgesi: `docs/superpowers/specs/2026-09-18-isi-haritasi-etkilesim-design.md`.
+Madde 29 ızgarayı getirirken ay gezinmeyi, hücreye dokunmayı ve yıllık
+pencereyi açıkça kapsam dışı bırakmıştı; bu madde ilk ikisini yapıyor.
+
+### 1. Ay, hesaplayıcının parametresi
+
+`calculateMonthlyHeatmap` `int monthOffset = 0` alıyor (0 bu ay, −1 geçen ay)
+ve ayı yine uygulama gününden türetiyor:
+`DateTime.utc(today.year, today.month + monthOffset, 1)`. `DateTime.utc` ay
+taşmasını iki yönde de normalize ediyor — ocakta −1 geçen yılın aralığı.
+
+Hazır bir `DateTime month` parametresi elendi: 04:00 TSİ gün sınırı (SPEC §5.3)
+o zaman çağıranın sorusu olurdu. Offset ile ay tanımı tek yerde kalıyor.
+
+Geçmiş ay ek bir sorgu da değil — `monthlyHeatmapProvider`
+`Provider.family<MonthlyHeatmap, int>` oldu ama hâlâ `allSessionsProvider`ın
+aynı listesinden başka bir pencere kesiyor.
+
+### 2. `isCurrentMonth` sessiz bir hatayı kapatıyor
+
+Karttaki `_todayIndex` "gelecek **olmayan** son gün" diyor. Geçmiş ayda hiçbir
+gün gelecek değil, yani bu ayrım olmadan ızgara 31 Ağustos'a bugünün ember
+çerçevesini çizerdi. Aynı bayrak ızgaranın nerede bittiğini de belirliyor:
+"bugünün satırında bitir" yalnızca içinde bulunulan ayın kuralı, geçmiş ay
+son satırına kadar çiziliyor.
+
+### 3. `hasEarlier` takvime değil veriye bakıyor
+
+Geri okun kapısı "bu aydan önce **tamamlanmış odak seansı** var mı" — ızgaranın
+kendi ölçütünün (`completed && focus`) aynısı. Takvim ayına bakılsaydı
+uygulamayı bu ay kuran kullanıcı boş aylarda kaybolurdu; mola/iptal sayılsaydı
+ok açılır ama ızgara boş çıkardı. İleri ok `hasLater` ile bu ayda kapanıyor:
+gelecek aya gezinme yok, yaşanmamış gün gösterilmiyor (madde 29 kararı).
+
+### 4. Seçili ay ve seçili gün ekranın kısa ömürlü durumu
+
+İkisini de Ekran 06'daki `_HeatmapSection` tutuyor, kart saf kalıyor
+(`heatmap`, `selectedDay`, `onDayTap`, `onMonthStep`) — madde 29'un "kartı
+Riverpod kurmadan çizebil" kalıbı bozulmadı. Kalıcı depoya yazılmadı: ikisi de
+bir bakışın süresi kadar yaşıyor, iki gün sonra Ekran 06'yı açan kullanıcı
+seçili bir gün değil bugünü görmeli. Ay değişince seçim sıfırlanıyor — başka
+ayın gününü gösteren satır ızgarayla çelişirdi. Aynı hücreye ikinci dokunuş
+seçimi kaldırıyor: açılan bir şey yok, kapatma düğmesi de olmasın.
+
+### 5. Ay adı `MaterialLocalizations`tan, büyük harfe çevrilmeden
+
+Madde 29 başlığı `BU AY` yapmıştı çünkü `DateFormat` ya 12 yeni ARB anahtarı
+ya da karta `intl` + `initializeDateFormatting` demekti. Üçüncü yol:
+`MaterialLocalizations.formatMonthYear` → "Ağustos 2026"; delegeler zaten
+bağlı, yeni anahtar yok. Bu ayın başlığı yine `BU AY` — gezinmeden sonra
+"buradayım" demenin en kısa yolu.
+
+Ay adı **büyük harfe çevrilmiyor**: Dart'ın `toUpperCase()`i Unicode
+varsayılanını uygular, `"Ekim"` → `"EKIM"`, `"Nisan"` → `"NISAN"` olur ve
+Türkçe noktalı İ kaybolur. Kicker'ların büyük harfi ARB metinlerinden
+geliyordu; bu metin kütüphaneden geliyor.
+
+### 6. Detay satırı efsanenin solunda
+
+Seçilen gün `18 Eyl • 7dk` olarak efsane satırının soluna yazılıyor
+(`formatShortMonthDay` + `compactFocusDuration`), odak yoksa `10 Ağu • odak
+yok` — sayı uydurulmuyor. Süre kısa hâlde çünkü satırı efsaneyle paylaşıyor;
+kartın sağ üstündeki ay toplamı uzun hâlde kalıyor.
+
+Tooltip elendi (dokunmatikte uzun basış ister, kenar sütunlarda taşar, ekran
+görüntüsüyle doğrulanamaz), alt sayfa elendi (yeni ekran + ARB + testler;
+maddenin sorusu "bu kutu kaç dakika", günün dökümü değil).
+
+Seçili hücre `colors.text` çerçeve alıyor. Bugünün ember çerçevesiyle
+çakışınca **seçim kazanıyor**: kullanıcının az önceki dokunuşu, hep orada
+duran işaretten daha taze.
+
+### 7. Erişilebilirlik: ızgara yine tek durak
+
+Madde 29'un `excludeSemantics: true`'su kabın tamamındaydı ve oklar onun
+altında kalınca ekran okuyucuya **hiç** görünmüyordu (test bunu yakaladı).
+Kapsam daraltıldı: kabın etiketi duruyor, ızgara + efsane `ExcludeSemantics`
+içinde, oklar kendi durakları (`statsHeatmapPreviousMonth` / `…NextMonth`).
+Başlık ve ay toplamı da dışlandı — özet cümlesi aynı sayıyı zaten söylüyor.
+Bir gün seçiliyken özet cümlesinin sonuna "Seçili gün 9 Eyl: 1 saat 40
+dakika." ekleniyor; süre orada **uzun** hâlde, "45dk" harf harf okunurdu.
+
+### 8. Testler (+19, toplam 470)
+
+Hesaplayıcıda dokuz test: offset −1 penceresi ve yerleşimi, yıl sınırı
+(ocak → geçen yılın aralığı), geçmiş ayda `isFuture` yok, `isCurrentMonth`,
+`hasEarlier`in dört hâli (bu ayın seansı yetmiyor / eski seans açıyor /
+mola-iptal açmıyor / geçmiş aya gidince ölçüt o ayın başı) ve 04:00 TSİ
+sınırının `hasEarlier`da da geçerli olması.
+
+Kartta dokuz test: geçmiş ayın başlığı ve ay sonuna kadar dolan ızgara,
+hiçbir hücrede ember çerçeve olmaması, okların adım bildirmesi ve
+sınırlarda susması, hücre dokunuşunun günü bildirmesi, detay satırının iki
+hâli, seçim çerçevesinin rengi ve bugünü yenmesi.
+
+Ekran testinde bir tam tur: geri ok geçen ayı açıyor, hücre `45dk` yazdırıyor,
+ileri ok hem bu aya dönüyor hem seçimi bırakıyor.
+
+Kartın başlık satırı test yazı tipinde taştı (her karakter tam genişlikte);
+ay toplamı `Expanded` + `ellipsis` oldu. Gerçek fontta taşma yoktu ama dar
+ekranda "12 saat 30 dakika" + ay adı + iki ok gerçekten sığmayabilir.
+
+### 9. Emülatör doğrulaması (2026-09-18)
+
+`focussayac_verify` (Android 16), release derlemesi, `.verify/m35_seed.py` ile
+üç aya yayılmış 15 seans. **Tuzak:** `adb push` edilen DB uid 10000'e ait
+kalıyor, uygulama 10220 olarak açamıyor ve açılış ekranında donuyor —
+`chown 10220:10220` + `restorecon` gerekiyor.
+
+- **Bu ay** (`m35_a_bu_ay.png`): `‹ BU AY ›`, toplam "3 saat 47 dakika",
+  bugünün (18 Eyl) ember çerçevesi yerinde, ızgara bugünün satırında bitiyor.
+- **Geçen ay** (`m35_b_gecen_ay.png`, `m35_c_gecen_ay_tam.png`): başlık
+  "Ağustos 2026" — Türkçe ay adı, noktalı harfler yerinde. Toplam "9 saat 55
+  dakika" tohumun toplamıyla birebir. Izgara 31 hücre, son satırda tek gün
+  (31 Ağustos pazartesi) ve **hiçbir hücrede ember çerçeve yok**.
+- **Gün seçimi** (`m35_d_secim.png`): 11 Ağustos beyaz çerçeve aldı, satır
+  "11 Ağu • 2sa 30dk" (tohum 150 dk).
+- **Odaksız gün** (`m35_e_odak_yok.png`): "10 Ağu • odak yok".
+- **İkinci dokunuş** (`m35_f_secim_kalkti.png`): çerçeve ve satır kalktı.
+- **Geri sınırı** (`m35_g_temmuz.png`, `m35_h_sinir.png`): temmuza inince
+  (en eski veri) geri ok soluk ve ikinci dokunuş hiçbir şey yapmıyor.
+- **Ay değişimi seçimi bırakıyor** (`m35_i_temmuz_secim.png` →
+  `m35_j_ay_degisti.png`): temmuzda seçili gün, ileri okla ağustosa geçince
+  yok.
+- **İleri sınırı ve bugünün çakışması** (`m35_k_bu_aya_donus.png`,
+  `m35_m_ileri_pasif.png`, `m35_n_bugun_secili.png`): bu ayda ileri ok pasif;
+  bugüne dokununca ember çerçeve beyaza dönüyor ve satır "18 Eyl • 7dk"
+  diyor — Ekran 02'nin "0sa 7dk"siyle aynı sayı.
+- **Açık tema** (`m35_q_acik_tema.png`, `m35_r_acik_secim.png`,
+  `m35_s_acik_gecen_ay.png`): rampa tersine dönüyor, seçim çerçevesi koyu
+  (`text`) ve ember çerçeveden ayrılıyor, "14 Eyl • 2sa".
+
+### 10. Kapsam dışı
+
+Yıllık pencere, hücreye uzun basma, seçili günün ders kırılımı, gelecek aya
+gezinme, ay geçişinin animasyonu, ızgara dışındaki kartların geçmiş aya
+bakması (bar chart ve haftalık kapanış yine bugünün penceresi).

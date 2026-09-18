@@ -120,7 +120,6 @@ class _StatsBody extends ConsumerWidget {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     final AppLocalizations l10n = AppLocalizations.of(context);
     final FocusStats stats = ref.watch(focusStatsProvider);
-    final MonthlyHeatmap heatmap = ref.watch(monthlyHeatmapProvider);
     final SubjectBreakdown breakdown = ref.watch(subjectBreakdownProvider);
 
     return Padding(
@@ -240,7 +239,7 @@ class _StatsBody extends ConsumerWidget {
           // ve boşluğun nerede açıldığını.
           RiseIn(
             delay: RiseIn.step * 8,
-            child: MonthlyHeatmapCard(heatmap: heatmap),
+            child: const _HeatmapSection(),
           ),
           const SizedBox(height: 12),
         ],
@@ -261,6 +260,54 @@ class _StatsBody extends ConsumerWidget {
     return parts.hours > 0
         ? l10n.statsAverageHoursMinutes(parts.hours, parts.minutes)
         : l10n.statsAverageMinutes(parts.minutes);
+  }
+}
+
+/// Isı haritasının gezinme durumu (ROADMAP madde 35): hangi ay açık ve hangi
+/// gün seçili.
+///
+/// Durum kartın kendisinde değil burada: kart saf kalınca testte Riverpod
+/// kurmadan çizilebiliyor (madde 29'un kalıbı) ve iki durum tek yerde
+/// tutuluyor. Sağlayıcıya da yazılmıyor — ikisi de bir bakışın süresi kadar
+/// yaşıyor, ekrandan çıkan kullanıcı geri geldiğinde bugünü görmeli.
+class _HeatmapSection extends ConsumerStatefulWidget {
+  const _HeatmapSection();
+
+  @override
+  ConsumerState<_HeatmapSection> createState() => _HeatmapSectionState();
+}
+
+class _HeatmapSectionState extends ConsumerState<_HeatmapSection> {
+  /// 0 bu ay, −1 geçen ay. İleri yönde 0'ı aşmıyor: gezinmeyi açan okun
+  /// kapısı `hasLater` ve o da bu aydan öteye izin vermiyor.
+  int _monthOffset = 0;
+
+  /// Seçili günün anahtarı (`HeatmapDay.dayKey`).
+  DateTime? _selectedDay;
+
+  void _step(int step) {
+    setState(() {
+      _monthOffset += step;
+      // Seçim ayla birlikte kalkıyor: başka ayın gününü gösteren bir satır
+      // ızgarayla çelişirdi.
+      _selectedDay = null;
+    });
+  }
+
+  /// Aynı hücreye ikinci dokunuş seçimi kaldırıyor — açılan bir şey yok, kapatma
+  /// düğmesi de olmasın.
+  void _toggleDay(HeatmapDay day) {
+    setState(() => _selectedDay = _selectedDay == day.dayKey ? null : day.dayKey);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MonthlyHeatmapCard(
+      heatmap: ref.watch(monthlyHeatmapProvider(_monthOffset)),
+      selectedDay: _selectedDay,
+      onDayTap: _toggleDay,
+      onMonthStep: _step,
+    );
   }
 }
 

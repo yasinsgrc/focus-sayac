@@ -1109,6 +1109,55 @@ kullanıcıya soruldu, seçilen sıra **rozet → kademe → seri**.
 
 ---
 
+## 35. Isı haritasında ay gezinme + gün seçimi ✅ bitti
+
+470 test geçiyor (+19). Tasarım belgesi:
+`docs/superpowers/specs/2026-09-18-isi-haritasi-etkilesim-design.md`.
+Kararlar: `DECISIONS.md` "Madde 35". Madde 29'un kapsam dışı bıraktığı üç
+şeyden ikisi; yıllık pencere hâlâ dışarıda.
+
+- **Pencere hesaplayıcının parametresi oldu:** `calculateMonthlyHeatmap`
+  `monthOffset` alıyor (0 bu ay, −1 geçen ay) ve ayı yine uygulama gününden
+  türetiyor — 04:00 TSİ sınırı tek yerde kalıyor. `monthlyHeatmapProvider`
+  aileye döndü ama geçmiş ay ek sorgu değil: `allSessionsProvider`ın aynı
+  listesinden başka bir pencere.
+- **`isCurrentMonth` sessiz bir hatayı kapattı:** `_todayIndex` "gelecek
+  olmayan son gün" diyor, geçmiş ayda bu ayın son günü olurdu — ızgara
+  31 Ağustos'a bugünün ember çerçevesini çizerdi. Aynı bayrak "bugünün
+  satırında bitir" kuralını da bu aya hapsediyor.
+- **Geri okun kapısı takvim değil veri:** `hasEarlier` "bu aydan önce
+  tamamlanmış odak var mı" diye soruyor (ızgaranın ölçütünün aynısı), yoksa
+  uygulamayı bu ay kuran kullanıcı boş aylarda kaybolurdu. İleri ok bu ayda
+  kapalı — yaşanmamış gün gösterilmiyor.
+- **Ay adı `MaterialLocalizations.formatMonthYear`den** ("Ağustos 2026"): 12
+  ARB anahtarı da `intl` başlatması da gerekmedi. **Büyük harfe çevrilmiyor** —
+  `"Ekim".toUpperCase()` Dart'ta "EKIM" verir, Türkçe noktalı İ kaybolur.
+- **Seçim ekranın kısa ömürlü durumu** (`_HeatmapSection`), kart saf kaldı.
+  Ay değişince seçim sıfırlanıyor, aynı hücreye ikinci dokunuş kaldırıyor.
+  Detay efsanenin solunda: `18 Eyl • 7dk`, odak yoksa `10 Ağu • odak yok`.
+  Seçim çerçevesi (`text`) bugünün ember çerçevesini yeniyor.
+- **Erişilebilirlik kapsamı daraldı:** madde 29'un `excludeSemantics`i kabın
+  tamamındaydı, oklar altında kalınca ekran okuyucuya hiç görünmüyordu (testte
+  çıktı). Artık ızgara + efsane dışlanıyor, oklar kendi durakları, seçim özet
+  cümlesine ekleniyor.
+- **Emülatör doğrulandı (2026-09-18).** `focussayac_verify` (Android 16),
+  release, `.verify/m35_seed.py` ile üç aya yayılmış 15 seans. Geçen ay
+  "Ağustos 2026" başlığıyla ve ay sonuna kadar dolu ızgarayla açılıyor, hiçbir
+  hücrede ember çerçeve yok (`m35_b_gecen_ay.png`, `m35_c_gecen_ay_tam.png`);
+  seçim "11 Ağu • 2sa 30dk" (`m35_d_secim.png`), boş gün "10 Ağu • odak yok"
+  (`m35_e_odak_yok.png`), ikinci dokunuş kaldırıyor (`m35_f_secim_kalkti.png`).
+  En eski ayda geri ok susuyor (`m35_h_sinir.png`), ay değişince seçim
+  düşüyor (`m35_j_ay_degisti.png`), bugüne dokununca çerçeve beyaza dönüp
+  "18 Eyl • 7dk" yazıyor (`m35_n_bugun_secili.png`). Açık temada aynısı
+  (`m35_q_acik_tema.png`, `m35_r_acik_secim.png`, `m35_s_acik_gecen_ay.png`).
+  **Tuzak:** `adb push` edilen DB uid 10000'de kalıyor, `chown 10220` +
+  `restorecon` yapılmazsa uygulama açılış ekranında donuyor.
+- **Kapsam dışı:** yıllık pencere, uzun basma, seçili günün ders kırılımı,
+  gelecek aya gezinme, ay geçişinin animasyonu, diğer kartların geçmiş aya
+  bakması.
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı
@@ -1137,7 +1186,7 @@ kullanıcıya soruldu, seçilen sıra **rozet → kademe → seri**.
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(451 test, `flutter test`)*
+- [x] Testler geçiyor *(470 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

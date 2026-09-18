@@ -25,11 +25,30 @@ PomodoroSession _september(int day, {int minutes = 25}) {
   );
 }
 
+/// Geçmiş ayın (ağustos 2026) günü — ay gezinme testleri için.
+PomodoroSession _august(int day, {int minutes = 25}) {
+  return PomodoroSession(
+    id: ++_id,
+    type: SessionType.focus,
+    startedAt: DateTime.utc(2026, 8, day, 12),
+    plannedDurationSec: minutes * 60,
+    completed: true,
+    breakExtensions: 0,
+  );
+}
+
 final AppColors _colors = AppColors.dark();
 
 /// Kartı tek başına çizer — veritabanı ve Riverpod yok, ızgara doğrudan saf
 /// hesaplayıcıdan besleniyor.
-Future<void> _pumpCard(WidgetTester tester, List<PomodoroSession> sessions) async {
+Future<void> _pumpCard(
+  WidgetTester tester,
+  List<PomodoroSession> sessions, {
+  int monthOffset = 0,
+  DateTime? selectedDay,
+  ValueChanged<HeatmapDay>? onDayTap,
+  ValueChanged<int>? onMonthStep,
+}) async {
   tester.view.physicalSize = const Size(390, 844);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
@@ -42,7 +61,14 @@ Future<void> _pumpCard(WidgetTester tester, List<PomodoroSession> sessions) asyn
         body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 26),
           child: MonthlyHeatmapCard(
-            heatmap: calculateMonthlyHeatmap(sessions: sessions, nowUtc: _nowUtc),
+            heatmap: calculateMonthlyHeatmap(
+              sessions: sessions,
+              nowUtc: _nowUtc,
+              monthOffset: monthOffset,
+            ),
+            selectedDay: selectedDay,
+            onDayTap: onDayTap,
+            onMonthStep: onMonthStep,
           ),
         ),
       ),
@@ -136,5 +162,156 @@ void main() {
       find.bySemanticsLabel('Bu ay 30 günün 17 gününde odaklandın, toplam 42 saat 30 dakika.'),
       findsOneWidget,
     );
+  });
+
+  group('ay gezinme (madde 35)', () {
+    testWidgets('geçmiş ay: başlık ay adını yazıyor, ızgara ay sonuna kadar dolu',
+        (WidgetTester tester) async {
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_august(3, minutes: 45)],
+        monthOffset: -1,
+      );
+
+      expect(find.text('Ağustos 2026'), findsOneWidget);
+      expect(find.text('BU AY'), findsNothing);
+      // Ağustos 31 günlük ve tamamı yaşandı: hiçbir hücre gelecek değil.
+      for (int day = 1; day <= 31; day++) {
+        expect(find.byKey(heatmapDayCellKey(day)), findsOneWidget, reason: '$day. gün hücresi');
+      }
+      // Bugün çerçevesi yalnızca içinde bulunulan ayın işareti; geçmiş ayın
+      // son gününe çizilseydi 31 Ağustos "bugün" gibi okunurdu.
+      for (int day = 1; day <= 31; day++) {
+        expect(_cellDecoration(tester, day).border, isNull, reason: '$day. günün çerçevesi');
+      }
+      expect(_cellDecoration(tester, 3).color, heatmapLevelColor(_colors, 2));
+    });
+
+    testWidgets('geri ok adımı bildiriyor, ileri ok bu ayda çalışmıyor',
+        (WidgetTester tester) async {
+      final List<int> steps = <int>[];
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_august(3), _september(10)],
+        onMonthStep: steps.add,
+      );
+
+      await tester.tap(find.byKey(heatmapPrevMonthKey));
+      expect(steps, <int>[-1]);
+
+      // Gelecek aya gezinme yok: yaşanmamış gün gösterilmiyor.
+      await tester.tap(find.byKey(heatmapNextMonthKey));
+      expect(steps, <int>[-1]);
+
+      expect(find.bySemanticsLabel('Önceki ay'), findsOneWidget);
+      expect(find.bySemanticsLabel('Sonraki ay'), findsOneWidget);
+    });
+
+    testWidgets('geçmiş ayda ileri ok çalışıyor', (WidgetTester tester) async {
+      final List<int> steps = <int>[];
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_august(3)],
+        monthOffset: -1,
+        onMonthStep: steps.add,
+      );
+
+      await tester.tap(find.byKey(heatmapNextMonthKey));
+      expect(steps, <int>[1]);
+      // Ağustostan öncesinde seans yok → geri ok kapalı.
+      await tester.tap(find.byKey(heatmapPrevMonthKey));
+      expect(steps, <int>[1]);
+    });
+
+    testWidgets('daha eski seans yokken geri ok çalışmıyor', (WidgetTester tester) async {
+      final List<int> steps = <int>[];
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_september(10)],
+        onMonthStep: steps.add,
+      );
+
+      await tester.tap(find.byKey(heatmapPrevMonthKey));
+      expect(steps, isEmpty);
+    });
+  });
+
+  group('gün seçimi (madde 35)', () {
+    testWidgets('hücreye dokunmak o günü bildiriyor', (WidgetTester tester) async {
+      final List<HeatmapDay> tapped = <HeatmapDay>[];
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_september(9, minutes: 100)],
+        onDayTap: tapped.add,
+      );
+
+      await tester.tap(find.byKey(heatmapDayCellKey(9)));
+      expect(tapped.single.dayKey, DateTime.utc(2026, 9, 9));
+      expect(tapped.single.minutes, 100);
+
+      // Odaksız gün de seçilebiliyor: "o gün hiç çalışmamışım" da bir cevap.
+      await tester.tap(find.byKey(heatmapDayCellKey(3)));
+      expect(tapped.last.dayKey, DateTime.utc(2026, 9, 3));
+      expect(tapped, hasLength(2));
+    });
+
+    testWidgets('seçili gün efsane satırında ve özet cümlesinde', (WidgetTester tester) async {
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_september(9, minutes: 100)],
+        selectedDay: DateTime.utc(2026, 9, 9),
+      );
+
+      expect(find.text('9 Eyl • 1sa 40dk'), findsOneWidget);
+      // Ay toplamı yerinde duruyor: seçim onun yerine geçmiyor.
+      expect(find.text('1 saat 40 dakika'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Bu ay 30 günün 1 gününde odaklandın, toplam 1 saat 40 dakika. '
+          'Seçili gün 9 Eyl: 1 saat 40 dakika.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('odaksız seçili gün sayı uydurmuyor', (WidgetTester tester) async {
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_september(9, minutes: 100)],
+        selectedDay: DateTime.utc(2026, 9, 3),
+      );
+
+      expect(find.text('3 Eyl • odak yok'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(
+          'Bu ay 30 günün 1 gününde odaklandın, toplam 1 saat 40 dakika. '
+          'Seçili gün 3 Eyl: odak yok.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('seçim çerçevesi bugünün çerçevesinden ayrı ve onu yeniyor',
+        (WidgetTester tester) async {
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_september(9, minutes: 100)],
+        selectedDay: DateTime.utc(2026, 9, 9),
+      );
+
+      expect(_cellDecoration(tester, 9).border!.top.color, _colors.text);
+      // Bugün seçili değilken kendi ember çerçevesinde.
+      expect(_cellDecoration(tester, 17).border!.top.color, _colors.ember);
+    });
+
+    testWidgets('bugün seçilince seçim kazanıyor', (WidgetTester tester) async {
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_september(9, minutes: 100)],
+        selectedDay: DateTime.utc(2026, 9, 17),
+      );
+
+      expect(_cellDecoration(tester, 17).border!.top.color, _colors.text);
+    });
   });
 }
