@@ -13,6 +13,7 @@ import '../../services/storage/storage_providers.dart';
 import '../badges/badge_providers.dart';
 import '../celebration/session_celebration.dart';
 import '../exams/exam_providers.dart';
+import '../flame/flame_tier.dart';
 import '../review/app_review_service.dart';
 import '../stats/weekly_summary.dart';
 import '../streak/comeback_status.dart';
@@ -449,14 +450,17 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     );
     await _notifications.rescheduleComebackReminder(
       reminderAtUtc: comeback.reminderAtUtc,
-      // `focus_stats.dart`'ın `cumulativeSeconds` kuralıyla birebir aynı:
-      // tamamlanan seans planlanan süresini tam çalışmıştır.
-      cumulativeFocusSeconds: completedFocus.fold<int>(
-        0,
-        (int sum, PomodoroSession s) => sum + s.plannedDurationSec,
-      ),
+      cumulativeFocusSeconds: _cumulativeFocusSeconds(completedFocus),
     );
   }
+
+  /// `focus_stats.dart`'ın `cumulativeSeconds` kuralıyla birebir aynı:
+  /// tamamlanan seans planlanan süresini tam çalışmıştır. İki çağıranı var
+  /// (dönüş bildirimi ve kademe kutlaması) ve ikisinin aynı sayıyı görmesi
+  /// şart — kademe eşiği bildirimdekinden farklı bir toplamdan hesaplansaydı
+  /// bildirimin söylediği kademe ile kutlanan kademe ayrışırdı.
+  static int _cumulativeFocusSeconds(List<PomodoroSession> completedFocus) =>
+      completedFocus.fold<int>(0, (int sum, PomodoroSession s) => sum + s.plannedDurationSec);
 
   /// Kutlamayı `sessionCelebrationProvider`a bırakır.
   ///
@@ -464,18 +468,34 @@ class PomodoroController extends Notifier<PomodoroPhase> {
   /// artık aynı anda tetiklenmediği için (madde 25) o dönüş değerinin tek
   /// tüketicisi kalmadı.
   ///
-  /// Rozet **önce**: ikisi aynı anda düşebiliyor (7. günde "Haftalık Seri"
-  /// rozeti ile 7 günlük seri eşiği) ve iki dialogu üst üste açmak kutlamayı
-  /// kesintiye çevirirdi. Rozetin öne geçmesi bilinçli — adı ve görseli olan,
-  /// daha somut ödül o.
+  /// Sıra **rozet → kademe → seri** (ROADMAP madde 34). Üçü aynı anda
+  /// düşebiliyor (7. günde "Haftalık Seri" rozeti ile 7 günlük seri eşiği;
+  /// K4/K6/K7/K9 ise 10/50/100/250 saatlik rozetlerle birebir aynı eşikte) ve
+  /// dialogları üst üste açmak kutlamayı kesintiye çevirirdi.
+  ///
+  /// Rozetin kademenin de önüne geçmesi bilinçli: saat rozetleri **yalnızca** o
+  /// anda kutlanabilir, kademenin görünür ödülü ise kalıcı — alev o andan sonra
+  /// her ekranda büyümüş duruyor ve Ekran 04'ün kahraman kartı onu adıyla
+  /// söylüyor. Çakışan seansta rozet aynı kazanımı (kümülatif saati) zaten
+  /// kutluyor, yani kutlamasız kalan bir an yok.
   Future<void> _offerCelebration(
     Set<String> unlockedBadges,
     List<PomodoroSession> completedFocus,
   ) async {
+    // Kademe, gösterilsin ya da gösterilmesin **her hâlde** işaretleniyor: aynı
+    // kademede kalındığı sürece her seans yeniden aday olurdu ve rozetin yuttuğu
+    // kutlama bir sonraki seansta, artık atlanmamış bir kademe için açılırdı.
+    final FlameTierCelebration? tierCelebration = await _consumeFlameTierCelebration(completedFocus);
+
     if (unlockedBadges.isNotEmpty) {
       ref.read(sessionCelebrationProvider.notifier).offer(
             BadgeCelebration(unlockedBadges.toList(growable: false)),
           );
+      return;
+    }
+
+    if (tierCelebration != null) {
+      ref.read(sessionCelebrationProvider.notifier).offer(tierCelebration);
       return;
     }
 
@@ -494,6 +514,26 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     // bir kutlama, her seans sonunda tekrar eden bir kutlamadan iyi.
     await _prefs.setInt(kCelebratedStreakMilestonePrefsKey, milestone);
     ref.read(sessionCelebrationProvider.notifier).offer(StreakCelebration(days: days));
+  }
+
+  /// Bu tamamlanışta kademe atlandıysa kutlamasını üretir, atlanmadıysa `null`.
+  ///
+  /// "Consume": işareti **okuyup hemen ilerletiyor**, yani çağrı bir kez bir
+  /// kademe döndürdükten sonra aynı kademe için bir daha hiç dönmüyor. Seri
+  /// eşiğindeki gerekçenin aynısı: kutlama kapatılmadan uygulama öldürülse bile
+  /// aynı kademe tekrar açılmamalı — kaçırılan bir kutlama, her seans sonunda
+  /// tekrar eden bir kutlamadan iyi.
+  Future<FlameTierCelebration?> _consumeFlameTierCelebration(
+    List<PomodoroSession> completedFocus,
+  ) async {
+    final FlameTier tier = flameTierFor(_cumulativeFocusSeconds(completedFocus)).tier;
+    final int? index = flameTierToCelebrate(
+      tierIndex: tier.index,
+      lastCelebrated: _prefs.getInt(kCelebratedFlameTierPrefsKey) ?? 1,
+    );
+    if (index == null) return null;
+    await _prefs.setInt(kCelebratedFlameTierPrefsKey, index);
+    return FlameTierCelebration(tier: tier);
   }
 
   /// [endedAtUtc] molanın **planlanan bitiş anı**dır — bkz. [_completeFocus].

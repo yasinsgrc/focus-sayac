@@ -2879,3 +2879,125 @@ Widget halkasını launcher'da yeniden çekmek (ekranda bağlı örnek yoktu;
 RemoteViews bitmap'i cihazda da Robolectric'teki yığınla çiziliyor), zaman
 yayının gradyan duraklarına ya da renklerine dokunmak, `session_ring_painter`
 ile `badge_progress_ring_painter` (ikisi de tek düz renk, sarma noktaları yok).
+
+---
+
+## Madde 34 — Kademe atlama kutlaması
+
+Tasarım belgesi yok: kutlama mekanizması madde 19'da kurulmuştu, bu üçüncü
+türü ekliyor. Açık olan tek soru çakışma kuralıydı; kullanıcıya soruldu.
+
+### 1. Sorun: kutlanmayan tek kazanım
+
+Kazanım anları kutlanıyordu (rozet açılışı, seri eşiği) ama **kademe atlama**
+kutlanmıyordu: alev K1'den K10'a çıkarken kullanıcı bunu ancak Ekran 04'e
+kendi girerse görüyordu. Oysa kademe uygulamanın kalıcı kimlik ekseni — rozet
+"ne başardım", kademe "ben kimim" diyor (`flame_avatar_card.dart`).
+
+### 2. Üçüncü `SessionCelebration` türü
+
+`FlameTierCelebration` eşiğin saatini değil **`FlameTier` nesnesinin kendisini**
+taşıyor: dialog alevi çizeceği için `scale`/`emberBase`/`sparkCount`/
+`haloOpacity` de gerekiyor, merdiven `const` olduğu için aynı kademe her zaman
+aynı nesne.
+
+Kutlamanın görseli **ödülün kendisi**: dairenin içinde `FlameWidget`, tam o
+kademede. Seri kutlamasındaki gibi bir Phosphor ikonu koymak, kademenin tek
+görünür karşılığını (alevin büyümesi) kutlamanın dışında bırakırdı. Alev
+titremiyor — dialog süresiz açık kalabilir (SPEC.md §6.4, `FlameAvatarCard`
+ile aynı gerekçe).
+
+Kademe adı **büyük harfe çevrilmiyor**. Dart'ın `toUpperCase`i yerelden
+bağımsız: "Şenlik Ateşi" → "ŞENLIK ATEŞI", noktasız İ bozuluyor. Üst satırın
+("KADEME 4") büyük harfleri ARB'de yazılı.
+
+### 3. Çakışma kuralı: rozet → kademe → seri
+
+Bu bir kenar durumu değil **kural**: K4/K6/K7/K9 eşikleri 10/50/100/250
+saatlik rozetlerle birebir aynı (`flame_tier.dart` bunu zaten söylüyor).
+Dokuz kademe atlamasının dördü bir rozetle birlikte düşüyor.
+
+Rozetin öne geçmesi seçildi (kullanıcı kararı): saat rozetleri **yalnızca** o
+anda kutlanabilir, kademenin görünür ödülü ise kalıcı — alev o andan sonra her
+ekranda büyümüş duruyor ve Ekran 04'ün kahraman kartı onu adıyla söylüyor.
+Çakışan seansta rozet aynı kazanımı (kümülatif saati) zaten kutluyor, yani
+kutlamasız kalan bir an yok.
+
+Elenen iki yol: **kademe öne geçsin** (o zaman 10/50/100/250 rozetleri hiç
+dialog açamaz — oysa onların başka bir anı yok), **ikisi arka arkaya açılsın**
+(kutlama tek yuva; üst üste iki farklı dialog kutlamayı kesintiye çevirir).
+
+### 4. Yutulan kutlama yine de işaretleniyor
+
+`_consumeFlameTierCelebration` işareti kutlama **gösterilmeden önce** ve
+gösterilip gösterilmeyeceğinden **bağımsız** ilerletiyor. Aksi hâlde rozetin
+yuttuğu kademe bir sonraki seansta, artık atlanmamış bir kademe için bayat bir
+dialog açardı. Seri eşiğindeki "gösterilmeden önce işaretle" kuralının aynısı:
+kaçırılan bir kutlama, her seans sonunda tekrar eden bir kutlamadan iyi.
+
+### 5. İşaretin varsayılanı 0 değil 1
+
+`kCelebratedFlameTierPrefsKey` okunurken `?? 1`: K1 kullanıcının **başlangıç
+hâli**, atlanan bir kademe değil. 0 olsaydı ilk tamamlanan pomodoro "Kıvılcım'a
+yükseldin" derdi. Buna karşılık K1'in üstündeki (güncelleyerek gelen) bir
+kullanıcının ilk seansında güncel kademesi bir kez kutlanıyor — geriye dönük
+yedi dialog açılmıyor, en yüksek kademe bir kez kutlanıp geçiliyor
+(`streakMilestoneToCelebrate`in kuralıyla aynı).
+
+"Verileri sıfırla" işareti de siliyor (`AppDataResetService`): geçmişi silinen
+kullanıcının alevi K1'e dönüyor, işaret kalsaydı merdiveni bir daha hiç
+kutlayamazdı.
+
+### 6. Kart şablonu zorlanmıyor
+
+Seri kutlaması SERİ şablonunu öneriyordu çünkü o şablon vardı. Kartın üç
+şablonundan (GECE MEŞALESİ / MİNİMAL / SERİ) hiçbiri kademeyi göstermiyor;
+uydurma bir öneri yerine rozet kutlamasının kuralı uygulanıyor — kullanıcının
+seçtiği kart açılıyor. Yeni bir "KADEME" şablonu bu maddenin kapsamı değil.
+
+### 7. Testler (+5, toplam 451)
+
+Üçü `pomodoro_controller_test.dart`'ta, gerçek DB ve gerçek rozet servisiyle:
+kademe atlayan seans kutlamayı sunuyor ve ikinci seans sunmuyor; K1 hiç
+kutlanmıyor; rozet kademeyi yutuyor ama işaret yine de ilerliyor. İkisi
+`session_celebration_test.dart`'ta: dialog alevi doğru kademede çiziyor
+(`FlameWidget.tier` kimlikle karşılaştırılıyor), düğme şablon zorlamadan kartı
+açıyor.
+
+Geçmiş yazan yardımcı (`_seedCompletedFocusHours`) **gün** aralıklı satır
+yazıyor ve hepsi bugünün saatinde. İlk sürüm saat aralıklıydı ve gece yarısını
+kesen koşumda satırların bir kısmı düne düşüyordu: Maraton (8/gün) rastgele bir
+seansta açılıp kutlamayı çalıyordu. Gün başına bir satır + ardışık olmayan
+günler, gün sayısına bakan rozetleri de seri eşiklerini de erişilemez kılıyor.
+
+### 8. Emülatör doğrulaması (2026-09-18)
+
+`focussayac_verify` (Android 16), release derlemesi, `focus_minutes = 1` ve
+`.verify/m34_seed.py` ile kümülatif toplam eşiğin bir dakika altına çekilerek.
+Tek satır tohumlanıyor: gün sayısına bakan rozetler tetiklenip yuvayı
+kapmasın.
+
+- **K2 kutlaması** (`m34_a_kademe_k2.png`): 3540 sn + 60 sn'lik seans = tam
+  1 saat → "KADEME 2 / Köz", gövdede "1 saat odak biriktirdin". Dairenin
+  içindeki alev K2 ölçeğinde (0.42) — küçük duruyor, merdivenin kendi oranı.
+  `flutter.celebrated_flame_tier_v1 = 2`.
+- **Kart** (`m34_b_kart.png`): düğme kartı kullanıcının kendi şablonuyla
+  (GECE MEŞALESİ) açıyor, öneri yok.
+- **Çakışma** (`m34_c_rozet_onde.png`, `m34_d_rozet2.png`): 10 saate çıkan
+  seansta "Odak Meşalesi" ve "10 Saat Kulübü" dialogları açıldı, kademe
+  dialogu **açılmadı** — ama işaret 2'den **4'e** ilerledi.
+- **İkinci kez yok** (`m34_e_ikinci_kez_yok.png`): aynı kademedeki sonraki
+  seans hiçbir dialog açmıyor.
+- **Koyu tema, uzun ad, büyük alev** (`m34_f_koyu_k8.png`): K4'ten K8'e
+  atlayan seans (175 saat) tek kutlama açıyor; "Harman Ateşi" tek satıra
+  sığıyor, hâle ve kıvılcımlar dairenin içinde kalıyor. İşaret 8.
+- **Kartla eşleşme** (`m34_g_ekran04.png`): Ekran 04'ün kahraman kartı aynı
+  adı ve "175 / 250 sa"yı gösteriyor — kutlamanın "meşalen büyüdü" iddiası
+  yüzeyde karşılığını buluyor.
+
+### 9. Kapsam dışı
+
+Kademe için yeni bir başarı kartı şablonu, kademe atlamasının bildirimi
+(kutlama uygulama içi bir an; `SessionCelebrationQueue` bilinçli olarak kalıcı
+değil), widget'ın kademe görselinin yeniden çekilmesi (madde 31'de
+doğrulanmıştı, bu madde çizimi değiştirmiyor).

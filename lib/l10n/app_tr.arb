@@ -324,6 +324,25 @@
     "placeholders": { "days": { "type": "int" } }
   },
 
+  "flameTierCelebrationKicker": "KADEME {index}",
+  "@flameTierCelebrationKicker": {
+    "description": "Kademe atlama kutlaması (kFlameTierLadder) — seans bitişinde bir kez açılır. Başlık kademenin kendi adı (flameTier{n}Name), bu satır numarasını söylüyor.",
+    "placeholders": { "index": { "type": "int" } }
+  },
+  "flameTierCelebrationBody": "{hours} saat odak biriktirdin, meşalen büyüdü. Bunu bir kartla anlatabilirsin.",
+  "@flameTierCelebrationBody": {
+    "description": "Saat, kademenin eşiği (thresholdHours) — kullanıcının toplamı değil. Kademeyi kazandıran sayı o; toplam, kutlamanın altında değil Ekran 04'ün sayacında duruyor.",
+    "placeholders": { "hours": { "type": "int" } }
+  },
+  "flameTierCelebrationSemantics": "{index}. kademeye ulaşıldı: {name}",
+  "@flameTierCelebrationSemantics": {
+    "description": "Ekran okuyucu için kutlamanın sözlü hâli; başlık ile üst satır tek düğümde birleşiyor.",
+    "placeholders": {
+      "index": { "type": "int" },
+      "name": { "type": "String" }
+    }
+  },
+
   "storyCardTitle": "BAŞARI KARTI",
   "storyCardTemplateNightTorch": "GECE MEŞALESİ",
   "storyCardTemplateMinimal": "MİNİMAL",

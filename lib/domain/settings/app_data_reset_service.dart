@@ -36,6 +36,11 @@ class AppDataResetService {
     // kutlayamazdı (`streakMilestoneToCelebrate` yalnızca işaretten büyük
     // eşikleri veriyor).
     await prefs.remove(kCelebratedStreakMilestonePrefsKey);
+    // Kutlanmış kademe de öyle: geçmiş silindiğinde alev K1'e dönüyor, işaret
+    // kalsaydı kullanıcı merdiveni yeniden tırmanırken hiçbir kademeyi
+    // kutlayamazdı (`flameTierToCelebrate` yalnızca işaretten büyük kademeyi
+    // veriyor).
+    await prefs.remove(kCelebratedFlameTierPrefsKey);
     // Bellekteki faz da aynı kayda dayanıyor; provider yeniden kurulunca
     // `build()` boşalan kayıttan `idle` okuyor.
     _ref.invalidate(pomodoroControllerProvider);

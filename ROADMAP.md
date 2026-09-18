@@ -1067,27 +1067,45 @@ bıraktığı şeridi de kapsayacak kadar geri çevrildi — tek sabit, iki dosy
 
 ---
 
-## 34. Kademe atlama kutlaması ⬜ başlanmadı
+## 34. Kademe atlama kutlaması ✅ bitti
 
-**Sorun.** Madde 28'den ayrıldı. Kazanım anları kutlanıyor ama **kademe
-atlama** kutlanmıyor: alev K1'den K10'a çıkarken (`flame_tier.dart`) kullanıcı
-bunu ancak rozetler ekranına kendi girerse görüyor. Rozet açılışı ve seri eşiği
-madde 19'da kutlanmıştı, kademe o listede yoktu.
+451 test geçiyor (+5). Kararlar: `DECISIONS.md` "Madde 34". Çakışma kuralı
+kullanıcıya soruldu, seçilen sıra **rozet → kademe → seri**.
 
-**Kanıt.** `lib/domain/celebration/session_celebration.dart` — `SessionCelebration`
-yalnızca `BadgeCelebration` ve `StreakCelebration`.
-
-- **Kapsam:** üçüncü bir `SessionCelebration` türü; `PomodoroController`
-  `_completeFocus`ta kademe geçişini saptasın; kalıcı "son kutlanan kademe"
-  anahtarı (seri eşiğindeki `kCelebratedStreakMilestonePrefsKey` kalıbı — aksi
-  hâlde aynı kademe her seansta yeniden kutlanır ve "Verileri sıfırla" bunu da
-  temizlemeli); kutlama dialogu başarı kartını önersin (madde 28'de kartın
-  girişleri kazanım anlarına bağlandı, bu onların üçüncüsü).
-- **Çakışma kuralı gerekiyor:** kutlama tek yuva — aynı seansta hem rozet hem
-  kademe düşerse hangisinin öne geçtiğine karar verilmeli.
-- **Kabul:** kademe atlayan seansta kutlama bir kez açılıyor, aynı kademede
-  ikinci kez açılmıyor, kart oradan ulaşılabiliyor.
-- **Boyut:** küçük–orta.
+- **Üçüncü kutlama türü:** `FlameTierCelebration` eşiğin saatini değil
+  `FlameTier` nesnesini taşıyor — dialog alevi tam o kademede çiziyor, yani
+  kutlamanın görseli ödülün kendisi. Bir Phosphor ikonu koymak, kademenin tek
+  görünür karşılığını (alevin büyümesi) kutlamanın dışında bırakırdı.
+- **Çakışma kural, istisna değil:** K4/K6/K7/K9 eşikleri 10/50/100/250 saatlik
+  rozetlerle birebir aynı — dokuz atlamanın dördü bir rozetle birlikte düşüyor.
+  Rozet öne geçiyor: saat rozeti **yalnızca** o anda kutlanabilir, kademenin
+  ödülü ise kalıcı (alev her ekranda büyümüş duruyor, Ekran 04 onu adıyla
+  söylüyor) ve rozet zaten aynı kümülatif saati kutluyor.
+- **Yutulan kademe yine de işaretleniyor:** aksi hâlde bir sonraki seansta,
+  artık atlanmamış bir kademe için bayat bir dialog açılırdı. Seri eşiğindeki
+  "gösterilmeden önce işaretle" kuralının aynısı.
+- **İşaretin varsayılanı 1:** K1 başlangıç hâli, atlanan kademe değil — 0
+  olsaydı ilk pomodoro "Kıvılcım'a yükseldin" derdi. Güncelleyerek gelen
+  kullanıcıda güncel kademe bir kez kutlanıp geçiliyor. "Verileri sıfırla"
+  anahtarı siliyor (`AppDataResetService`).
+- **Kart şablonu zorlanmıyor:** üç şablonun hiçbiri kademeyi göstermiyor;
+  rozet kutlamasının kuralıyla kullanıcının seçtiği kart açılıyor. Seri
+  kutlaması SERİ şablonunu öneriyordu çünkü o şablon vardı.
+- **Testteki tuzak:** geçmiş yazan yardımcı önce **saat** aralıklıydı; gece
+  yarısını kesen koşumda satırların bir kısmı düne düşüyor ve Maraton (8/gün)
+  rastgele bir seansta açılıp kutlamayı çalıyordu. Gün başına bir satır +
+  ardışık olmayan günler, gün bazlı rozetleri de seri eşiklerini de erişilemez
+  kılıyor.
+- **Emülatör doğrulandı (2026-09-18).** `focussayac_verify` (Android 16),
+  release derlemesi, `focus_minutes = 1`, `.verify/m34_seed.py` ile toplam
+  eşiğin bir dakika altına çekilerek. K2 kutlaması açıldı ve anahtar 2 oldu
+  (`m34_a_kademe_k2.png`); kart kullanıcının kendi şablonuyla açıldı
+  (`m34_b_kart.png`); 10 saatte iki rozet dialogu açıldı, kademe dialogu
+  açılmadı ama anahtar 4'e ilerledi (`m34_c_rozet_onde.png`,
+  `m34_d_rozet2.png`); aynı kademedeki sonraki seans hiçbir şey açmadı
+  (`m34_e_ikinci_kez_yok.png`); koyu temada K4→K8 atlaması tek kutlama açtı ve
+  "Harman Ateşi" tek satıra sığdı (`m34_f_koyu_k8.png`), Ekran 04 aynı adı ve
+  "175 / 250 sa"yı gösterdi (`m34_g_ekran04.png`).
 
 ---
 
@@ -1119,7 +1137,7 @@ yalnızca `BadgeCelebration` ve `StreakCelebration`.
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(397 test, `flutter test`)*
+- [x] Testler geçiyor *(451 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

@@ -16,6 +16,7 @@ import '../../core/widgets/settling_progress.dart';
 import '../../domain/badges/badge_definition.dart';
 import '../../domain/celebration/session_celebration.dart';
 import '../../domain/flame/flame_providers.dart';
+import '../../domain/flame/flame_tier.dart';
 import '../../domain/pomodoro/break_tips.dart';
 import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_math.dart';
@@ -25,6 +26,7 @@ import '../../domain/settings/settings_providers.dart';
 import '../../domain/story_card/story_card_text.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../badges/badges_screen.dart';
+import 'widgets/flame_tier_celebration_dialog.dart';
 import 'widgets/session_ring_painter.dart';
 import 'widgets/streak_celebration_dialog.dart';
 
@@ -81,10 +83,10 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
   /// yakalama tiki ikinci bir fazı da kapatırsa) yeni bir kutlama sunabilir.
   bool _celebrating = false;
 
-  /// Kutlamayı gösterir: rozet açılışında Ekran 04'ün dialogu, seri eşiğinde
-  /// kutlama dialogu. İkisinin de birincil aksiyonu başarı kartı — paylaşım
-  /// artık kullanıcının gidip aramasını beklemiyor, kutlama anında önüne
-  /// geliyor.
+  /// Kutlamayı gösterir: rozet açılışında Ekran 04'ün dialogu, kademe
+  /// atlamasında ve seri eşiğinde kendi dialogları. Üçünün de birincil aksiyonu
+  /// başarı kartı — paylaşım artık kullanıcının gidip aramasını beklemiyor,
+  /// kutlama anında önüne geliyor.
   Future<void> _showCelebration(SessionCelebration celebration) async {
     if (_celebrating) return;
     _celebrating = true;
@@ -113,6 +115,16 @@ class _FocusSessionScreenState extends ConsumerState<FocusSessionScreen> with Wi
               onOpenStoryCard: _openStoryCard,
             );
           }
+        case FlameTierCelebration(tier: final FlameTier tier):
+          await showFlameTierCelebrationDialog(
+            context,
+            tier: tier,
+            // Şablon **zorlanmıyor** (rozet kutlamasıyla aynı): kartın üç
+            // şablonundan hiçbiri kademeyi göstermiyor, yani "kademe kartı"
+            // diye açılacak bir şey yok. Seri kutlamasında SERİ şablonunun
+            // önerilmesinin sebebi tam da o şablonun var olmasıydı.
+            onOpenStoryCard: _openStoryCard,
+          );
         case StreakCelebration(days: final int days):
           await showStreakCelebrationDialog(
             context,

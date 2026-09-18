@@ -4,12 +4,15 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:focussayac/domain/badges/badge_providers.dart';
+import 'package:focussayac/domain/celebration/session_celebration.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_controller.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_phase.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_stats_providers.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
+import 'package:focussayac/services/storage/daos/pomodoro_session_dao.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,6 +76,46 @@ Future<void> _waitForSessionCount(ProviderContainer container, int expectedCount
     await Future<void>.delayed(const Duration(milliseconds: 5));
   }
   throw StateError('Timed out waiting for allSessionsProvider to report $expectedCount sessions.');
+}
+
+/// [hours] adet tamamlanmış, birer saatlik odak seansı yazar — kademe eşikleri
+/// kümülatif saatten okunuyor ve testlerin kendi seansları 0 saniye sürüyor,
+/// yani eşiği yalnızca yazılmış geçmiş geçebilir.
+///
+/// [spacing] **gün** cinsinden verilmeli ve satırlar hep bugünün saatine
+/// düşmeli; ikisi de testi duvar saatinden bağımsız kılıyor:
+/// - Aynı saat → saat bazlı rozetler (Sabah Yıldızı / Gece Nöbeti) geçmişte de
+///   testin kendi seansındaki koşulu görüyor, yani testin kaçta koştuğu
+///   kutlamayı kaydırmıyor.
+/// - Gün başına en fazla bir satır → gün sayısına bakan rozetler (Odak
+///   Meşalesi 4/gün, Maraton 8/gün) geçmişten tetiklenemiyor. Saat aralıklı
+///   (`Duration(hours: 1)`) ilk sürüm tam buradan düştü: gece yarısını kesen
+///   koşumda satırların bir kısmı bugüne, kalanı düne düşüyor ve Maraton
+///   rastgele bir seansta açılıyordu.
+/// - `> 1 gün` → günler ardışık değil, yani seri 1'de kalıyor ve istemeden bir
+///   seri eşiği (3/7/30) ya da "Haftalık Seri" rozeti tetiklenmiyor.
+Future<void> _seedCompletedFocusHours(
+  ProviderContainer container,
+  int hours, {
+  required Duration spacing,
+}) async {
+  final PomodoroSessionDao dao = container.read(pomodoroSessionDaoProvider);
+  final DateTime nowUtc = DateTime.now().toUtc();
+  for (int i = 0; i < hours; i++) {
+    final DateTime startedAt = nowUtc.subtract(spacing * (i + 1));
+    final int id = await dao.startSession(
+      examId: null,
+      type: SessionType.focus,
+      startedAt: startedAt,
+      plannedDurationSec: 3600,
+    );
+    await dao.finishSession(
+      id: id,
+      completed: true,
+      endedAt: startedAt.add(const Duration(hours: 1)),
+    );
+  }
+  await _waitForSessionCount(container, hours);
 }
 
 /// Platform kanalı açmayan ([NotificationService.disabled] gibi) ama mola
@@ -497,5 +540,83 @@ void main() {
     // Ayar sıfırlanmıyor ama seans yanlış bir derse değil, dersiz yazılıyor.
     expect(container.read(allSessionsProvider).value!.single.subjectKey, equals(null));
     expect((await db.appSettingsDao.getSettings()).activeSubjectKey, 'chemistry');
+  });
+
+  // --- Kademe atlama kutlaması (ROADMAP madde 34) ---------------------------
+
+  test('kademe atlayan seans kutlamayı sunuyor, aynı kademede ikinci kez sunmuyor', () async {
+    final ProviderContainer container = await _buildContainer();
+    addTearDown(container.dispose);
+    // Bir saatlik geçmiş: testin kendi seansı 0 saniye sürdüğü için eşiği
+    // yalnızca yazılmış geçmiş geçebilir.
+    await _seedCompletedFocusHours(container, 1, spacing: const Duration(days: 1));
+    // Geçmişin rozetleri önceden açılıyor: aksi hâlde "İlk Kıvılcım" bu
+    // tamamlanışta açılır ve çakışma kuralı gereği kademeyi yutardı (o kural
+    // aşağıda ayrıca sınanıyor).
+    await container.read(badgeUnlockServiceProvider).evaluateAfterFocusCompletion();
+
+    final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
+    await controller.startFocus();
+    await controller.tick();
+
+    final SessionCelebration? celebration = container.read(sessionCelebrationProvider);
+    expect(celebration, isA<FlameTierCelebration>());
+    // 1 saat = K2 ("Köz"); K1 başlangıç hâli olduğu için hiç kutlanmıyor.
+    expect((celebration! as FlameTierCelebration).tier.index, 2);
+    final SharedPreferences prefs = container.read(sharedPreferencesProvider);
+    expect(prefs.getInt(kCelebratedFlameTierPrefsKey), 2);
+
+    // İkinci seans aynı kademede kalıyor: kutlama bir daha açılmamalı.
+    container.read(sessionCelebrationProvider.notifier).consume();
+    await controller.startFocus();
+    await controller.tick();
+
+    expect(container.read(sessionCelebrationProvider), equals(null));
+  });
+
+  test('K1 kutlanmıyor: ilk tamamlanan pomodoro kademe atlaması değil', () async {
+    final ProviderContainer container = await _buildContainer();
+    addTearDown(container.dispose);
+
+    final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
+    await controller.startFocus();
+    await controller.tick();
+
+    // Bu seansta kutlanacak bir şey var — ama "İlk Kıvılcım" rozeti, kademe
+    // değil. İşaret de yazılmıyor: kullanıcı K1'den hiç çıkmadı.
+    expect(container.read(sessionCelebrationProvider), isA<BadgeCelebration>());
+    expect(
+      container.read(sharedPreferencesProvider).getInt(kCelebratedFlameTierPrefsKey),
+      equals(null),
+    );
+  });
+
+  test('rozet kademeyi yutuyor ama kademe yine de işaretleniyor', () async {
+    final ProviderContainer container = await _buildContainer();
+    addTearDown(container.dispose);
+    // 10 saat = hem K4 hem "10 Saat Kulübü" rozeti — iki merdivenin birlikte
+    // tetiklendiği dört eşikten biri (`flame_tier.dart`). Rozetler bilerek
+    // önceden açılmıyor.
+    await _seedCompletedFocusHours(container, 10, spacing: const Duration(days: 2));
+
+    final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
+    await controller.startFocus();
+    await controller.tick();
+
+    // Çakışmada rozet öne geçiyor.
+    expect(container.read(sessionCelebrationProvider), isA<BadgeCelebration>());
+    // Ama kademe "kutlandı" sayılıyor: aksi hâlde bir sonraki seansta, artık
+    // atlanmamış bir kademe için bayat bir dialog açılırdı.
+    final SharedPreferences prefs = container.read(sharedPreferencesProvider);
+    expect(prefs.getInt(kCelebratedFlameTierPrefsKey), 4);
+
+    container.read(sessionCelebrationProvider.notifier).consume();
+    await controller.startFocus();
+    await controller.tick();
+
+    // İkinci seansta kutlanacak bir şey kalmıyor: rozetler açıldı, kademe
+    // işaretli, seri tek günde. Kademe işaretlenmeseydi burası K4 kutlamasıyla
+    // patlardı — bu satır çakışma kuralının ikinci yarısını çiviliyor.
+    expect(container.read(sessionCelebrationProvider), equals(null));
   });
 }

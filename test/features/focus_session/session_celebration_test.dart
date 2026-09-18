@@ -8,12 +8,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/core/theme/app_motion.dart';
+import 'package:focussayac/core/widgets/flame_widget.dart';
 import 'package:focussayac/domain/badges/badge_definition.dart';
 import 'package:focussayac/domain/celebration/session_celebration.dart';
+import 'package:focussayac/domain/flame/flame_tier.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_controller.dart';
 import 'package:focussayac/domain/pomodoro/pomodoro_phase.dart';
 import 'package:focussayac/domain/story_card/story_card_text.dart';
 import 'package:focussayac/features/focus_session/focus_session_screen.dart';
+import 'package:focussayac/features/focus_session/widgets/flame_tier_celebration_dialog.dart';
 import 'package:focussayac/features/focus_session/widgets/streak_celebration_dialog.dart';
 import 'package:focussayac/features/story_card/story_card_screen.dart';
 import 'package:focussayac/main.dart';
@@ -161,6 +164,51 @@ void main() {
     await _disposeTree(tester);
   });
 
+  // ROADMAP madde 34: kademe atlaması yalnızca rozetler ekranına girilirse
+  // görülüyordu; kazanım anları kutlanırken kademe o listede yoktu.
+
+  testWidgets('kademe atlaması kutlaması alevi yeni kademesinde gösteriyor',
+      (WidgetTester tester) async {
+    final ProviderContainer container = await _pumpBreak(tester);
+
+    // K4 "Fener" — 10 saatlik eşik, merdivenin rozetle çakışan kademelerinden.
+    final FlameTier tier = kFlameTierLadder.firstWhere((FlameTier t) => t.index == 4);
+    container.read(sessionCelebrationProvider.notifier).offer(FlameTierCelebration(tier: tier));
+    await _settleCelebration(tester);
+
+    expect(find.byKey(kFlameTierCelebrationHaloKey, skipOffstage: false), findsOneWidget);
+    expect(find.text('KADEME 4'), findsOneWidget);
+    expect(find.text('Fener'), findsOneWidget);
+    // Ödülün kendisi çiziliyor: dairenin içindeki alev **o** kademenin alevi.
+    expect(tester.widget<FlameWidget>(find.byType(FlameWidget)).tier, same(tier));
+    expect(find.text('BAŞARI KARTINI OLUŞTUR'), findsOneWidget);
+    expect(container.read(sessionCelebrationProvider), isNull);
+
+    await _disposeTree(tester);
+  });
+
+  testWidgets('kademe kutlamasının düğmesi şablon zorlamadan kartı açıyor',
+      (WidgetTester tester) async {
+    final ProviderContainer container = await _pumpBreak(tester);
+
+    container.read(sessionCelebrationProvider.notifier).offer(
+          FlameTierCelebration(tier: kFlameTierLadder.firstWhere((FlameTier t) => t.index == 2)),
+        );
+    await _settleCelebration(tester);
+
+    await tester.tap(find.text('BAŞARI KARTINI OLUŞTUR'));
+    await tester.pump();
+    await tester.pump(AppMotion.base);
+
+    final Finder card = find.byType(StoryCardScreen, skipOffstage: false);
+    expect(card, findsOneWidget);
+    // Kartın üç şablonundan hiçbiri kademeyi göstermiyor; seri kutlamasının
+    // aksine önerilecek bir şablon yok, kullanıcının seçtiği kart açılıyor.
+    expect(tester.widget<StoryCardScreen>(card).initialTemplate, equals(null));
+
+    await _disposeTree(tester);
+  });
+
   testWidgets('kutlama yokken dialog açılmıyor', (WidgetTester tester) async {
     // Karşı kontrol: yukarıdaki üç test yalnızca "dialog her zaman açık" olduğu
     // için de geçebilirdi.
@@ -168,6 +216,7 @@ void main() {
     await _settleCelebration(tester);
 
     expect(find.byKey(kStreakCelebrationHaloKey, skipOffstage: false), findsNothing);
+    expect(find.byKey(kFlameTierCelebrationHaloKey, skipOffstage: false), findsNothing);
     expect(find.text('BAŞARI KARTINI OLUŞTUR'), findsNothing);
 
     await _disposeTree(tester);
