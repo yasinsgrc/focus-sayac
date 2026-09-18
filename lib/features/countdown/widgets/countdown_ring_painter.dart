@@ -63,6 +63,24 @@ class CountdownRingPainter extends CustomPainter {
   static const double _effortRadius = 119;
   static const double _effortStrokeWidth = 4;
 
+  /// Zaman izinin ve yayının kalınlığı; ikisi üst üste oturduğu için tek sayı.
+  static const double _progressStrokeWidth = 9;
+
+  /// Gradyanı yayın **gerisine** kaydıran açı (ROADMAP madde 33).
+  ///
+  /// `StrokeCap.round` başlangıç ucunu `strokeWidth / 2` kadar geriye taşıyor.
+  /// `SweepGradient` orada turu tamamlayıp son durakta — közde — örnekleniyordu:
+  /// mavi yayın tam başlangıcında turuncu bir leke, yayın oranı ne olursa olsun
+  /// aynı yerde. Gradyanı bu kadar geriye çevirince 0. durak (`sky`) kapağın
+  /// altındaki açıyı da kapsıyor ve sarma noktası **hiç çizilmeyen** bir açıya
+  /// düşüyor. Kapağın 4.5px'ine 2px kenar yumuşatma payı ekli: sarma noktası
+  /// kapağın ucundan 2px geride kalıyor, oraya taşan yumuşatma pikseli yok.
+  ///
+  /// Ödenen bedel gradyanın 2.9° (turun %0.8'i) kayması; yay yerinden
+  /// kıpırdamıyor, üç durak da duruyor.
+  static const double _gradientBackshift =
+      (_progressStrokeWidth / 2 + 2) / _trackRadius;
+
   @override
   void paint(Canvas canvas, Size size) {
     final double scale = size.width / _viewBoxSize;
@@ -77,13 +95,13 @@ class CountdownRingPainter extends CustomPainter {
     final Paint track = Paint()
       ..color = colors.hairline
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 9 * scale;
+      ..strokeWidth = _progressStrokeWidth * scale;
     canvas.drawCircle(center, _trackRadius * scale, track);
 
     final Rect progressRect = Rect.fromCircle(center: center, radius: _trackRadius * scale);
     final Paint progress = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 9 * scale
+      ..strokeWidth = _progressStrokeWidth * scale
       ..strokeCap = StrokeCap.round
       // Koyu temada bu üçlü prototipin `#63b4ff → #b5abfc → #ffb03a`
       // duraklarıyla birebir aynı değerlere çözülüyor; açık temada rollerin
@@ -91,7 +109,7 @@ class CountdownRingPainter extends CustomPainter {
       ..shader = SweepGradient(
         colors: <Color>[colors.sky, colors.accent400, colors.ember],
         stops: const <double>[0, 0.48, 1],
-        transform: const GradientRotation(-math.pi / 2),
+        transform: const GradientRotation(-math.pi / 2 - _gradientBackshift),
       ).createShader(progressRect);
     const double startAngle = -math.pi / 2;
     final double sweepAngle = 2 * math.pi * progressRatio.clamp(0.0, 1.0);

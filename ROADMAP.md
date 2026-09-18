@@ -1026,29 +1026,44 @@ Kararlar: `DECISIONS.md` "Madde 31".
 
 ---
 
-## 33. Zaman yayının başlangıcında köz lekesi ⬜ başlanmadı
+## 33. Zaman yayının başlangıcında köz lekesi ✅ bitti
 
-**Sorun.** Madde 27'nin emülatör doğrulamasında çıktı. Geri sayım halkasının
-zaman yayı 12 yönünden başlıyor ve tam başlangıç noktasında yayın kendi
-renginden (mavi `sky`) olmayan küçük turuncu bir leke duruyor. Kanıt
-`.verify/m27_a_bos.png`, `.verify/m27_d_kapali.png`.
+446 test geçiyor (+5), Kotlin birim koşumu +2. Kararlar:
+`DECISIONS.md` "Madde 33". Seçilen yol (c): gradyan, yuvarlak ucun geride
+bıraktığı şeridi de kapsayacak kadar geri çevrildi — tek sabit, iki dosyada.
 
-**Neden.** `countdown_ring_painter.dart` yayı `SweepGradient`
-(`sky → accent400 → ember`, `GradientRotation(-math.pi / 2)`) ve
-`StrokeCap.round` ile çiziyor. Yuvarlak uç başlangıç açısının biraz **gerisine**
-taşıyor; orada gradyan ~360°'de, yani son durakta (`ember`) örnekleniyor. Yayın
-oranı ne olursa olsun leke aynı yerde: %6 tabanında da, %25'te de görünüyor.
-
-Kaynağı kesin — madde 27'nin emek yayı **değil**: hedef kapalı karesinde emek
-yayı hiç çizilmediği hâlde leke duruyor.
-
-- **Kapsam:** üç seçenekten biri — (a) gradyanı `SweepGradient` yerine yayın
-  süpürdüğü açıya sığdırılmış duraklarla kur, (b) başlangıç ucunu `butt` yapıp
-  yalnızca bitiş ucunu yuvarlak bırak (iki ayrı `drawArc` gerekir),
-  (c) gradyanın 0. durağını yayın gerisini de kapsayacak şekilde genişlet.
-- **Kabul:** yayın başlangıcında yayın kendi rengi dışında piksel yok; bitiş
-  ucunun yuvarlaklığı ve prototipin üç gradyan durağı korunuyor.
-- **Boyut:** küçük.
+- **Sorun ve nedeni yerinde duruyordu:** yay `SweepGradient` +
+  `StrokeCap.round` ile çiziliyor, yuvarlak uç başlangıç açısının
+  `strokeWidth / 2` kadar gerisine taşıyor ve gradyan orada turu tamamlayıp son
+  durakta (`ember`) örnekleniyordu. Leke yayın oranıyla kımıldamıyordu.
+- **Gradyan 2.9° geri çevrildi** (`_gradientBackshift` = `(9/2 + 2) / 130`
+  radyan): 0. durak (`sky`) kapağın altındaki açıyı da kapsıyor, sarma noktası
+  ise **hiç çizilmeyen** bir açıya düşüyor. 2px'lik fazla kenar yumuşatma payı —
+  sarma noktası kapağın ucundan 2px geride, oraya taşan yumuşatma pikseli yok.
+- **(a) ve (b) elendi:** (a) gradyanı süpürülen açıya sığdırırdı, yani %25'te
+  bile yayın ucu köz olurdu — 300 gün kalan kullanıcıya aciliyet rengi.
+  (b) başlangıç ucunu düzleştirirdi ama `butt` kenarının yumuşatma pikselleri
+  de aynı sarma bölgesinden örnekleniyor; leke hairline'a iner, gitmez.
+- **Widget'ın Kotlin portu da düzeltildi:** `RingRenderer.kt` aynı gradyanı
+  aynı `-90°` ile kuruyordu, dosyanın kendi başlığı "gradyanı uygulamayla AYNI"
+  diyor. Birini düzeltip diğerini bırakmak o sözü bozardı.
+- **Depodaki ilk piksel testi:** `countdown_ring_start_test.dart` painter'ı
+  `PictureRecorder`a çizip 12'nin 20° gerisinden 2° ilerisine tarıyor ve hiçbir
+  pikselin kırmızısının mavisini 12'den fazla aşmadığını söylüyor. Painter'ın
+  alanlarını okuyan kalıp (`effort_arc_test.dart`) bu hatayı göremezdi — hata
+  boyanın kendisinde. Kotlin karşılığı `RingRendererRobolectricTest`.
+- **Emülatör doğrulandı (2026-09-18).** `focussayac_verify` (Android 16), sınav
+  300 gün ileri (%25 yay, bitiş ucu 3 yönünde — böylece başlangıç yalnız
+  kalıyor). Düzeltmeden önce 12'deki yuvarlak ucun **tamamı** köz
+  (`m33_a_once.png`, 6× yakın çekim `m33_c_once_zoom.png`; tepedeki piksel
+  `(163,93,0)`). Sonra aynı konumdaki piksel `(31,110,192)` = `sky` ve 12'nin
+  solundaki 130px'de en sıcak piksel −160, yani saf gökyüzü
+  (`m33_b_sonra.png`, `m33_d_sonra_zoom.png`, halka `m33_e_halka.png`). Koyu
+  temada aynı sonuç, `(100,180,255)` (`m33_f_koyu.png`, `m33_g_koyu_zoom.png`).
+  Uç yuvarlaklığı ve yayın yeri değişmedi — kapak aynı pikselde başlıyor.
+- **Kalan bağlı iş:** widget halkası launcher'da yeniden çekilmedi (ekranda
+  bağlı örnek yoktu). Kotlin tarafının kanıtı Robolectric'in NATIVE Skia'sı;
+  widget zaten RemoteViews bitmap'i, yani cihazda da aynı yığın.
 
 ---
 

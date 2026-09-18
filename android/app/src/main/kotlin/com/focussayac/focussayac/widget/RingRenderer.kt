@@ -31,6 +31,22 @@ object RingRenderer {
     /** Gunluk pomodoro yayi geri sayim yayindan ince: ikincil bir bilgi. */
     private const val HABIT_STROKE = 5f
 
+    /**
+     * Gradyani yayin GERISINE kaydiran aci - ROADMAP madde 33.
+     *
+     * Cap.ROUND baslangic ucunu strokeWidth/2 kadar geriye tasiyor; SweepGradient
+     * orada turu tamamlayip son durakta (ember) orneklendigi icin mavi yayin tam
+     * basinda turuncu bir leke kaliyordu. Gradyan bu kadar geri cevrilince 0.
+     * durak (sky) kapagin altindaki aciyi da kapsiyor, sarma noktasi hic
+     * cizilmeyen bir aciya dusuyor. Kapagin 4.5px'ine 2px kenar yumusatma payi
+     * ekli.
+     *
+     * CountdownRingPainter._gradientBackshift ile ayni formul: bu dosya onun
+     * portu, ikisi ayrisirsa widget ile Ekran 02 ayni halkayi farkli boyar.
+     */
+    private val GRADIENT_BACKSHIFT_DEG =
+        Math.toDegrees(((TRACK_STROKE / 2f + 2f) / TRACK_RADIUS).toDouble()).toFloat()
+
     private const val OUTER_COLOR = 0x17FFFFFF
     private const val TRACK_COLOR = 0x12FFFFFF
 
@@ -138,13 +154,15 @@ object RingRenderer {
         val rect = RectF(cx - radius, cy - radius, cx + radius, cy + radius)
         // Prototipin uc duraklikli sweep gradyani; -90 derece dondurulerek
         // yayin baslangicina hizalaniyor (Dart tarafinda GradientRotation).
+        // Ustune GRADIENT_BACKSHIFT_DEG: yuvarlak ucun geride biraktigi seride
+        // kozun degil gokyuzunun dusmesi icin (madde 33).
         val gradient = SweepGradient(
             cx,
             cy,
             intArrayOf(0xFF63B4FF.toInt(), 0xFFB5ABFC.toInt(), 0xFFFFB03A.toInt()),
             floatArrayOf(0f, 0.48f, 1f),
         ).apply {
-            setLocalMatrix(Matrix().apply { setRotate(-90f, cx, cy) })
+            setLocalMatrix(Matrix().apply { setRotate(-90f - GRADIENT_BACKSHIFT_DEG, cx, cy) })
         }
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE

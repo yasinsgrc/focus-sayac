@@ -2770,3 +2770,112 @@ için çember uydurması 12px kayıyor), ölçek 1080/390 = 2.769 ile doğruland
 Satırı halkanın dışına almak (normal durumu da değiştirirdi, prototipin halka
 içi kompozisyonunu bozardı), kesik çizgili 112'lik çemberi de temizlemek,
 `RollingNumber`ın ya da kicker'ın ölçüsüne dokunmak.
+
+---
+
+## Madde 33 — Zaman yayının başlangıcındaki köz lekesi
+
+Tasarım belgesi yok: iki dosya, bir sabit. Gerekçe burada.
+
+### 1. Leke yayın değil, gradyanın sarma noktası
+
+`StrokeCap.round` yayın başlangıç ucunu başlangıç açısının `strokeWidth / 2`
+kadar **gerisine** taşıyor — 130 yarıçapta 4.5px, yani 2°. `SweepGradient` o
+2°'yi 360°'nin sağından örnekliyor, orada da son durak var: `ember`. Sonuç,
+mavi yayın tam başında turuncu bir yarım daire.
+
+İki şey bunu "yayın kendi rengi" sanmaktan kurtarıyor: leke yayın oranıyla
+kımıldamıyor (%6'da da %25'te de aynı yerde — oysa gradyanın kendi renkleri
+oranla birlikte kayar), ve madde 27'nin emek yayının hiç çizilmediği karede
+de duruyor (`.verify/m27_d_kapali.png`).
+
+### 2. Seçilen yol: gradyanı yayın gerisine kaydırmak
+
+`GradientRotation(-π/2)` → `GradientRotation(-π/2 - _gradientBackshift)`,
+`_gradientBackshift = (9/2 + 2) / 130` radyan = 2.9°.
+
+0. durak (`sky`) artık kapağın altındaki açıyı da kapsıyor. Asıl kazanç şu:
+sarma noktası — gradyanın közden gökyüzüne bir pikselde atladığı yer —
+**hiç çizilmeyen** bir açıya düşüyor. Kapak 12'nin 2° gerisinde bitiyor, sarma
+2.9° geride; arada 0.9°, yani 130 yarıçapta 2px. Kenar yumuşatma bir pikselden
+geniş olmadığı için o boşluk payın tamamı.
+
+Bedeli gradyanın 2.9° (turun %0.8'i) kayması. Üç durak da yerinde, yayın
+geometrisi bir piksel oynamıyor, uçların ikisi de yuvarlak.
+
+### 3. Neden (a) değil
+
+"Gradyanı yayın süpürdüğü açıya sığdır" seçeneği lekeyi kaldırırdı ama yayın
+**anlamını** değiştirirdi: o zaman yay hangi oranda olursa olsun közle biter.
+300 gün kalan kullanıcı halkanın ucunda aciliyet rengini görürdü. Gradyan
+prototipte turun tamamına yayılı, tam da bunun için: köz yaklaşan sınavın
+rengi, uzaktakinin değil.
+
+### 4. Neden (b) değil
+
+"Başlangıç ucunu `butt` yap" seçeneği geometriyi siliyor ama sarmayı silmiyor:
+`butt` kenarı da 0°'de duruyor ve o kenarın yumuşatma pikselleri, merkezleri
+geometrinin bir tık gerisinde kaldığı için gradyanı yine sarma bölgesinden
+örnekliyor. Kalan şey 4.5px'lik yarım daire yerine 1px'lik sıcak bir çizgi
+olurdu — küçülmüş bir hata, düzeltilmiş bir hata değil. Üstüne prototipin
+`stroke-linecap="round"`unu bir uçta kaybederdik.
+
+### 5. Kotlin portu da düzeltildi
+
+`RingRenderer.kt` widget halkasını aynı üç durakla, aynı `-90°` ile ve aynı
+`Cap.ROUND` ile çiziyor; dosyanın başlığı "Ilerleme yayinin gradyani
+uygulamayla AYNI" diyor. Dart'ı düzeltip Kotlin'i bırakmak bu cümleyi yalan
+yapardı — kullanıcı aynı halkayı ana ekranda lekesiz, launcher'da lekeli
+görürdü. Aynı formül, aynı yorum, iki dilde.
+
+### 6. Depodaki ilk piksel testi
+
+`countdown_ring_start_test.dart` painter'ı `PictureRecorder`a çizip
+`toByteData` ile okuyor. Gerekçesi: bu hata painter'ın **alanlarında** yok,
+boyasında. `effort_arc_test.dart`ın kalıbı (painter'ı bulup oranlarını okumak)
+onu göremezdi; gölgelendiricinin ne renk ürettiğini ancak piksel söyler.
+
+İddia eşiği renk değil **fark**: 12'nin 20° gerisinden 2° ilerisine, izin iki
+kenarı arasında taranan hiçbir pikselin kırmızısı mavisini 12'den fazla
+aşmıyor. Köz iki temada da +197/+163, gökyüzü −156/−160, nötr iz 0 — tek eşik
+iki temayı birden tutuyor ve altın görüntüye gerek kalmıyor. Düzeltmeden önce
+dört durum da 163'ün üstünde kırmızı.
+
+İkinci test iki ucun da yuvarlak kaldığını söylüyor, yoksa lekeyi ucu
+düzleştirerek "çözmek" birinciyi yeşil bırakırdı.
+
+`RingRendererRobolectricTest` aynı iddiayı Kotlin tarafında tutuyor.
+`FlameRenderer`daki gibi `sharedTest` sözleşmesi ve cihaz koşumu yok: madde
+31'in derdi çizim yolunun cihazda gerçekten koşup koşmadığıydı, buradaki dert
+gölgelendiricinin renk matematiği — o da Robolectric'in NATIVE Skia'sında
+cihazdakiyle aynı. Kanıtı da var: sabit `0f` ile çarpılınca test kırmızı.
+
+### 7. Emülatör doğrulandı (2026-09-18)
+
+Host testi Skia ile çiziyor, cihazdaki Flutter Impeller ile — yani bu maddede
+emülatör turu gerçekten yeni bilgi veriyor.
+
+`focussayac_verify` (Android 16). Sınav `.verify/seed_final_stretch.py` ile 300
+gün ileri alındı: yay %25'e iniyor ve bitiş ucu 3 yönüne gidiyor, böylece
+başlangıç ucu ölçüde yalnız kalıyor. (İlk kare son düzlükteydi, orada yayın
+**bitişi** de 12'nin solundaydı ve ölçüm ikisini ayıramazdı.) Ölçen betik
+`.verify/m33_probe.py`.
+
+- Önce (`m33_a_once.png`, 6× `m33_c_once_zoom.png`): 12'deki yuvarlak ucun
+  tamamı köz, tepedeki piksel `(163,93,0)` — açık temanın `ember`ı. Yakın
+  çekimde kahverengi yarım daire ile mavi yayın sınırı keskin.
+- Sonra (`m33_b_sonra.png`, `m33_d_sonra_zoom.png`): aynı piksel
+  `(31,110,192)` = açık temanın `sky`ı, 12'nin solundaki 130px'de en sıcak
+  piksel −160. Kapak aynı koordinatta başlıyor, yani yay yerinden oynamadı.
+- Koyu tema (`m33_f_koyu.png`, `m33_g_koyu_zoom.png`): `(100,180,255)`,
+  en sıcak −154.
+- Halkanın tamamı (`m33_e_halka.png`): iki uç da yuvarlak, yay 12'den 3'e,
+  gradyan mavi-mor bandında — %25'te közün görünmemesi (a) seçeneğinin neden
+  elendiğinin resmi.
+
+### 8. Kapsam dışı
+
+Widget halkasını launcher'da yeniden çekmek (ekranda bağlı örnek yoktu;
+RemoteViews bitmap'i cihazda da Robolectric'teki yığınla çiziliyor), zaman
+yayının gradyan duraklarına ya da renklerine dokunmak, `session_ring_painter`
+ile `badge_progress_ring_painter` (ikisi de tek düz renk, sarma noktaları yok).
