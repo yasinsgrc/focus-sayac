@@ -2661,3 +2661,112 @@ gerekiyor — ilk montaj bu yüzden okunamaz çıktı.
 Widget'ı ana ekrana adb ile yerleştirmek (hâlâ mümkün değil), diğer
 renderer'lar (`RingRenderer`, `StripRenderer`, `SparkRenderer`), Dart ↔ Kotlin
 piksel paritesi.
+
+---
+
+## Madde 32 — Meta satırı halkanın izine giriyordu
+
+Tasarım belgesi yok: tek ekran, tek satır, iki sabit. Gerekçe burada.
+
+### 1. Sabit doğru sayıyı ölçüyordu, yanlış yerden
+
+`countdown_screen.dart` satırın kapağını `SizedBox(width: 284)` ile koyuyordu ve
+yorum 284'ü "halkanın 9px'lik izinin içinde kalan genişlik" diye
+gerekçelendiriyordu. 284 gerçekten de izin içinde kalan genişlik — **halkanın
+yatay çapında**. Satır ise merkezin ~75px altında duruyor ve dairenin kirişi
+orada çok daha dar. Kapak sığacağını söylüyor, sığdırmıyordu.
+
+Bu yüzden hata "eksik kontrol" değil: kontrol vardı, `FittedBox` de vardı,
+ikisi de yanlış sayıya bakıyordu. Kapak 284'ken üç parçalı satır (~181px) hiç
+küçülmüyordu — çünkü kapağın altında kalıyordu — ve kirişi aşarak izin altına
+giriyordu.
+
+### 2. Neden yalnızca son düzlükte görünüyordu
+
+Meta satırı normalde iki parça (`08:59:51 • 29 Eylül 2026`, ölçülen 148px),
+son düzlükte üç (`11 GÜN • 08:59:49 • 29 Eyl`, 181px). İki parçalı hâl o
+yükseklikteki kirişin altında kalıyor, üç parçalı hâl aşıyor. Hata madde 21'in
+emülatör doğrulamasında, yani son düzlük ilk kez gerçek cihazda görüldüğünde
+çıktı (`.verify/v28_metarow_zoom.png`).
+
+### 3. Ölçü zaman izine değil, **en içteki dolu yaya** bağlı
+
+İlk düzeltme kapağı zaman izinin iç kenarına (125.5) göre hesapladı: kiriş 198,
+kapak 186. Emülatör görüntüsü piksel piksel ölçülünce bunun hâlâ yarım olduğu
+görüldü — madde 27'nin emek yayı 119 yarıçapta, 4px kalınlıkta, yani **117'den**
+başlıyor ve zaman izinden daha içeride. 186'lık kapağın köşesi (119.3) tam o
+şeridin içine düşüyordu. Yeni sabit o yüzden
+`CountdownRingPainter.innerContentRadius` = 117 ve kapak 176.
+
+`timeTrackInnerRadius` diye ikinci bir sabit bırakılmadı: halkanın içine yazı
+koyan herkesi ilgilendiren tek sayı en içteki **dolu** yayın iç kenarı. İki
+sabit olsaydı çağıran yanlışını seçebilirdi — nitekim ilk denemede seçti.
+
+112'lik kesik çizgili çember kasten hesaba katılmıyor: 1px, %35 saydam, dönen
+bir dekor ve satırın uçları onu madde 32'den **önce** de teğet geçiyordu.
+Metni ona sığdırmak kirişi 167'ye indirip satırı gerçekten küçültmek demekti.
+
+### 4. Tarih son düzlükte kısalıyor
+
+176'lık kapak tek başına satırı %3 küçültürdü; tam tarih üç parçalıya eklenince
+(~240px) küçülme %27'ye çıkardı, yani 12px yazı 8.8px'e inerdi. O yüzden son
+düzlükte tarih `d MMM` ("29 Eyl"), normalde `d MMMM y`.
+
+Kaybolan bilgi yıl ve ayın son harfleri. Son düzlük en çok otuz gün
+(`kFinalStretchDays`), o pencerede "29 Eyl"in hangi yıl olduğu sorusu yok;
+yılbaşını aşan sınavda da ("28 Ara" → "15 Oca") okunan tarih tek bir güne
+işaret ediyor. Tam tarih sınav ekranında ve paylaşım kartında duruyor.
+
+Türkçe ay kısaltmalarının hepsi tam adın ön eki ("Haziran" → "Haz"), yani font
+altkümesine yeni glif girmiyor — sessiz Roboto'ya düşme tuzağı burada yok.
+
+### 5. Kalan %3 küçülme bilinçli
+
+Üç parçalı satır 181px, kapak 176; `FittedBox` aradaki farkı kapatıyor
+(12px → 11.6px). Kapağı 186'ya açmak küçülmeyi tamamen kaldırırdı ama kapağın
+köşesini emek yayının şeridine sokardı — yani kapak yine sığacağını söyleyip
+sığdırmayan bir sayı olurdu. Ölçülemez bir küçülme, ölçülebilir bir yalandan
+iyi.
+
+### 6. Test genişliği değil geometriyi ölçüyor
+
+`flutter test` gerçek fontları yüklemiyor (`flutter_test_config.dart` yok), her
+glif aynı kutu: bu koşumda üç parçalı satır 373px çıkıyor, cihazda 181px.
+Metin genişliğine dayanan bir iddia bu yüzden hem yanlış hem kırılgan olurdu.
+
+`countdown_meta_row_test.dart` onun yerine kapağın dört köşesinin merkeze
+uzaklığını `CountdownRingPainter.innerContentRadius` ile karşılaştırıyor.
+Satırın dikey ofseti gerçek yerleşimden geliyor — kahraman sayı ya da kicker
+büyürse satır aşağı kayar, kiriş daralır, iddia düşer. Eski 284 ile test
+kırmızı ("sol üst köşe 152.5px"), 176 ile yeşil.
+
+İkinci iddia kapağın o yükseklikteki kirişin çoğunu kullandığını söylüyor,
+yoksa "hiç kesişmiyor" kapağı 10px'e indirerek de sağlanabilirdi. Payı gevşek
+(%80): `FittedBox` en boy oranını koruduğu için metni küçülttüğünde kutunun
+yüksekliği de düşüyor, `Column` kısalıyor, ortalanmış satır yukarı kayıyor ve
+kiriş genişliyor — küçültmenin miktarı yüklü fonta bağlı.
+
+### 7. Emülatör doğrulandı (2026-09-18)
+
+`focussayac_verify` (Android 16), `.verify/seed_final_stretch.py` ile
+tohumlandı (sınav 11 gün ileri, o sınava 11.25 saat odak — son düzlük iki
+koşulu birlikte istiyor, o yüzden mevcut iki tohumlama betiği yetmedi).
+Görüntüler piksel piksel ölçüldü: halkanın merkezi emek yayının **dikey**
+ekseninden bulundu (yatay eksende yay, zaman yayının altında renk değiştirdiği
+için çember uydurması 12px kayıyor), ölçek 1080/390 = 2.769 ile doğrulandı.
+
+- Son düzlük, koyu (`m32_b_son_duzluk.png`, yakın çekim
+  `m32_c_metarow_zoom.png`): `11 GÜN • 08:59:49 • 29 Eyl`, satır 164px,
+  alt köşe merkezden **110.5px**, metinle emek yayı arasındaki en kısa mesafe
+  **5.9px**. Kesişme yok.
+- Normal, koyu (`m32_a_normal.png`, `m32_d_normal_zoom.png`):
+  `08:59:51 • 29 Eylül 2026`, 148px, alt köşe 105.2px — tam tarih duruyor,
+  küçülme yok, madde 32 öncesiyle aynı.
+- Son düzlük, açık tema (`m32_e_acik_tema.png`, `m32_f_acik_zoom.png`): aynı
+  geometri, aynı boşluk.
+
+### 8. Kapsam dışı
+
+Satırı halkanın dışına almak (normal durumu da değiştirirdi, prototipin halka
+içi kompozisyonunu bozardı), kesik çizgili 112'lik çemberi de temizlemek,
+`RollingNumber`ın ya da kicker'ın ölçüsüne dokunmak.

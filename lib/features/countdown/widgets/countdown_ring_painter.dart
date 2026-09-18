@@ -43,6 +43,18 @@ class CountdownRingPainter extends CustomPainter {
   static const double _outerRadius = 142;
   static const double _trackRadius = 130;
   static const double _dashedRadius = 112;
+  /// Halkanın içine yazı koyan her şeyin sığması gereken çember: en içteki
+  /// **dolu** yayın iç kenarı. Madde 27'den beri bu, zaman izi (125.5) değil
+  /// emek yayı — 119 yarıçap, 4px kalınlık → 117.
+  ///
+  /// 112'lik kesik çizgili çember kasten hesaba katılmıyor: 1px, %35 saydam,
+  /// dönen bir dekor ve satırın uçları onu madde 32'den **önce** de teğet
+  /// geçiyordu; metni ona sığdırmak 12px'lik satırı küçültmek demekti.
+  ///
+  /// `countdown_screen.dart`taki meta satırının kapağı ve onun testi (ROADMAP
+  /// madde 32) sayıyı buradan okuyor, iki yerde iki kez yazılıp zamanla
+  /// ayrışmasın diye.
+  static const double innerContentRadius = _effortRadius - _effortStrokeWidth / 2;
 
   /// Emek yayı prototipin **boş bandına** yerleşiyor: zaman izinin iç kenarı
   /// 125.5 (130 − 9/2), kesikli çember 112. 119 yarıçap ve 4px kalınlıkla

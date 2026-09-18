@@ -191,6 +191,10 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
 /// Testler parıltının halkayla eş merkezli olduğunu bu anahtarla doğruluyor.
 const Key kCountdownGlowKey = Key('countdown_ambient_glow');
 
+/// Halkanın içindeki meta satırının kapağı. Testler bu kutunun köşelerinin en
+/// içteki yayın içinde kaldığını buradan ölçüyor (ROADMAP madde 32).
+const Key kCountdownMetaRowKey = Key('countdown-meta-row');
+
 /// Ekran 02'nin geniş mor aurora'sı (prototip satır 72: 580×520, `.34` → %60'ta
 /// saydam).
 ///
@@ -343,9 +347,6 @@ class _CountdownBody extends ConsumerWidget {
     final String hh = remainder.inHours.toString().padLeft(2, '0');
     final String mm = (remainder.inMinutes % 60).toString().padLeft(2, '0');
     final String ss = (remainder.inSeconds % 60).toString().padLeft(2, '0');
-    final DateFormat examDateFormat = DateFormat('d MMMM y', 'tr');
-    final String examDateText = examDateFormat.format(toIstanbulWallClock(exam.dateUtc));
-
     // Son düzlükte ekranın işareti dönüyor: kahraman sayı kalan gün değil, bu
     // sınav için biriken odak saati olur (`isFinalStretch` gerekçeyi taşıyor).
     // Halkanın oranı **değişmiyor** — o zaten sınava yaklaştıkça dolan, yani
@@ -353,6 +354,20 @@ class _CountdownBody extends ConsumerWidget {
     final int examSeconds = ref.watch(examFocusSecondsProvider(exam.id));
     final bool finalStretch = isFinalStretch(days: days, examFocusSeconds: examSeconds);
     final int examFocusHours = formatFocusDuration(examSeconds).hours;
+
+    // Son düzlükte tarih kısalıyor ("20 Haz"), normalde tam ("20 Haziran
+    // 2027"): meta satırı orada üç parçaya çıkıyor ve tam tarihle halkanın
+    // kirişini aşıyordu (ROADMAP madde 32).
+    //
+    // Kısalan tek şey yıl ve ayın son harfleri. Son düzlük en çok otuz gün
+    // (`kFinalStretchDays`), o pencerede "20 Haz"ın hangi yıl olduğu sorusu
+    // yok — yılbaşını aşan sınavda da ("28 Ara" → "15 Oca") okunan tarih
+    // yine tek bir güne işaret ediyor; tam tarih sınav ekranında ve paylaşım
+    // kartında durmaya devam ediyor.
+    // Kısaltmaların hepsi tam ay adının ön eki ("Haziran" → "Haz"), yani font
+    // altkümesine yeni glif girmiyor.
+    final String examDateText =
+        DateFormat(finalStretch ? 'd MMM' : 'd MMMM y', 'tr').format(toIstanbulWallClock(exam.dateUtc));
 
     // Halka içindeki meta satırının ortak stili; son düzlükte bu satır iki
     // parçadan üçe çıktığı için üç kez tekrarlanmasın diye burada.
@@ -552,14 +567,29 @@ class _CountdownBody extends ConsumerWidget {
                                       const SizedBox(height: 16),
                                       // Kalan gün kahramanlığı bırakıyor ama **kaybolmuyor**:
                                       // son düzlükte bu satırın başına geçiyor ve üç parça
-                                      // oluyor ("12 GÜN • 04:22:31 • 12 Haziran 2027").
-                                      // Halkanın kesik çizgili iç çemberi 224px; 316'lık
-                                      // kutuda taşma hatası çıkmasa da satır o çemberi
-                                      // aşabiliyor, `FittedBox` böyle bir durumda kırpmak
-                                      // yerine küçültüyor (284 = halkanın 9px'lik izinin
-                                      // içinde kalan genişlik).
+                                      // oluyor ("12 GÜN • 04:22:31 • 12 Haz").
+                                      //
+                                      // Kapak halkanın **çapına** değil, satırın durduğu
+                                      // yükseklikteki **kirişine** göre (ROADMAP madde 32).
+                                      // Eski 284 değeri çaptan geliyordu; satır merkezin
+                                      // ~75px altında bittiği için orada dairenin kirişi çok
+                                      // daha dar. Ölçü en içteki dolu yaya bağlı
+                                      // ([CountdownRingPainter.innerContentRadius] = 117,
+                                      // madde 27'nin emek yayı): 2·√(117² − 75²) ≈ 180.
+                                      // 176 o kirişin içinde kalıyor (köşe uzaklığı 115.5)
+                                      // ve yuvarlak uca, kenar yumuşatmaya pay bırakıyor.
+                                      //
+                                      // Üç parçalı satırın kendi genişliği ~181px, yani
+                                      // `FittedBox` onu %3 küçültüyor (12px → 11.6px).
+                                      // Kapağı satıra göre 186'ya açmak küçültmeyi
+                                      // kaldırırdı ama kapağın köşesini emek yayının
+                                      // şeridine (117–121) sokardı: kapak yine sığacağını
+                                      // söyleyip sığdırmayan bir sayı olurdu — madde 32'nin
+                                      // ta kendisi. Ölçülemez bir küçülme, ölçülebilir bir
+                                      // yalandan iyi.
                                       SizedBox(
-                                        width: 284,
+                                        key: kCountdownMetaRowKey,
+                                        width: 176,
                                         child: FittedBox(
                                           fit: BoxFit.scaleDown,
                                           child: Row(

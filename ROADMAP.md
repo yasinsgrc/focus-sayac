@@ -990,28 +990,39 @@ Kararlar: `DECISIONS.md` "Madde 31".
 
 ---
 
-## 32. Son düzlükte meta satırı halkanın altına giriyor ⬜ başlanmadı
+## 32. Son düzlükte meta satırı halkanın altına giriyor ✅ bitti
 
-**Sorun.** Madde 21'in emülatör doğrulamasında çıktı. Son düzlükte meta satırı
-üç parçaya çıkıyor ("11 GÜN • 20:59:41 • 20 Haziran 2027") ve satırın iki ucu
-halkanın çizgisinin **altına** giriyor: "11"in üstünden mor yay, "2027"nin
-üstünden mavi yay geçiyor. Kanıt `.verify/v28_metarow_zoom.png`.
+441 test geçiyor (+1). Kararlar: `DECISIONS.md` "Madde 32". Seçilen yol
+(a)+(c): kapak kirişe göre hesaplanıyor **ve** son düzlükte tarih kısalıyor.
 
-**Neden.** `countdown_screen.dart:540` satırdaki kapağı `SizedBox(width: 284)`
-ile koyuyor ve yorum 284'ü "halkanın 9px'lik izinin içinde kalan genişlik"
-diye gerekçelendiriyor. Ama 284 halkanın **yatay çapındaki** genişlik; satır
-merkezin ~60dp altında duruyor ve orada dairenin kirişi çok daha dar
-(iç kesik çizgili çember için ~189dp). Ölçülen satır ~240dp, yani kapağın
-altında kalıyor — `FittedBox(scaleDown)` hiç devreye girmiyor — ama kirişi
-aşıyor. İki parçalı normal durumda satır ~174dp, kirişin altında; bu yüzden
-hata yalnızca son düzlükte görünüyor.
-
-- **Kapsam:** üç seçenekten biri — (a) kapağı satırın dikey ofsetindeki
-  kirişe göre hesapla (metin küçülür), (b) satırı halkanın dışına al,
-  (c) son düzlükte tarihi kısalt. Tasarım kararı gerektiriyor.
-- **Kabul:** son düzlükte satırın hiçbir parçası halka çizgisiyle
-  kesişmiyor; iki parçalı normal durum bozulmuyor.
-- **Boyut:** küçük kod, küçük tasarım kararı.
+- **Kapak çaptan geliyordu:** `SizedBox(width: 284)` halkanın yatay çapındaki
+  genişlikti; satır merkezin ~75px altında duruyor ve kiriş orada çok daha
+  dar. Kontrol de `FittedBox` de vardı, ikisi de yanlış sayıya bakıyordu.
+- **Ölçü en içteki *dolu* yaya bağlı:** ilk düzeltme zaman izinin iç kenarını
+  (125.5) aldı, ama madde 27'nin emek yayı 117'den başlıyor ve daha içeride —
+  186'lık kapağın köşesi tam o şeride düşüyordu. Sabit tek:
+  `CountdownRingPainter.innerContentRadius` = 117, kapak 176. İkinci bir
+  sabit bırakılmadı, yoksa çağıran yanlışını seçer.
+- **Kesik çizgili 112'lik çember kapsam dışı:** 1px, %35 saydam, dönen dekor;
+  satırın uçları onu bu maddeden önce de teğet geçiyordu.
+- **Son düzlükte tarih kısalıyor** (`d MMM` → "29 Eyl"), normalde tam
+  (`d MMMM y`). Son düzlük en çok otuz gün, o pencerede yıl okunmuyor; tam
+  tarih sınav ekranında ve paylaşım kartında duruyor. Kısaltmalar tam ay
+  adının ön eki olduğu için font altkümesine yeni glif girmiyor.
+- **Kalan %3 küçülme bilinçli:** satır 181px, kapak 176 (12px → 11.6px).
+  186'ya açmak küçülmeyi kaldırırdı ama kapağı yine sığdırmayacağı hâlde
+  "sığar" diyen bir sayıya çevirirdi.
+- **Test genişliği değil geometriyi ölçüyor:** `flutter test` gerçek fontları
+  yüklemiyor (satır orada 373px, cihazda 181px). `countdown_meta_row_test.dart`
+  kapağın dört köşesinin merkeze uzaklığını ölçüyor; dikey ofset gerçek
+  yerleşimden geldiği için kahraman sayı büyürse iddia düşüyor. Eski 284 ile
+  kırmızı, 176 ile yeşil.
+- **Emülatör doğrulandı (2026-09-18).** `focussayac_verify` (Android 16),
+  `.verify/seed_final_stretch.py` ile tohumlandı. Son düzlükte alt köşe
+  merkezden 110.5px, metinle emek yayı arası en kısa mesafe 5.9px, kesişme yok
+  (`m32_b_son_duzluk.png`, `m32_c_metarow_zoom.png`); normal durum tam tarihle
+  ve küçülmeden duruyor (`m32_a_normal.png`, `m32_d_normal_zoom.png`); açık
+  temada aynı geometri (`m32_e_acik_tema.png`, `m32_f_acik_zoom.png`).
 
 ---
 
