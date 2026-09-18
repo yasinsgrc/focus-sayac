@@ -1158,6 +1158,104 @@ Kararlar: `DECISIONS.md` "Madde 35". Madde 29'un kapsam dışı bıraktığı ü
 
 ---
 
+## 36. Ekran 02'de alt çubuğun payı reklam yuvasına bağlıydı ✅ bitti
+
+471 test geçiyor (+1). Kararlar: `DECISIONS.md` "Madde 36". Madde 29'un
+Ekran 06'da düzeltip Ekran 02'de bilerek açık bıraktığı kusur ("Ekran 02'de
+aynı gizli kusur duruyor — orada içerik henüz o kadar uzamıyor").
+
+- **Kusur:** alt gezinme çubuğunun payı `BannerAdSlot`ın `bottomMargin`indeydi
+  (`BannerAdSlot(bottomMargin: 88)`). Yuva reklam **hiç istenmediğinde** —
+  premium ya da UMP onayı yok — `SizedBox.shrink()`e iniyor ve payı da
+  götürüyor; kaydırılan gövdenin sonu, yani **ODAKLAN'ın kendisi**, opak
+  çubuğun arkasında kalıyor ve kaydırarak kurtarılamıyor. Ölçülen fark
+  **−82px**: butonun tamamı çubuğun altında.
+- **Neden ancak şimdi görünür oldu:** madde 24'te Ekran 02 kaydırmaya geçti.
+  Sabit yerleşimde farkı alttaki boşluk yutuyordu — madde 29'un notu bu yüzden
+  "içerik henüz o kadar uzamıyor" diyordu. Kusurun koşulu artık kuruluyor.
+- **Düzeltme Ekran 06'nınkiyle aynı:** pay yuvadan çıkıp kardeş bir `SizedBox`a
+  taşındı. Ölçü ekranın kendi 88'i değil Ekran 04 ve 07'nin de kullandığı ortak
+  `kBottomNavReservedSpace` (96px); Ekran 06'nın özel `_navBarFootprint`i de
+  aynı sabite bağlandı. Aynı kavramın üç kaynağı (88 literal, private 88,
+  paylaşılan 96) tek kaynağa indi.
+- **Regresyon testi** (`test/features/countdown/nav_bar_footprint_test.dart`):
+  390x640'ta, reklam istenmeyen hâlde, kaydırma sonuna götürülüp ODAKLAN'ın altı
+  ile çubuğun üstü ölçülüyor. İki koruma var: kaydırmanın gerçekten devreye
+  girdiği (`maxScrollExtent > 0` — yoksa uzun ekranda test boşa koşar) ve payın
+  yuvaya geri bağlanmadığı (`bottomMargin == 0`).
+- **`banner_placement_test` beklentisi düzeltildi:** Ekran 02'nin yuvası artık
+  `90 + 88` değil `90`. Test eski mekanizmayı pinliyordu; payın gerçekten
+  ayrıldığını yeni test ölçüyor.
+- **Tek `pumpWidget` zorunlu (yolda çıkan tuzak):** aynı dosyada ikinci bir
+  `testWidgets` — hatta aynı testte ikinci bir `pumpWidget` — drift göçünü
+  yarıda bırakıyor, ekran `CircularProgressIndicator`da donuyor ve koşum 10
+  dakikada zaman aşımına düşüyor. Dosyanın ilk iki hâli sırayla tam olarak buna
+  düştü. Reklamın istendiği hâlin karşı kontrolü bu yüzden geometriyle değil
+  **mekanizmayla** pinlendi: orada yuva kendi yüksekliğini de eklediği için
+  ayrılan alan yalnızca artıyor, yani asıl iddiayı geçen yerleşim orada da
+  geçiyor.
+- **Emülatör doğrulandı (2026-09-19).** `focussayac_verify` (Android 16),
+  release. Kusur koşulu `.verify/m36_seed.py` ile kuruldu (`is_premium = 1` →
+  `canRequestAds()` false → yuva kapalı); taşma gerçek bir küçük telefon
+  sınıfıyla zorlandı (`wm size 720x1440`, `wm density 320` → 360x720dp,
+  `font_scale 1.3` — uygulama yazı ölçeğini kırpmıyor, `textScaler` araması
+  boş). Madde 35'ten kurulu kalan APK düzeltme **öncesi** hâl olduğu için "önce"
+  görüntüsü yeniden derlemeden alındı: kaydırmanın sonunda "1 DAKİKA ODAKLAN"
+  çubuğun arkasında, yalnızca kenarlığı üstten sızıyor
+  (`.verify/m36/m36_b_kusur.png`). Düzeltilmiş APK birebir aynı koşullarda
+  CTA'yı çubuğun üstünde ve tam görünür bırakıyor (`m36_c_duzeltme.png`), koyu
+  temada da aynı (`m36_f_koyu.png`).
+- **Cihazda doğrulanamayan tek hâl — reklam açık.** `is_premium = 0` ile
+  koşulduğunda UMP onay formunun WebView'ü açılıyor ve emülatörde **ağ yok**
+  (`ping 8.8.8.8` %100 kayıp, `res_stats_usable_server: too many resolution
+  errors`); uygulama açılış ekranında %82 CPU ile asılı kalıyor ve systemui
+  ANR'ye düşüyor. Ortam kısıtı, kodla ilgisi yok. O dal
+  `banner_placement_test`in adaptive yükseklik iddiasıyla ve yukarıdaki
+  mekanizma iddiasıyla kapalı.
+- **Kapsam dışı:** `kBottomNavReservedSpace`in 96 değerinin kendisi (çubuğun
+  64+18'ine göre yeniden ölçülmedi), Ekran 02'nin uzun ekranlardaki `Spacer`sız
+  üst hizalı yerleşimi, banner'ın kaydırma alanının dışında durması kuralı.
+
+---
+
+## 37. Yıllık ısı haritası penceresi
+
+Madde 29 ve 35'in kapsam dışı bıraktığı üç şeyden geriye kalan tek iş. Ekran
+06'daki aylık ızgaranın yanına 52 haftalık bir pencere: yeni sorgu değil,
+`allSessionsProvider`ın aynı listesinden başka bir pencere (madde 35'in
+`monthOffset` kalıbının aynısı). Madde 29'un mutlak seviye eşikleri (1/25/50/90
+dk) yıllık ölçekte yeniden düşünülmeli — bir yılın en yoğun gününe göre
+ölçeklemek aynı sebeple yanlış olur. Gün sınırı yine 04:00 TSİ, tek yerde.
+
+---
+
+## 38. Yayın engelleyicileri — imzalama anahtarı, AdMob kimlikleri, mağaza görselleri
+
+SPEC §10 DoD'de açık kalan kutular ve `docs/play/RELEASE.md`nin açık kutuları.
+Kod tarafı madde 6 ve 9'da hazır; üçü de **dış kaynak** bekliyor:
+
+- `android/key.properties` yok, AAB şu an `CN=Android Debug` ile imzalı. Şablon
+  `key.properties.example`; format PKCS12 (JKS'te `keytool` uyarı basıyor).
+- Gerçek AdMob birim/App ID'leri bir AdMob hesabı gerektiriyor. Kod değişikliği
+  gerekmiyor, `--dart-define` tablosu `docs/play/RELEASE.md` §3'te; şu an
+  Google'ın resmî test kimlikleri kullanılıyor.
+- Simge/feature graphic/ekran görüntüleri. Bu maddenin emülatörde üretilebilecek
+  kısmı var, ama mağaza görselleri için gerçek bir ARM cihaz hâlâ öneriliyor.
+
+---
+
+## 39. Kotlin renderer'ların doğrulama boşluğu (Ring / Strip / Spark)
+
+Madde 31'in kapsam dışı bıraktığı iş: `FlameRenderer` için kurulan iki koşum
+evli sözleşme testi kalıbı (`src/sharedTest` + Robolectric NATIVE + instrumented)
+`RingRenderer`, `StripRenderer` ve `SparkRenderer`a uygulanmadı. Madde 31'de bu
+yaklaşım hiç çalıştırılmamış kodda **gerçek bir hata** bulmuştu (üst kademelerde
+kıvılcımlar sessizce atlanıyordu), yani boşluk teorik değil. Uygulamada görünür
+değişiklik yok; kanıt test koşumu. Türkçe yerel ayarı tuzağı (conscrypt tr-TR'de
+`wındows` arıyor) burada da geçerli: test JVM'i `-Duser.language=en` ile koşmalı.
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı
@@ -1186,7 +1284,7 @@ Kararlar: `DECISIONS.md` "Madde 35". Madde 29'un kapsam dışı bıraktığı ü
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(470 test, `flutter test`)*
+- [x] Testler geçiyor *(471 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

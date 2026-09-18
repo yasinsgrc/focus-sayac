@@ -842,6 +842,7 @@ class _CountdownBody extends ConsumerWidget {
                           // Ekranın birincil eylemi: dalganın yanına basıldığını hissettiren
                           // ölçek de giriyor (madde 20).
                           child: AppPressable(
+                            key: kFocusCtaKey,
                             child: SizedBox(
                               height: 60,
                               child: DecoratedBox(
@@ -893,8 +894,16 @@ class _CountdownBody extends ConsumerWidget {
         // SPEC.md §7.1: banner yalnızca Ekran 02 ve Ekran 06.
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 26),
-          child: BannerAdSlot(bottomMargin: 88),
+          child: BannerAdSlot(),
         ),
+        // Alt gezinme çubuğunun yeri, `BannerAdSlot`ın `bottomMargin`i yerine
+        // burada ayrılıyor (ROADMAP madde 36; Ekran 06 aynısını madde 29'da
+        // yaptı). Yuva reklam **hiç istenmediğinde** — premium ya da UMP onayı
+        // yok — tamamen kapanıyor ve payı da götürüyordu: kaydırılan gövdenin
+        // sonu, yani ODAKLAN'ın kendisi, çubuğun arkasında kalıyordu. Sabit
+        // yerleşimde farkı alttaki boşluk yutuyordu, madde 24'te ekran
+        // kaydırmaya geçince kusur görünür hâle geldi.
+        const SizedBox(height: kBottomNavReservedSpace),
       ],
     );
   }
@@ -911,6 +920,10 @@ const Key kComebackRowKey = Key('comeback-row');
 
 /// Ders hapı — testler seçimi bununla buluyor.
 const Key kSubjectPillKey = Key('subject-pill');
+
+/// Ekranın birincil eylemi (ODAKLAN). Testler kaydırmanın sonunda bu kutunun
+/// alt çubuğun üstünde kaldığını bununla ölçüyor (ROADMAP madde 36).
+const Key kFocusCtaKey = Key('countdown-focus-cta');
 
 /// ODAKLAN'ın üstündeki ders hapı (ROADMAP madde 30).
 ///

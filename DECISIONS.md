@@ -3143,3 +3143,142 @@ kalıyor, uygulama 10220 olarak açamıyor ve açılış ekranında donuyor —
 Yıllık pencere, hücreye uzun basma, seçili günün ders kırılımı, gelecek aya
 gezinme, ay geçişinin animasyonu, ızgara dışındaki kartların geçmiş aya
 bakması (bar chart ve haftalık kapanış yine bugünün penceresi).
+
+---
+
+## Madde 36 — Ekran 02'de alt çubuğun payı reklam yuvasına bağlıydı
+
+### 1. Kusur madde 29'da yazılmıştı, düzeltilmemişti
+
+Madde 29 Ekran 06'da aynı kusuru düzeltirken notuna şunu yazmıştı: "Ekran 02'de
+aynı gizli kusur duruyor — orada içerik henüz o kadar uzamıyor." Bu madde o
+cümlenin kapanışı.
+
+Mekanizma şu: alt gezinme çubuğu `Positioned(bottom: 18)` ile `Stack`te yüzüyor,
+yani yerleşimde yer kaplamıyor. İçeriğin onun altına girmemesi için ekranların
+altta pay bırakması gerekiyor. Ekran 02'de bu pay `BannerAdSlot`ın kendi
+`bottomMargin`indeydi:
+
+    BannerAdSlot(bottomMargin: 88)
+
+`BannerAdSlot` reklam **hiç istenmediğinde** — `canRequestAds()` false, yani
+premium ya da UMP onayı yok — `SizedBox.shrink()` döndürüyor. Bu bilinçli bir
+karar (Faz 11: "asla dolmayacak bir boşluğu ayırmak reklamsız sürümün alanını
+geri vermemek olurdu"), ama yuva kapanınca `bottomMargin` de onunla gidiyor.
+Sonuç: kaydırılan gövdenin sonu çubuğun arkasında kalıyor.
+
+### 2. Neden bugüne kadar görünmedi
+
+Madde 24'e (haftalık hedef) kadar Ekran 02 sabit yerleşimdeydi ve alttaki artan
+boşluk farkı yutuyordu. Madde 24 ekranı kaydırmaya geçirince gövde artık tam
+olarak içerik kadar uzun; kaydırma menzili içeriğin sonunda bitiyor ve altta
+ayrılmış bir pay yoksa son öğe çubuğun altında kalıyor, **kaydırarak da
+kurtarılamıyor**.
+
+Ölçülen fark **−82px**: ODAKLAN'ın alt kenarı çubuğun üst kenarının 82px
+altında, yani 60px'lik butonun tamamı ve üstündeki boşluk çubuğun arkasında.
+Bu ekranın birincil eylemi.
+
+### 3. Düzeltme: pay yuvanın değil yerleşimin işi
+
+Ekran 06'nın madde 29'da yaptığının aynısı — pay kardeş bir `SizedBox`a taşındı:
+
+    const Padding(padding: ..., child: BannerAdSlot()),
+    const SizedBox(height: kBottomNavReservedSpace),
+
+Yuva kapansa da açık kalsa da pay duruyor. Reklam istendiğinde ayrılan alan
+yuvanın yüksekliği kadar **artıyor**; bu yönde bir hata görünürde kayıp değil.
+
+### 4. Üç kaynak tek kaynağa indi
+
+Aynı kavramın kodda üç ayrı ölçüsü vardı: Ekran 02'de çıplak `88` literali,
+Ekran 06'da private `StatsScreen._navBarFootprint = 88`, Ekran 04 ve 07'de
+paylaşılan `kBottomNavReservedSpace = 96`. Üçü de "çubuğun altta kapladığı yer"i
+anlatıyor.
+
+Ekran 02 ve 06 ortak sabite bağlandı. 88 → 96 sekiz piksel daha açıyor: çubuk
+64px yükseklik + 18px alt konum = 82px, yani 88 altı piksel, 96 on dört piksel
+nefes payı bırakıyor. Ekran 02 zaten kaydırmalı olduğu için sekiz piksel taşma
+riski yaratmıyor; ikisini farklı bırakmak ise madde 36'nın kendisinin yeni bir
+tutarsızlık üretmesi olurdu.
+
+### 5. Test: geometriyi ölç, ama boşa koşmasın
+
+`test/features/countdown/nav_bar_footprint_test.dart` 390x640'ta, reklam
+istenmeyen hâlde (`AdService.disabled()`), kaydırmayı sonuna götürüp ODAKLAN'ın
+altı ile çubuğun üstü arasındaki farkı ölçüyor.
+
+İki koruma iddianın kendisinden önce geliyor:
+
+- **`maxScrollExtent > 0`.** İçerik sığsaydı kaydırma hiç devreye girmez, CTA
+  zaten çubuğun çok üstünde kalır ve test kusuru göremeden yeşil yanardı. Bu
+  iddia testin gerçekten bir şey ölçtüğünü garanti ediyor. Ekranın uzun
+  olduğu hâllerde (emülatörün 411x914dp'si) kusur gerçekten yok — testin kısa
+  bir gövde seçmesinin sebebi bu.
+- **`SingleChildScrollView` bulundu.** Gövde yerine yükleniyor hâli kalmışsa
+  (drift tuzağı, aşağıda) iddialar boşa koşardı.
+
+### 6. Karşı kontrol geometriyle değil mekanizmayla
+
+Reklamın **istendiği** hâl ayrı bir `pumpWidget` istiyor ve orada deponun
+belgelediği drift tuzağı devreye giriyor: aynı dosyada ikinci bir `testWidgets`
+— hatta aynı testte ikinci bir `pumpWidget` — göçü yarıda bırakıyor, ekran
+`CircularProgressIndicator`da donuyor ve koşum 10 dakikada zaman aşımına
+düşüyor. Bu dosyanın ilk iki hâli sırayla tam olarak buna düştü.
+
+Karşı kontrol bu yüzden kusurun **mekanizmasını** pinliyor:
+
+    expect(tester.widget<BannerAdSlot>(...).bottomMargin, 0);
+
+Pay yuvaya geri bağlanırsa reklam kapalıyken yine yok olur — test o anda düşer.
+Reklamlı hâlde ayrılan alan yalnızca arttığı için, geometrik iddiayı geçen
+yerleşim orada da geçiyor; ayrıca `banner_placement_test` yuvanın adaptive
+yüksekliği ayırdığını zaten ölçüyor.
+
+### 7. `banner_placement_test` eski mekanizmayı pinliyordu
+
+"Ekran 02 banner istiyor" testi yuvanın yüksekliğini `_adaptiveSize.height + 88`
+bekliyordu — yani payın yuvaya ait olduğunu bir iddia olarak tutuyordu. Pay
+yerleşime taşınınca beklenti `_adaptiveSize.height` oldu. Bu bir testi "düzeltip
+geçirmek" değil: iddia yer değiştirdi, payın gerçekten ayrıldığını artık yeni
+test ölçüyor ve ikisi birlikte eski toplam garantiyi koruyor.
+
+### 8. Emülatör doğrulaması — "önce" görüntüsü bedava geldi
+
+`focussayac_verify` (Android 16), release. Madde 35'in doğrulamasından kalan
+kurulu APK düzeltme **öncesi** hâl olduğu için kusurun görüntüsü yeniden
+derlemeden alındı.
+
+Koşulun iki ayağı var:
+
+- **Yuva kapalı olmalı.** `.verify/m36_seed.py` `is_premium = 1` yazıyor;
+  premium `canRequestAds()`i UMP'ye hiç sormadan kısa devre ettiriyor. UMP dalı
+  ağ/onay durumuna bağlı olduğu için adb'den pinlenemezdi.
+- **İçerik taşmalı.** Emülatörün varsayılan ekranı 411x914dp — orada içerik
+  `font_scale 1.5` ile bile sığıyor ve kusur yok (`m36_a_kusur_ust.png` bunu
+  gösteriyor). Gerçek bir küçük telefon sınıfı emüle edildi: `wm size 720x1440`
+  + `wm density 320` → 360x720dp, `font_scale 1.3`. Uygulama yazı ölçeğini
+  kırpmıyor (`textScaler`/`textScaleFactor` araması `lib/`de boş), yani bu
+  uydurma değil yaşanabilir bir yapılandırma.
+
+Sonuç: kaydırmanın sonunda "1 DAKİKA ODAKLAN" çubuğun arkasında, yalnızca
+kenarlığı üstten sızıyor (`m36_b_kusur.png`). Düzeltilmiş APK birebir aynı
+koşullarda CTA'yı tam görünür bırakıyor (`m36_c_duzeltme.png`); koyu temada
+aynısı (`m36_f_koyu.png`).
+
+### 9. Cihazda kapatılamayan dal: reklam açık
+
+`is_premium = 0` ile koşulduğunda UMP onay formunun WebView'ü açılıyor ve
+emülatörde ağ yok (`ping 8.8.8.8` %100 kayıp, logcat'te
+`res_stats_usable_server: too many resolution errors`). Uygulama açılış
+ekranında %82 CPU ile asılı kalıyor ve systemui ANR'ye düşüyor. Bu ortam
+kısıtı — kodla ilgisi yok ve bu maddenin değiştirdiği hiçbir şeye dokunmuyor.
+O dal test tarafında kapalı (§6, §7).
+
+### 10. Kapsam dışı
+
+`kBottomNavReservedSpace`in 96 değerinin çubuğun gerçek 82px'ine göre yeniden
+ölçülmesi, Ekran 02'nin uzun ekranlarda `Spacer`sız üst hizalı duruşu,
+banner'ın kaydırma alanının dışında kalması kuralı, Ekran 06'nın aynı
+düzeltmesinin geriye dönük regresyon testi (madde 29'da yazılmamıştı; yeni test
+yalnızca Ekran 02'yi ölçüyor).

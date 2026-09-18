@@ -109,9 +109,12 @@ void main() {
     expect(find.text('GÜN KALDI'), findsOneWidget);
     expect(adService.bannerRequests, 1);
     // Yükseklik reklam gelmeden ayrılıyor: yüklenemeyen banner'da da yuva
-    // aynı boyu koruyor (SPEC §7.1 "layout zıplamaz"). 88 alt gezinme
-    // çubuğunun payı.
-    expect(tester.getSize(find.byType(BannerAdSlot)).height, _adaptiveSize.height + 88);
+    // aynı boyu koruyor (SPEC §7.1 "layout zıplamaz"). Alt gezinme çubuğunun
+    // payı **eklenmiyor** — madde 36'da o pay yuvanın `bottomMargin`inden
+    // çıkıp Ekran 06'daki gibi yerleşime (`kBottomNavReservedSpace`) taşındı;
+    // yuvaya bağlıyken reklam hiç istenmediğinde payla birlikte yok oluyordu.
+    // Payın gerçekten ayrıldığını `nav_bar_footprint_test.dart` ölçüyor.
+    expect(tester.getSize(find.byType(BannerAdSlot)).height, _adaptiveSize.height);
 
     await _disposeTree(tester);
   });
@@ -164,11 +167,11 @@ void main() {
 
     expect(adService.bannerSizeRequests, 1);
     expect(adService.bannerRequests, 1);
-    // Ekran 02'nin aksine 88 eklenmiyor: Ekran 06'da alt çubuğun payı
-    // yuvanın `bottomMargin`inde değil yerleşimde (`_navBarFootprint`).
-    // Yuva reklam istenmediğinde tamamen kapandığı için o payı da
-    // götürüyordu ve kaydırılan içeriğin sonu çubuğun arkasına giriyordu
-    // (ROADMAP madde 29).
+    // Çubuğun payı yuvaya eklenmiyor: iki ekranda da yerleşime ait
+    // (`kBottomNavReservedSpace`). Yuva reklam istenmediğinde tamamen
+    // kapandığı için o payı da götürüyordu ve kaydırılan içeriğin sonu
+    // çubuğun arkasına giriyordu — Ekran 06'da ROADMAP madde 29, Ekran 02'de
+    // madde 36 düzeltti.
     expect(tester.getSize(find.byType(BannerAdSlot)).height, kBannerSlotFallbackHeight);
 
     await _disposeTree(tester);
