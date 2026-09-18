@@ -908,24 +908,43 @@ Kararlar: `DECISIONS.md` "Madde 29".
 
 ---
 
-## 30. Ders bazlı seans ⬜ başlanmadı
+## 30. Ders bazlı seans ✅ bitti
 
-**Sorun.** Sınav öğrencisinin asıl takip ettiği metrik ders dağılımı ve
-uygulamada hiç yok — rakiplere karşı en somut boşluk.
+440 test geçiyor (+24). Tasarım belgesi:
+`docs/superpowers/specs/2026-09-17-ders-bazli-seans-design.md`.
+Kararlar: `DECISIONS.md` "Madde 30".
 
-**Kanıt.** `PomodoroSessions` tablosunda (`lib/services/storage/tables.dart:28-36`)
-alanlar: `id`, `examId`, `type`, `plannedDurationSec`, `completed`,
-`breakExtensions`. Ders sütunu yok.
-
-- **Kapsam:** seans başlarken ders seçimi (tek yeni alan + drift göçü), Ekran
-  06'da ders dağılımı, "en çok ihmal ettiğin ders" satırı, haftalık denge.
-- Tek alan, dört yeni içerik yüzeyi açıyor.
-- Göç dikkat ister: mevcut seanslar dersiz kalacak, ekranlar bunu
-  taşıyabilmeli.
-- **Kabul:** ders seçilebiliyor, eski dersiz seanslar hiçbir ekranı
-  kırmıyor, dağılım doğru toplanıyor.
-- **Boyut:** büyük. Bu listedeki en çok iş, ama en savunulabilir
-  farklılaşma.
+- **Şema v6, iki nullable sütun:** `PomodoroSessions.subjectKey` ve
+  `AppSettingsTable.activeSubjectKey`. İkisi de **varsayılansız** — göç alan
+  kullanıcının seansları gerçekten dersiz, onlara kolon varsayılanıyla bir ders
+  atamak veri uydurmak olurdu. `null` = "belirtilmemiş" ve ekranlarda kendi
+  dilimi var.
+- **Katalog sınava göre, kodda** (`domain/subjects/subject_catalog.dart`),
+  rozet kataloğunun kalıbı. Anahtarlar sınavlar arasında paylaşılıyor (YKS'nin
+  ve LGS'nin "Matematik"i aynı `math`); preset'i olmayan sınav genel katalogu
+  alıyor. 18 anahtar, yeni tablo yok.
+- **Yapışkan hap** ODAKLAN'ın üstünde; dokununca hap ızgaralı alt sayfa. ODAKLAN
+  tek dokunuşla başlatmaya devam ediyor — her seansa bir dokunuş eklemek Hızlı
+  Odak widget'ını ve onboarding'in ilk seansını akışın dışında bırakırdı.
+- **Ekran 06'da üç yüzey:** ders dağılımı kartı (çubuk + yüzde), haftalık denge
+  (en çok artan/azalan), "en çok ihmal ettiğin ders". Üçü de `BU HAFTA` kartıyla
+  **aynı** yedi günlük pencereyi kullanıyor.
+- **İhmal yalnızca geçmişi olan ders için:** hiç çalışılmamış ders aday değil,
+  yoksa satır her hafta aynı yedi dersi sayan bir suçlamaya dönerdi.
+- **`startFocus` sınavı DAO'dan okuyor (test sırasında çıktı):** katalog
+  `activeExamProvider`ın akışından gelseydi, soğuk başlangıçta widget'tan açılan
+  seansta geçerli bir ders sessizce kaybolurdu.
+- **Göç testlerinin kurgusu eksikmiş (yan kazanım):** üç eski göç testi yalnızca
+  `app_settings_table` yaratıyordu; v6 seans tablosuna da dokunduğu için üçüne de
+  pre-v6 `pomodoro_sessions` eklendi (tarih sütunları `TEXT`).
+- **Kapsam dışı:** ders başına hedef, ders bazlı rozet, geçmiş seansın dersini
+  düzenleme, kullanıcının kendi dersini yazması, ders bazlı bildirim.
+- **Emülatör doğrulandı (2026-09-18).** Gerçek yükseltme yolu koştu: madde
+  29'dan kalan v5 veritabanı `user_version = 6` olarak açıldı, eski seanslar
+  dersiz, hap boş (`.verify/m30_a_hap_davet.png`); Kimya seçimi ayara ve seansa
+  yazıldı (`m30_c_hap_secili.png`, DB `adb pull` ile doğrulandı); tohumlanmış
+  haftada dağılım, denge ve ihmal satırları doğru (`m30_g_ekran06_dagilim.png`),
+  açık temada rampa tersine dönüyor (`m30_h_ekran06_acik.png`).
 
 ---
 

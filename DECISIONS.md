@@ -2448,3 +2448,115 @@ uzamıyor, o yüzden bu maddede dokunulmadı.
   vermek; gün başına sayı bar chart'ta zaten var.
 - **Yıllık pencere.** 7 satır × 52 sütun düzeni yatay kaydırma ve ayrı bir
   yoğunluk ölçeği ister.
+
+---
+
+## Madde 30 — Ders bazlı seans
+
+Tasarım belgesi: `docs/superpowers/specs/2026-09-17-ders-bazli-seans-design.md`.
+440 test geçiyor (+24). Sınav öğrencisinin asıl takip ettiği metrik ders
+dağılımıydı ve uygulamada hiç yoktu; listedeki en çok iş, en savunulabilir
+farklılaşma.
+
+### 1. Katalog sınava göre ve kodda
+
+`presetKey` → ders anahtarı listesi (`domain/subjects/subject_catalog.dart`),
+rozet kataloğunun kalıbı: DB yalnızca anahtarı tutuyor, ad ARB'den geliyor.
+Yeni tablo yok, **tek yeni sütun**.
+
+Anahtarlar sınavlar arasında **paylaşılıyor**: YKS'nin ve LGS'nin "Matematik"i
+aynı `math`, KPSS'in "GY Matematik"i de. Ayrı anahtar, sınav değiştiren
+kullanıcının geçmişini iki ayrı derse böler ve ARB'ye aynı şeyi söyleyen ikinci
+bir ad eklerdi. 18 anahtar; preset'i olmayan sınav (kullanıcının kendi eklediği)
+ve tanınmayan preset genel katalogu alıyor — boş liste hapı ölü bir düğmeye
+çevirirdi.
+
+### 2. İki nullable sütun, şema v6
+
+`PomodoroSessions.subjectKey` ve `AppSettingsTable.activeSubjectKey`, ikisi de
+**varsayılansız** nullable. Önceki dört göçün kalıbı (kolon varsayılanı mevcut
+satıra da uygulanır) burada yanlış olurdu: göç alan kullanıcının seansları
+gerçekten dersiz, onlara bir ders atamak veri uydurmak olur. `null` =
+"belirtilmemiş" ve ekranlarda kendi dilimi var.
+
+Ders **yalnızca odak** seansına yazılıyor; mola satırları `null`. Alternatif
+(molanın dersi odaktan devralması) `PomodoroPhase`e freezed alan, prefs
+kodlaması ve kurtarma yolu demekti — karşılığında hiçbir yüzeye veri vermeden.
+
+Seçim `SharedPreferences`ta değil `AppSettings`te: aktif sınav zaten orada, ikisi
+aynı anda okunuyor ve aynı anda geçersizleşiyor. Sınav değişince ayar
+**sıfırlanmıyor**, okuma anında doğrulanıyor (`resolveActiveSubject`) — YKS'de
+Kimya seçip LGS'ye bakan kullanıcı YKS'ye dönünce dersini geri buluyor, aradaki
+LGS seansları ise yanlış bir derse değil dersiz yazılıyor.
+
+### 3. Yapışkan hap, zorunlu bir adım değil
+
+Ekran 02'de ODAKLAN'ın üstünde hap; dokununca alt sayfa. ODAKLAN tek dokunuşla
+seansı başlatmaya devam ediyor. Her ODAKLAN'da alt sayfa açmak her seansa bir
+dokunuş eklerdi ve Hızlı Odak widget'ı ile onboarding'in ilk seansı o akışa hiç
+giremezdi. Ders seçilmemişken hap bir davet (`Ders seç`) — maddenin asıl riski
+kimsenin ders seçmemesi.
+
+Alt sayfanın seçim yüzeyi satır listesi değil **hap ızgarası** (`Wrap`): adlar
+kısa, sayıları 2-11; satır listesi YKS'de kaydırma gerektirirdi.
+
+### 4. `startFocus` sınavı DAO'dan okuyor (test sırasında çıktı)
+
+Katalogu belirleyen sınav `activeExamProvider`ın akış değeri olamaz: o akış soğuk
+başlangıçta (widget'tan açılan seans, ekran hiç kurulmadan) henüz yayın yapmamış
+olabiliyor ve katalog genel listeye düşünce **geçerli bir ders sessizce
+kayboluyordu**. Ders seçiliyken sınav `ExamDao.getActiveExam()` ile okunuyor;
+seçim yokken fazladan sorgu yok. Controller testinde ortaya çıktı — sağlayıcı
+akışına abone olmayan bir container'da kimya yazılmıyordu.
+
+### 5. Tek pencere: son yedi uygulama günü
+
+Dağılım da denge de ihmal de `calculateWeeklySummary` ile **birebir aynı**
+pencereyi kullanıyor (bugünle biten yedi gün, karşılaştırma ondan önceki blok).
+Dağılıma ayrı bir aylık pencere açmak tek ekranda iki farklı "şimdi" tanımı
+demekti; Ekran 06 zaten bu pencereyi konuşuyor ("BU HAFTA" kartı, bar chart).
+
+- **Denge:** en çok artan + en çok azalan ders. Önceki pencere boşken ikisi de
+  yok — ilk haftasındaki kullanıcıya kendi sıfırıyla kıyas sunmak
+  `WeeklySummary.hasComparison`ın reddettiği şey. Azalan uç **nötr** tonda,
+  kırmızı yok.
+- **İhmal:** katalogdaki dersler içinde, **daha önce çalışılmış** ama pencerede
+  hiç çalışılmamış olanlardan en uzun süredir dokunulmayanı. Hiç çalışılmamış
+  ders aday değil: YKS katalogunda 11 ders var, kullanıcı haftada 3-4'üne
+  dokunuyor; "hiç çalışmadıkların" her hafta aynı yedi dersi sayan bir suçlama
+  olurdu.
+- **Belirtilmemiş dilim** dağılımda duruyor ama eşitlikte sona düşüyor ve denge
+  uçlarına aday değil ("Belirtilmemiş +40 dk" bir şey söylemiyor). Kart yalnızca
+  bu dilim varken hiç çizilmiyor.
+
+### 6. Göç testlerinin kurgusu eksikmiş (yan kazanım)
+
+v6 göçü `pomodoro_sessions`a da kolon eklediği için üç eski göç testi
+(`theme_mode` / `weekly_summary` / `weekly_goal`) kırıldı: kurguları yalnızca
+`app_settings_table` yaratıyordu, oysa gerçek bir v2-v5 veritabanında seans
+tablosu v1'den beri duruyor. Üçüne de pre-v6 `pomodoro_sessions` eklendi.
+Tarih sütunları `TEXT`: `build.yaml`'daki `store_date_time_values_as_text` ISO
+metin yazıyor, `INTEGER` kurgu okuma anında `FormatException` veriyor.
+
+### 7. Emülatör doğrulandı (2026-09-18)
+
+Cihazda **gerçek yükseltme yolu** koştu: madde 29'dan kalan v5 veritabanı
+açıldığında `user_version = 6`, eski seansların `subject_key`i `NULL`, hap boş
+(`.verify/m30_a_hap_davet.png`). Alt sayfa YKS katalogunu 11 hapla açıyor
+(`m30_b_alt_sayfa.png`), Kimya seçimi hapa ve ayara yazılıyor
+(`m30_c_hap_secili.png`), başlatılan seans `subject_key = 'chemistry'` ile
+düşüyor (DB `adb pull` ile doğrulandı). Tohumlanmış haftada Ekran 06:
+`4sa 45dk` toplam, Matematik %42 / Türkçe %32 / Fizik %16 / Belirtilmemiş %11,
+denge `Türkçe +1sa · Matematik −1sa`, ihmal `Kimya'ya 14 gündür dokunmadın.`
+(`m30_g_ekran06_dagilim.png`); açık temada rampa ısı haritasıyla aynı yönde
+dönüyor (`m30_h_ekran06_acik.png`).
+
+Doğrulama sırasında iki taşma düzeltildi (ikisi de widget testinde yakalandı,
+cihaza hiç gitmedi): kartın başlığı uzun süre metniyle 40px, alt sayfanın
+başlığı uzun ipucuyla 52px taşıyordu. Başlıkta kısa süre biçimine geçildi,
+denge iki satıra alındı, ipucu kısaltılıp esnek yapıldı.
+
+### 8. Kapsam dışı
+
+Ders başına hedef, ders bazlı rozet, geçmiş seansın dersini sonradan düzenleme,
+kullanıcının kendi dersini yazması, ders bazlı bildirim.

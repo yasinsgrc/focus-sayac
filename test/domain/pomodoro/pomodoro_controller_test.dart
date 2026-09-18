@@ -451,4 +451,51 @@ void main() {
     expect(last, isA<DateTime>());
     expect(last!.isAfter(DateTime.now().toUtc()), isTrue);
   });
+
+  // --- Ders bazlı seans (ROADMAP madde 30) ----------------------------------
+
+  test('seçili ders odak seansına yazılıyor, molaya yazılmıyor', () async {
+    final ProviderContainer container = await _buildContainer();
+    addTearDown(container.dispose);
+    final AppDatabase db = container.read(appDatabaseProvider);
+    // Aktif sınav seed'den geliyor (`presetKey = 'yks'`), kimya o katalogda.
+    await db.appSettingsDao.setActiveSubject('chemistry');
+
+    final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
+    await controller.startFocus();
+    await controller.tick();
+    await _waitForSessionCount(container, 2);
+
+    final List<PomodoroSession> sessions = container.read(allSessionsProvider).value!;
+    final PomodoroSession focus =
+        sessions.firstWhere((PomodoroSession s) => s.type == SessionType.focus);
+    final PomodoroSession pause =
+        sessions.firstWhere((PomodoroSession s) => s.type != SessionType.focus);
+
+    expect(focus.subjectKey, 'chemistry');
+    // Mola dersiz: dağılım yalnızca odak seanslarını sayıyor, molanın dersi
+    // hiçbir yüzeye veri vermezdi. (`isNull` burada kullanılamıyor: drift de
+    // aynı adı dışa veriyor.)
+    expect(pause.subjectKey, equals(null));
+  });
+
+  test('katalogda olmayan ders seansa yazılmıyor', () async {
+    final ProviderContainer container = await _buildContainer();
+    addTearDown(container.dispose);
+    final AppDatabase db = container.read(appDatabaseProvider);
+
+    // Aktif sınavı LGS'ye çeviriyoruz; ayarda YKS'den kalan kimya duruyor.
+    final List<Exam> exams = await db.examDao.watchAllExams().first;
+    final Exam lgs = exams.firstWhere((Exam e) => e.presetKey == 'lgs');
+    await db.examDao.setActiveExam(lgs.id);
+    await db.appSettingsDao.setActiveExam(lgs.id);
+    await db.appSettingsDao.setActiveSubject('chemistry');
+
+    await container.read(pomodoroControllerProvider.notifier).startFocus();
+    await _waitForSessionCount(container, 1);
+
+    // Ayar sıfırlanmıyor ama seans yanlış bir derse değil, dersiz yazılıyor.
+    expect(container.read(allSessionsProvider).value!.single.subjectKey, equals(null));
+    expect((await db.appSettingsDao.getSettings()).activeSubjectKey, 'chemistry');
+  });
 }

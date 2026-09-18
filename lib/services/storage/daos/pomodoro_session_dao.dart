@@ -14,11 +14,14 @@ part 'pomodoro_session_dao.g.dart';
 class PomodoroSessionDao extends DatabaseAccessor<AppDatabase> with _$PomodoroSessionDaoMixin {
   PomodoroSessionDao(super.db);
 
+  /// [subjectKey] yalnızca odak seanslarında dolu (ROADMAP madde 30); mola
+  /// satırları dersiz yazılıyor, bkz. `PomodoroSessions.subjectKey`.
   Future<int> startSession({
     required int? examId,
     required SessionType type,
     required DateTime startedAt,
     required int plannedDurationSec,
+    String? subjectKey,
   }) {
     return into(pomodoroSessions).insert(
       PomodoroSessionsCompanion.insert(
@@ -26,6 +29,7 @@ class PomodoroSessionDao extends DatabaseAccessor<AppDatabase> with _$PomodoroSe
         type: type,
         startedAt: startedAt,
         plannedDurationSec: plannedDurationSec,
+        subjectKey: Value<String?>(subjectKey),
       ),
     );
   }

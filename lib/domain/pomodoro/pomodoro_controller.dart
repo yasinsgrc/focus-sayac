@@ -17,6 +17,7 @@ import '../review/app_review_service.dart';
 import '../stats/weekly_summary.dart';
 import '../streak/comeback_status.dart';
 import '../streak/streak_calculator.dart';
+import '../subjects/subject_catalog.dart';
 import 'pomodoro_math.dart';
 import 'pomodoro_phase.dart';
 import 'pomodoro_stats_providers.dart';
@@ -120,11 +121,33 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     final int cyclePosition = completedInCycle + 1;
     final DateTime startedAt = DateTime.now().toUtc();
     final int plannedSec = focusMinutes * 60;
+    // Ders (ROADMAP madde 30): ayardaki seçim aktif sınavın katalogunda
+    // doğrulanıyor. Sınav değiştikten sonra kalmış bir anahtar burada `null`a
+    // düşüyor — seans yanlış bir derse değil, dersiz yazılıyor.
+    //
+    // Hızlı Odak widget'ı ve onboarding'in ilk seansı da bu yoldan geçiyor:
+    // ikisi de `startFocus()` çağırdığı için ders seçiliyse onlarda da yazılıyor.
+    //
+    // Katalogu belirleyen sınav, yukarıdaki `exam` **olmayabilir**: o değer
+    // `activeExamProvider` akışından geliyor ve soğuk başlangıçta (widget'tan
+    // açılan seans, ekran hiç kurulmadan) henüz yayın yapmamış olabiliyor.
+    // O anda katalog genel listeye düşer ve geçerli bir ders sessizce
+    // kaybolurdu; bu yüzden ders seçiliyken sınav DAO'dan okunuyor. Seçim yokken
+    // fazladan sorgu da yok.
+    String? subjectKey;
+    if (settings.activeSubjectKey != null) {
+      final Exam? subjectExam = exam ?? await ref.read(examDaoProvider).getActiveExam();
+      subjectKey = resolveActiveSubject(
+        settings.activeSubjectKey,
+        subjectsForExam(subjectExam?.presetKey),
+      );
+    }
     final int sessionId = await ref.read(pomodoroSessionDaoProvider).startSession(
           examId: exam?.id,
           type: SessionType.focus,
           startedAt: startedAt,
           plannedDurationSec: plannedSec,
+          subjectKey: subjectKey,
         );
     state = PomodoroPhase.focusRunning(
       sessionId: sessionId,

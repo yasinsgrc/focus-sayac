@@ -29,12 +29,15 @@ import '../../domain/stats/stats_providers.dart';
 import '../../domain/stats/weekly_goal.dart';
 import '../../domain/streak/comeback_status.dart';
 import '../../domain/streak/streak_calculator.dart';
+import '../../domain/subjects/subject_catalog.dart';
+import '../../domain/subjects/subject_providers.dart';
 import '../../domain/time/duration_formatter.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/ads/banner_ad_slot.dart';
 import '../../services/storage/app_database.dart';
 import 'widgets/countdown_ring_painter.dart';
 import 'widgets/exam_picker_sheet.dart';
+import 'widgets/subject_picker_sheet.dart';
 
 /// Ekran 02 — geri sayım. Prototip satır 68-135 birebir; telefon çerçevesi
 /// (46px radius, sahte 9:41 durum çubuğu) tasarım aracının mockup'ı, gerçek
@@ -796,8 +799,16 @@ class _CountdownBody extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 14),
+                        // Ders hapı (ROADMAP madde 30): seçim **butonun
+                        // üstünde** duruyor ve ODAKLAN tek dokunuşla seansı
+                        // başlatmaya devam ediyor. Alternatif, butona basınca
+                        // önce alt sayfayı açmaktı; her seansa bir dokunuş
+                        // eklerdi ve Hızlı Odak widget'ı ile onboarding'in ilk
+                        // seansı o akışa hiç giremezdi.
+                        RiseIn(delay: RiseIn.step * 3, child: const _SubjectPill()),
+                        const SizedBox(height: 8),
                         RiseIn(
-                          delay: RiseIn.step * 3,
+                          delay: RiseIn.step * 4,
                           // Ekranın birincil eylemi: dalganın yanına basıldığını hissettiren
                           // ölçek de giriyor (madde 20).
                           child: AppPressable(
@@ -867,6 +878,90 @@ const Key kWeeklyGoalProgressKey = Key('weekly-goal-progress');
 /// Dönüş şeridi anahtarı — testler kartın hangi satırına baktığını bununla
 /// söylüyor.
 const Key kComebackRowKey = Key('comeback-row');
+
+/// Ders hapı — testler seçimi bununla buluyor.
+const Key kSubjectPillKey = Key('subject-pill');
+
+/// ODAKLAN'ın üstündeki ders hapı (ROADMAP madde 30).
+///
+/// Yapışkan: son seçilen ders ayarda duruyor (`AppSettings.activeSubjectKey`)
+/// ve bir sonraki seansa yazılıyor. Hap ne gösteriyorsa seansa o gidiyor —
+/// ikisi de `resolveActiveSubject`ten geçiyor (`activeSubjectProvider`).
+///
+/// Ders seçilmemişken satır bir **davet**: `Ders seç`. Boş bir hap yerine
+/// eylemi yazmak, madde 30'un asıl riskini (kimse ders seçmezse dağılım
+/// yüzeyleri boş kalır) doğrudan karşılıyor.
+class _SubjectPill extends ConsumerWidget {
+  const _SubjectPill();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppColors colors = Theme.of(context).extension<AppColors>()!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String? subjectKey = ref.watch(activeSubjectProvider);
+    final bool hasSubject = subjectKey != null;
+    final String label = hasSubject ? subjectName(l10n, subjectKey) : l10n.countdownSubjectPickCta;
+
+    return Semantics(
+      key: kSubjectPillKey,
+      container: true,
+      button: true,
+      excludeSemantics: true,
+      label: l10n.countdownSubjectSemantics(label),
+      child: AppPressable(
+        // Halkanın altındaki geniş ve alçak yüzey — sınav satırıyla aynı ölçek
+        // (`_ExamRow`: 0.99).
+        scale: 0.99,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: () => showSubjectPickerSheet(context),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.fillMedium),
+              ),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      // Seçili ders ember, davet nötr: hap dolu olduğunda
+                      // ekranın vurgu rengine katılıyor.
+                      color: hasSubject ? colors.ember : colors.neutral600,
+                    ),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.label(
+                        fontSize: AppTextSize.md,
+                        weight: FontWeight.w500,
+                        color: hasSubject ? colors.text : colors.neutral400,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    l10n.countdownSubjectChange,
+                    style:
+                        AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// `BUGÜN` kartının dönüş satırı (ROADMAP madde 26).
 ///

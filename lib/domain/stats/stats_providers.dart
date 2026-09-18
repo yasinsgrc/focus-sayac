@@ -4,8 +4,10 @@ import '../../core/time/app_day.dart';
 import '../../services/storage/app_database.dart';
 import '../pomodoro/pomodoro_stats_providers.dart';
 import '../settings/settings_providers.dart';
+import '../subjects/subject_providers.dart';
 import 'focus_stats.dart';
 import 'monthly_heatmap.dart';
+import 'subject_breakdown.dart';
 import 'weekly_goal.dart';
 import 'weekly_summary.dart';
 
@@ -28,6 +30,22 @@ final Provider<MonthlyHeatmap> monthlyHeatmapProvider = Provider<MonthlyHeatmap>
   final List<PomodoroSession> sessions =
       ref.watch(allSessionsProvider).value ?? const <PomodoroSession>[];
   return calculateMonthlyHeatmap(sessions: sessions, nowUtc: DateTime.now().toUtc());
+});
+
+/// Ekran 06'nın ders dağılımı (ROADMAP madde 30).
+///
+/// Katalog `subjectCatalogProvider`dan geliyor, yani aktif sınava bağlı:
+/// dağılımın kendisi katalogla sınırlı değil ama "ihmal ettiğin ders" yalnızca
+/// o sınavın dersleri arasından seçiliyor — LGS'ye geçen kullanıcıya Felsefe
+/// hatırlatılmıyor.
+final Provider<SubjectBreakdown> subjectBreakdownProvider = Provider<SubjectBreakdown>((Ref ref) {
+  final List<PomodoroSession> sessions =
+      ref.watch(allSessionsProvider).value ?? const <PomodoroSession>[];
+  return calculateSubjectBreakdown(
+    sessions: sessions,
+    catalog: ref.watch(subjectCatalogProvider),
+    nowUtc: DateTime.now().toUtc(),
+  );
 });
 
 /// Belirli bir sınav için biriken odak süresi (saniye) — Ekran 02'nin son

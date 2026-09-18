@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -65,6 +65,15 @@ class AppDatabase extends _$AppDatabase {
             // yani güncelleme alan kullanıcı hedefi 5 saatte açık buluyor;
             // kapatma yolu Ekran 07'de (slider 0 = kapalı).
             await m.addColumn(appSettingsTable, appSettingsTable.weeklyGoalMinutes);
+          }
+          if (from < 6) {
+            // Ders bazlı seans (ROADMAP madde 30). Önceki dört göçten farkı:
+            // iki sütun da **varsayılansız nullable**, yani yükseltme alan
+            // kullanıcının biriken seansları dersiz kalıyor ve hapı da boş
+            // açılıyor. Kasıtlı — geçmişe bir ders atamak veri uydurmak olurdu
+            // (`PomodoroSessions.subjectKey` gerekçesi).
+            await m.addColumn(pomodoroSessions, pomodoroSessions.subjectKey);
+            await m.addColumn(appSettingsTable, appSettingsTable.activeSubjectKey);
           }
         },
       );

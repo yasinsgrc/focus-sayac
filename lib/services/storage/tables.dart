@@ -34,6 +34,20 @@ class PomodoroSessions extends Table {
   IntColumn get plannedDurationSec => integer()();
   BoolColumn get completed => boolean().withDefault(const Constant(false))();
   IntColumn get breakExtensions => integer().withDefault(const Constant(0))();
+
+  /// Seansın dersi (ROADMAP madde 30). Katalog koddadır
+  /// (`domain/subjects/subject_catalog.dart`), burada yalnızca anahtar durur —
+  /// `UserBadges.badgeKey` ile aynı kalıp, yani bir kez yayınlanan anahtar
+  /// değişmemeli.
+  ///
+  /// Varsayılansız nullable: `null` = "belirtilmemiş" ve ekranlarda kendi
+  /// dilimi var. Göç alan kullanıcının eski seansları gerçekten dersiz;
+  /// onlara kolon varsayılanıyla bir ders atamak veri uydurmak olurdu.
+  ///
+  /// Yalnızca **odak** seanslarına yazılıyor; mola satırları `null` kalıyor.
+  /// Dağılım zaten tamamlanmış odak seanslarını sayıyor, molanın dersi hiçbir
+  /// yüzeye veri vermezdi.
+  TextColumn get subjectKey => text().nullable()();
 }
 
 /// Açılmış rozetler. Yalnızca açılan rozet için satır yazılır — statik
@@ -86,6 +100,15 @@ class AppSettingsTable extends Table {
   /// zaten tek koyu temaydı, cihazı koyu olan kullanıcı hiçbir değişiklik
   /// görmez.
   TextColumn get themeMode => textEnum<AppThemeMode>().withDefault(const Constant('system'))();
+
+  /// Ekran 02'nin ders hapında duran, bir sonraki seansa yazılacak ders
+  /// (ROADMAP madde 30). `activeExamId` ile aynı yerde: ikisi `startFocus()`ta
+  /// aynı anda okunuyor ve sınav değiştiğinde ikisi aynı anda geçersizleşiyor.
+  ///
+  /// Sınav değişince **sıfırlanmıyor**; okuma anında aktif sınavın katalogunda
+  /// doğrulanıyor (`resolveActiveSubject`). Böylece YKS'de Kimya seçip LGS'ye
+  /// bakan kullanıcı YKS'ye dönünce dersini geri buluyor.
+  TextColumn get activeSubjectKey => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};

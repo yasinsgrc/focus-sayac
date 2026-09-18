@@ -30,11 +30,30 @@ void main() {
     )
   ''';
 
+  /// v6 göçü (ROADMAP madde 30) `pomodoro_sessions`a da kolon ekliyor, yani
+  /// kurgu artık o tabloyu da kurmak zorunda — gerçek bir v2 veritabanında
+  /// tablo v1'den beri duruyor. Sütunlar v1-v5 hâliyle: `subject_key` yok.
+  /// `exam_id`nin `REFERENCES exams (id)` kısıtı kurguda yok; bu testlerin
+  /// konusu ALTER yolu, sınav tablosu hiç açılmıyor.
+  const String createPreV6Sessions = '''
+    CREATE TABLE pomodoro_sessions (
+      id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+      exam_id INTEGER,
+      type TEXT NOT NULL,
+      started_at TEXT NOT NULL,
+      completed_at TEXT,
+      planned_duration_sec INTEGER NOT NULL,
+      completed INTEGER NOT NULL DEFAULT 0,
+      break_extensions INTEGER NOT NULL DEFAULT 0
+    )
+  ''';
+
   AppDatabase openUpgradedFromV2() {
     final NativeDatabase executor = NativeDatabase.memory(
       setup: (Database raw) {
         raw
           ..execute(createV2Settings)
+          ..execute(createPreV6Sessions)
           // Kullanicinin v2'de biriktirdigi ayarlar: migration bunlari
           // korumali, yalnizca yeni kolonu eklemeli.
           ..execute(

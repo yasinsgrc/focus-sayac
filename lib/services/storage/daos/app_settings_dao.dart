@@ -34,4 +34,13 @@ class AppSettingsDao extends DatabaseAccessor<AppDatabase> with _$AppSettingsDao
   Future<void> clearActiveExam() {
     return updateSettings(const AppSettingsTableCompanion(activeExamId: Value<int?>(null)));
   }
+
+  /// Ekran 02'nin ders hapı (ROADMAP madde 30). [subjectKey] `null` ise ders
+  /// belirtilmemiş demektir — alt sayfanın "Ders belirtme" çıkışı buraya
+  /// düşüyor, ayrı bir temizleme metodu yok. `clearActiveExam`den farkı bu:
+  /// sınavın `Exams.isActive` bayrağıyla eşlenmesi gerekiyordu, dersin
+  /// eşleneceği ikinci bir tablo yok.
+  Future<void> setActiveSubject(String? subjectKey) {
+    return updateSettings(AppSettingsTableCompanion(activeSubjectKey: Value<String?>(subjectKey)));
+  }
 }

@@ -10,11 +10,13 @@ import '../../core/widgets/rolling_number.dart';
 import '../../domain/stats/focus_stats.dart';
 import '../../domain/stats/monthly_heatmap.dart';
 import '../../domain/stats/stats_providers.dart';
+import '../../domain/stats/subject_breakdown.dart';
 import '../../domain/stats/weekly_summary.dart';
 import '../../domain/time/duration_formatter.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/ads/banner_ad_slot.dart';
 import 'widgets/monthly_heatmap_card.dart';
+import 'widgets/subject_breakdown_card.dart';
 import 'widgets/weekly_focus_bar_painter.dart';
 
 /// Ekran 06 — istatistik. Prototip v2 satır 248-285 birebir. Prototipin
@@ -119,6 +121,7 @@ class _StatsBody extends ConsumerWidget {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final FocusStats stats = ref.watch(focusStatsProvider);
     final MonthlyHeatmap heatmap = ref.watch(monthlyHeatmapProvider);
+    final SubjectBreakdown breakdown = ref.watch(subjectBreakdownProvider);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(26, 6, 26, 0),
@@ -211,10 +214,23 @@ class _StatsBody extends ConsumerWidget {
               ],
             ),
           ),
-          if (stats.productiveWindow != null) ...<Widget>[
+          // Ders dağılımı (ROADMAP madde 30): haftalık pencereyi konuşan
+          // kartların yanında, aylık ısı haritasının üstünde.
+          //
+          // Tek dilim belirtilmemişse kart hiç çizilmiyor: henüz ders seçmemiş
+          // (ya da göçten yeni gelmiş) kullanıcıya "Belirtilmemiş %100" tek
+          // satırı bir dağılım değil, boş bir kutu gösterirdi.
+          if (breakdown.slices.any((SubjectSlice s) => s.key != null)) ...<Widget>[
             const SizedBox(height: 12),
             RiseIn(
               delay: RiseIn.step * 6,
+              child: SubjectBreakdownCard(breakdown: breakdown),
+            ),
+          ],
+          if (stats.productiveWindow != null) ...<Widget>[
+            const SizedBox(height: 12),
+            RiseIn(
+              delay: RiseIn.step * 7,
               child: _ProductiveWindowCard(window: stats.productiveWindow!),
             ),
           ],
@@ -223,7 +239,7 @@ class _StatsBody extends ConsumerWidget {
           // dakikalarını veriyor, ızgara ise ritmi — hangi günler çalışıldığını
           // ve boşluğun nerede açıldığını.
           RiseIn(
-            delay: RiseIn.step * 7,
+            delay: RiseIn.step * 8,
             child: MonthlyHeatmapCard(heatmap: heatmap),
           ),
           const SizedBox(height: 12),

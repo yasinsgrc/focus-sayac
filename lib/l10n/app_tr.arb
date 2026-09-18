@@ -456,6 +456,80 @@
   "statsHeatmapLegendLow": "az",
   "statsHeatmapLegendHigh": "çok",
 
+  "subjectMath": "Matematik",
+  "subjectGeometry": "Geometri",
+  "subjectTurkish": "Türkçe",
+  "subjectPhysics": "Fizik",
+  "subjectChemistry": "Kimya",
+  "subjectBiology": "Biyoloji",
+  "subjectHistory": "Tarih",
+  "subjectGeography": "Coğrafya",
+  "subjectPhilosophy": "Felsefe",
+  "subjectReligion": "Din Kültürü",
+  "subjectForeignLanguage": "Yabancı Dil",
+  "subjectScience": "Fen Bilimleri",
+  "subjectSocialScience": "Sosyal Bilimler",
+  "subjectRevolutionHistory": "İnkılap Tarihi",
+  "subjectCitizenship": "Vatandaşlık",
+  "subjectCurrentAffairs": "Güncel Bilgiler",
+  "subjectQuantitative": "Sayısal",
+  "subjectVerbal": "Sözel",
+  "subjectUnspecified": "Belirtilmemiş",
+  "@subjectUnspecified": {
+    "description": "Dersi olmayan seansların dağılımdaki adı (ROADMAP madde 30). Göçten gelen tüm geçmiş ve ders seçmeden başlatılan seanslar burada; tanınmayan bir anahtar da buraya düşüyor."
+  },
+
+  "countdownSubjectPickCta": "Ders seç",
+  "countdownSubjectChange": "değiştir",
+  "countdownSubjectSemantics": "Seçili ders {subject}. Değiştirmek için dokun.",
+  "@countdownSubjectSemantics": {
+    "placeholders": { "subject": { "type": "String" } }
+  },
+  "subjectPickerTitle": "DERS SEÇ",
+  "subjectPickerHint": "SEANSA YAZILIR",
+  "subjectPickerClear": "Ders belirtme",
+
+  "statsSubjectLabel": "DERS DAĞILIMI",
+  "statsSubjectPercent": "%{percent}",
+  "@statsSubjectPercent": {
+    "placeholders": { "percent": { "type": "int" } }
+  },
+  "statsSubjectBalanceLabel": "GEÇEN HAFTAYA GÖRE",
+  "@statsSubjectBalanceLabel": {
+    "description": "Kicker stilinde çizildiği için büyük harf (AppTypography.kicker çağıran her yerin kuralı)."
+  },
+  "statsSubjectShiftUp": "{subject} +{duration}",
+  "@statsSubjectShiftUp": {
+    "description": "Haftalık denge satırının artan ucu; duration kısa biçimde (4sa 30dk).",
+    "placeholders": {
+      "subject": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "statsSubjectShiftDown": "{subject} −{duration}",
+  "@statsSubjectShiftDown": {
+    "placeholders": {
+      "subject": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "statsSubjectNeglect": "{subject} {days} gündür dokunmadın.",
+  "@statsSubjectNeglect": {
+    "description": "En çok ihmal edilen ders (ROADMAP madde 30). subject yönelme ekiyle birlikte geliyor (dativeSuffix): 'Kimya'ya'. Ton suçlayıcı değil, kırmızı da yok.",
+    "placeholders": {
+      "subject": { "type": "String" },
+      "days": { "type": "int" }
+    }
+  },
+  "statsSubjectSemantics": "Bu hafta {count} derste toplam {duration} odaklandın.",
+  "@statsSubjectSemantics": {
+    "description": "Dağılım kartının ekran okuyucu karşılığı; kart tek durak olarak okunuyor (ısı haritasıyla aynı kalıp).",
+    "placeholders": {
+      "count": { "type": "int" },
+      "duration": { "type": "String" }
+    }
+  },
+
   "settingsTitle": "AYARLAR",
   "settingsLoadError": "Ayarlar okunamadı.",
   "settingsDurationsSection": "SÜRELER",
