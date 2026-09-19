@@ -411,7 +411,7 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     // bir tik geride olabilir ve eşik kutlaması bir gün şaşardı.
     final List<PomodoroSession> completedFocus =
         await ref.read(pomodoroSessionDaoProvider).getAllCompletedFocusSessions();
-    await _rescheduleWeeklySummary(completedFocus);
+    await _rescheduleWeeklySummary(completedFocus, settings.weeklyGoalMinutes);
     await _rescheduleComebackReminder(completedFocus);
     await _offerCelebration(unlockedBadges, completedFocus);
     await _haptic();
@@ -426,7 +426,11 @@ class PomodoroController extends Notifier<PomodoroPhase> {
   /// tamamlanışında çağrılıyor: odak yalnızca uygulama içinde birikebildiği
   /// için bildirimdeki sayı böylece hiç bayatlamıyor (bkz.
   /// [NotificationService.rescheduleWeeklySummary]).
-  Future<void> _rescheduleWeeklySummary(List<PomodoroSession> completedFocus) async {
+  ///
+  /// [goalMinutes] çağıranın elindeki ayardan geliyor ([_completeFocus] onu
+  /// mola süresi için zaten okumuş): hedef de bildirimin sayıları kadar taze
+  /// olsun diye, ikinci bir sorgu açmadan (ROADMAP madde 42).
+  Future<void> _rescheduleWeeklySummary(List<PomodoroSession> completedFocus, int goalMinutes) async {
     final DateTime sendAtUtc = nextWeeklySummaryUtc(DateTime.now().toUtc());
     final WeeklySummary summary = calculateWeeklySummary(
       sessions: completedFocus,
@@ -436,6 +440,8 @@ class PomodoroController extends Notifier<PomodoroPhase> {
       sendAtUtc: sendAtUtc,
       seconds: summary.seconds,
       previousSeconds: summary.previousSeconds,
+      // Kolon dakika tutuyor (`tables.dart`), hedefin geri kalanı saniye konuşuyor.
+      goalSeconds: goalMinutes * 60,
     );
   }
 

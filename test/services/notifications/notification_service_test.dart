@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:focussayac/domain/time/duration_formatter.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 
 import '../../support/localized_test_app.dart';
@@ -271,6 +272,123 @@ void main() {
       );
 
       expect(calls.map((MethodCall call) => call.method), <String>['cancel']);
+    });
+  });
+
+  // ROADMAP madde 42: haftalık kapanış hedefi de söylüyor. Kural "hedef
+  // tuttuysa gövde **kıyas cümlesinin yerine** hedef cümlesi" — yanına değil,
+  // yoksa dört varyant sekize çıkardı (madde 24'ün bu işi kapsam dışı bırakma
+  // gerekçesi). Bu yüzden testler gövdeyi tek tek eşitliyor: "hedef cümlesi
+  // var mı" yetmez, kıyas cümlesinin **gitmiş** olması da iddianın parçası.
+  group('haftalık kapanış hedefi', () {
+    /// Hedefi tam karşılayan hafta: 5sa hedef, 5sa 20dk odak.
+    const int goalSeconds = 5 * 3600;
+    const int focusedSeconds = goalSeconds + 20 * 60;
+    const int previousSeconds = 4 * 3600;
+
+    /// Gönderim anı ileride olmalı, yoksa `zonedSchedule` hiç çağrılmıyor.
+    final DateTime sendAtUtc = DateTime.now().toUtc().add(const Duration(days: 2));
+
+    String scheduledBody() {
+      final MethodCall call = calls.singleWhere((MethodCall call) => call.method == 'zonedSchedule');
+      return (call.arguments as Map<Object?, Object?>)['body']! as String;
+    }
+
+    test('hedef tutunca kıyas cümlesinin yerini hedef cümlesi alıyor', () async {
+      final NotificationService service = await serviceWith(notificationsEnabled: true);
+
+      await service.rescheduleWeeklySummary(
+        sendAtUtc: sendAtUtc,
+        seconds: focusedSeconds,
+        previousSeconds: previousSeconds,
+        goalSeconds: goalSeconds,
+      );
+
+      expect(
+        scheduledBody(),
+        testL10n.notificationWeeklySummaryBodyGoalReached(spellFocusDuration(testL10n, focusedSeconds)),
+      );
+      // Kıyas gerçekten düştü: bu sayılarla (+1sa 20dk) normalde "arttı"
+      // varyantı kurulurdu.
+      expect(scheduledBody(), isNot(contains('geçen hafta')));
+    });
+
+    // Madde 24 sınırı **dahil** saymıştı (`WeeklyGoalProgress.isReached`);
+    // bildirim o kararı kendi `>=`siyle yeniden yazmıyor.
+    test('hedef tam karşılanınca da tutmuş sayılıyor', () async {
+      final NotificationService service = await serviceWith(notificationsEnabled: true);
+
+      await service.rescheduleWeeklySummary(
+        sendAtUtc: sendAtUtc,
+        seconds: goalSeconds,
+        previousSeconds: previousSeconds,
+        goalSeconds: goalSeconds,
+      );
+
+      expect(
+        scheduledBody(),
+        testL10n.notificationWeeklySummaryBodyGoalReached(spellFocusDuration(testL10n, goalSeconds)),
+      );
+    });
+
+    // Eksiklik hiç dile getirilmiyor: haftayı kapatan bildirimde kapatılamaz
+    // bir eksiği okumak ölçen bir ton kurardı (tasarım belgesi, karar 1).
+    test('hedef tutmayınca bugünkü kıyas cümlesi aynen kuruluyor', () async {
+      final NotificationService service = await serviceWith(notificationsEnabled: true);
+
+      await service.rescheduleWeeklySummary(
+        sendAtUtc: sendAtUtc,
+        seconds: focusedSeconds,
+        previousSeconds: previousSeconds,
+        goalSeconds: 20 * 3600,
+      );
+
+      expect(
+        scheduledBody(),
+        testL10n.notificationWeeklySummaryBodyUp(
+          spellFocusDuration(testL10n, focusedSeconds),
+          spellFocusDuration(testL10n, focusedSeconds - previousSeconds),
+        ),
+      );
+    });
+
+    // Hedefi kapalı kullanıcı dört varyantta kalıyor: koymadığı bir hedefi
+    // tutturmuş saymak `WeeklyGoalProgress.isReached`in de reddettiği şey.
+    test('hedef kapalıyken hedef cümlesi hiç kurulmuyor', () async {
+      final NotificationService service = await serviceWith(notificationsEnabled: true);
+
+      await service.rescheduleWeeklySummary(
+        sendAtUtc: sendAtUtc,
+        seconds: focusedSeconds,
+        previousSeconds: previousSeconds,
+        goalSeconds: 0,
+      );
+
+      expect(
+        scheduledBody(),
+        testL10n.notificationWeeklySummaryBodyUp(
+          spellFocusDuration(testL10n, focusedSeconds),
+          spellFocusDuration(testL10n, focusedSeconds - previousSeconds),
+        ),
+      );
+    });
+
+    // İlk haftasında hedefini tutturan kullanıcı da hedef cümlesini almalı:
+    // hedef dallanması kıyassızlık dallanmasının **önünde**.
+    test('ilk haftada hedef tutunca hedef cümlesi kuruluyor', () async {
+      final NotificationService service = await serviceWith(notificationsEnabled: true);
+
+      await service.rescheduleWeeklySummary(
+        sendAtUtc: sendAtUtc,
+        seconds: focusedSeconds,
+        previousSeconds: 0,
+        goalSeconds: goalSeconds,
+      );
+
+      expect(
+        scheduledBody(),
+        testL10n.notificationWeeklySummaryBodyGoalReached(spellFocusDuration(testL10n, focusedSeconds)),
+      );
     });
   });
 }

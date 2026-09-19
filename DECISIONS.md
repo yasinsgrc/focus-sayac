@@ -3833,3 +3833,104 @@ hiç görünmüyor, Ekran 02'de `colors.fillSubtle` ile görünüyor. Madde 41 b
 kusuru yaratmadı, mevcut iki ize üçüncüyü ekledi. Düzeltmek izleri
 `FocusPalette`e bağlamayı ve madde 39'un "halkanın izleri temadan bağımsız"
 varsayımını gözden geçirmeyi gerektiriyor — **madde 44** oldu.
+
+---
+
+## Madde 42 — Pazar bildirimi haftalık hedefi söylüyor
+
+Madde 24'ün kapsam dışı bıraktığı iş. Haftalık hedef Ekran 07'nin slider'ında,
+Ekran 02'nin çubuğunda ve (madde 41'den beri) widget'ın emek yayında duruyordu;
+haftayı **kapatan** cümlede yoktu. `rescheduleWeeklySummary`nin imzasında hedef
+diye bir şey yoktu (`seconds`, `previousSeconds`), yani hedefini tutturan
+kullanıcı da tutturamayan da aynı dört gövdeden birini alıyordu.
+
+Tasarım: `docs/superpowers/specs/2026-09-19-pazar-bildirimi-hedef-design.md`.
+
+### 1. Hedef cümlesi kıyas cümlesinin **yerine** geçiyor, yanına değil
+
+Madde 24 bu işi iki riskle kapsam dışı bırakmıştı: dört varyantı sekize
+çıkarmak ve "yüzde değil fark" kararıyla çelişen bir dil kurmak. İkisinden de
+kaçınan kural tek cümle — **hedef karşılandıysa gövde hedef cümlesidir**,
+karşılanmadıysa bugünkü dört gövde aynen kalır. Hedef, varyantların yanına
+ikinci bir cümle olarak eklenmediği için çarpım olmuyor: 4 → 5.
+
+"Haftalık hedefin tamam — ayrıca geçen haftadan 40dk fazla" reddedildi: bir
+bildirim gövdesinin taşıyabileceği tek bir haber var, ve hedefin tutması o
+haftanın daha büyük haberi. Aynı gerekçeyle hedef dallanması kıyassızlık
+dallanmasının **önünde**: ilk haftasında hedefini tutturan kullanıcı da hedef
+cümlesini alıyor.
+
+### 2. Eksiklik hiç dile getirilmiyor
+
+Simetrik kural ("tutmadıysa hedefine X kaldı") bildirimin saatiyle aslında
+uyumluydu: 20:00 TSİ'de pencere henüz kapanmamış (uygulama günü ertesi 04:00'te
+biter) ve `kWeeklySummaryHour`un gerekçesi zaten "özeti gördükten sonra o akşam
+hâlâ bir pomodoro vakti kalsın". Yine de reddedildi, çünkü aynı kural 20sa
+hedefin 1sa'sinde duran kullanıcıya "hedefine 19sa kaldı" derdi — haftayı
+kapatan bir bildirimde kapatılamaz bir eksiği okumak ölçen ton.
+
+Eşik koymak (kalan ≤ bir odak seansı) bunu çözerdi ama maddenin kapsam dışı
+notu "hedef dolmadığında ayrı bir hatırlatma bildirimi"ni zaten dışarıda
+bırakmış; eksikliği konuşan her cümle o bildirimin küçük hâli. Bu karar onun
+önünü kapatmıyor: bu madde yalnızca "tuttu" hâlini sahipleniyor.
+
+### 3. "Tuttu mu" kararı `WeeklyGoalProgress`ten okunuyor
+
+Bildirim kendi `>=`sini yazmıyor; `goalSeconds`/`focusedSeconds` ile bir
+`WeeklyGoalProgress` kurup `isReached` soruyor. Madde 24'ün iki kararı orada
+gömülü ve ikisi bildirim için de geçerli: sınır **dahil** (hedefi tam karşılayan
+hafta tamamlanmış), ve kapalı hedef hiçbir zaman ulaşılmış sayılmıyor. Elle
+yazılmış ikinci bir karşılaştırma bunları sessizce ayırabilirdi — Ekran 02'nin
+çubuğu "tamam" derken bildirimin "geçen haftadan fazla" demesi.
+
+Katman sınırı çiğnenmiyor: `services/notifications` `services/storage`e
+bağlanmıyor (`NotificationPreferences`in var oluş sebebi bu) ama saf `domain`
+yapraklarına bağlanıyor — `domain/time/duration_formatter` ve
+`domain/flame/flame_tier` zaten import edilmiş. `domain/stats/weekly_goal.dart`
+hiçbir şey import etmiyor, aynı sınıftan bir yaprak.
+
+### 4. Hedef, saniyesiyle aynı yoldan geliyor
+
+`rescheduleWeeklySummary` `goalSeconds` alıyor; servis ayarı kendisi okumuyor
+(`NotificationPreferences` dışındaki her ayar çağıranın işi, eşleme tek yerde).
+İki çağıran da değeri zaten ellerinde tutuyor: `main.dart` açılışta DAO'dan,
+`PomodoroController._completeFocus` ise mola süresi için okuduğu `settings`ten
+— ikinci bir sorgu açılmıyor.
+
+### 5. Cümlede hedefin sayısı geçmiyor
+
+`Bu hafta {total} odaklandın — haftalık hedefin tamam.` Mevcut dört gövdenin
+iskeletine oturuyor (aynı baş, tireden sonra ikinci yarı), yani beşinci varyant
+yeni bir cümle biçimi getirmiyor. "Haftalık" sıfatı Ekran 02'nin rozetinde
+(`Hedef tamam`) yok çünkü orada satır zaten `BU HAFTA` yazıyor; bildirimde cümle
+tek başına okunuyor. Hedefin sayısı yok: "10 saat 5 dakika odaklandın, hedefin
+tamam" zaten hedefin o sayının altında olduğunu söylüyor.
+
+### 6. Bayatlama: Ekran 07 bir yeniden kurma noktası değil
+
+Bildirim kurulduğu **andaki** hedefle kuruluyor. Kullanıcı hedefi yükseltip
+uygulamayı bir daha açmazsa ve o hafta hiç odak tamamlamazsa, kurulu "hedefin
+tamam" cümlesi eski hedefe ait kalır.
+
+Bu pencere yeni değil, mevcut mimarinin penceresi: Ekran 07 hiçbir ayar
+yazısında bildirim yeniden kurmuyor — `notificationsEnabled`ı kapatmak bile
+kurulmuş özeti açılışa ya da ilk odak tamamlanışına kadar iptal etmiyor. Hedef
+de tam olarak o iki noktadan besleniyor, yani saniyelerle aynı tazelikte.
+Ekran 07'yi üçüncü bir yeniden kurma noktası yapmak üç bildirimin (seri riski,
+haftalık kapanış, dönüş) hepsini ilgilendiren ayrı bir karar, bu maddeye
+sığmıyor.
+
+### 7. Emülatör: kurulu alarm değil, **düşen** bildirim okundu
+
+`focussayac_verify`de cihaz saati pazar 19:58'e çekilip uygulama açıldı ve
+20:00'yi geçmesi beklendi; kanıt `dumpsys alarm`ın kurduğu alarm değil,
+`dumpsys notification`ın gösterdiği gövde. Pencerenin gerçek toplamı 36300 sn
+(10sa 5dk), önceki pencere 37800 sn:
+
+| hedef | gövde |
+| --- | --- |
+| 10sa (tuttu) | `Bu hafta 10 saat 5 dakika odaklandın — haftalık hedefin tamam.` |
+| 20sa (tutmadı) | `Bu hafta 10 saat 5 dakika odaklandın — geçen haftadan 25 dakika az.` |
+
+İkinci satır karşı kontrol: hedef tutmayınca bugünkü dört varyant bozulmadan
+duruyor, ve hedef cümlesi "her hâlde çıkan" bir metin değil.

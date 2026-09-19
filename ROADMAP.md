@@ -1446,19 +1446,47 @@ kusurda, madde 41 öncesinde de öyleydi. **Madde 44** oldu.
 
 ---
 
-## 42. Pazar bildirimi haftalık hedeften habersiz ⬜ sırada
+## 42. Pazar bildirimi haftalık hedeften habersiz ✅ bitti
+
+501 Dart testi (496 + 5) geçiyor. Kararlar: `DECISIONS.md` "Madde 42". Tasarım:
+`docs/superpowers/specs/2026-09-19-pazar-bildirimi-hedef-design.md`.
 
 Madde 24'ün kapsam dışı bıraktığı iş. Haftalık kapanış bildirimi
 (`weekly_summary.dart`) toplamı ve geçen haftayla farkı söylüyor ama
-kullanıcının kendi koyduğu hedefe hiç değinmiyor — hedefini tutturmuş kullanıcı
-da tutturamamış kullanıcı da aynı cümleyi alıyor.
+kullanıcının kendi koyduğu hedefe hiç değinmiyordu — hedefini tutturmuş
+kullanıcı da tutturamamış kullanıcı da aynı cümleyi alıyordu.
 
-Madde 24'ün notu iki riski işaret ediyor: dört bildirim varyantını sekize
+Madde 24'ün notu iki riski işaret ediyordu: dört bildirim varyantını sekize
 çıkarmak, ve `weekly_summary.dart`ın "yüzde değil **fark**" kararıyla çelişen
 bir dil kurmak ("hedefinin %80'i"). Maddenin asıl işi metin değil, varyant
-sayısını büyütmeden hedefi cümleye sokan bir kural bulmak.
+sayısını büyütmeden hedefi cümleye sokan bir kural bulmaktı.
 
-**Kapsam dışı (şimdilik):** hedef dolmadığında ayrı bir hatırlatma bildirimi.
+**Kural.** Hedef **karşılandıysa** gövde hedef cümlesi olur, kıyas cümlesinin
+**yerine** — yanına değil. Karşılanmadıysa bugünkü dört gövde aynen kalır.
+Çarpım yok: 4 → 5. Eksiklik hiç dile getirilmiyor; haftayı kapatan bir
+bildirimde 20sa hedefin 1sa'sindeki kullanıcıya "19sa kaldı" demek ürünün
+kaçındığı ölçen ton.
+
+- `rescheduleWeeklySummary` yeni bir `goalSeconds` alıyor; iki çağıran da
+  (`main.dart` açılışta, `PomodoroController._completeFocus` her odakta) onu
+  zaten ellerindeki ayardan veriyor, yeni sorgu açılmıyor.
+- "Tuttu mu" kararı `WeeklyGoalProgress.isReached`ten okunuyor: sınırın dahil
+  olması ve kapalı hedefin ulaşılmış sayılmaması madde 24'ün kararları, ikinci
+  bir `>=` ikisini Ekran 02'den ayırabilirdi.
+- Cümle: `Bu hafta {total} odaklandın — haftalık hedefin tamam.` Yüzde yok,
+  kalan yok, hedefin sayısı bile yok.
+
+**Emülatör doğrulandı (2026-09-19).** `focussayac_verify`de cihaz saati pazar
+20:00'ye getirilip bildirimin gerçekten **düşmesi** beklendi (kurulu alarm
+okunmadı, düşen bildirim okundu). Hedef 10sa iken gövde
+`Bu hafta 10 saat 5 dakika odaklandın — haftalık hedefin tamam.`; hedef 20sa'ye
+çıkarılıp uygulama yeniden açıldığında aynı pencere
+`… — geçen haftadan 25 dakika az.` cümlesine dönüyor, yani hedef tutmayınca
+bugünkü varyantlar bozulmadan duruyor.
+
+**Kapsam dışı:** hedef dolmadığında eksikliği söyleyen cümle ya da ayrı bir
+hatırlatma bildirimi; Ekran 07'nin ayar yazılarını bildirim yeniden kurma
+noktası yapmak (üç bildirimin hepsini ilgilendirir, bkz. `DECISIONS.md`).
 
 ---
 

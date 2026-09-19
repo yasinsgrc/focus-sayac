@@ -157,11 +157,15 @@ Future<void> _rescheduleStreakRiskReminder(AppDatabase database, NotificationSer
 /// (`_rescheduleStreakRiskReminder` ile aynı gerekçe). Pencere **hedef pazara**
 /// göre hesaplanıyor, bugüne göre değil: bildirim o pazarın yedi gününü
 /// anlatmalı (bkz. `domain/stats/weekly_summary.dart`).
+///
+/// Haftalık hedef de buradan geçiyor (ROADMAP madde 42): servis ayarı kendisi
+/// okumuyor, `NotificationPreferences` dışındaki her ayar çağıranın işi.
 Future<void> _rescheduleWeeklySummary(
   AppDatabase database,
   NotificationService notificationService,
 ) async {
   final List<PomodoroSession> sessions = await database.pomodoroSessionDao.getAllCompletedFocusSessions();
+  final AppSettingsTableData settings = await database.appSettingsDao.getSettings();
   final DateTime sendAtUtc = nextWeeklySummaryUtc(DateTime.now().toUtc());
   final WeeklySummary summary = calculateWeeklySummary(
     sessions: sessions,
@@ -171,6 +175,8 @@ Future<void> _rescheduleWeeklySummary(
     sendAtUtc: sendAtUtc,
     seconds: summary.seconds,
     previousSeconds: summary.previousSeconds,
+    // Kolon dakika tutuyor (`tables.dart`), hedefin geri kalanı saniye konuşuyor.
+    goalSeconds: settings.weeklyGoalMinutes * 60,
   );
 }
 

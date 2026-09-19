@@ -727,5 +727,10 @@
   "notificationWeeklySummaryBodySame": "Bu hafta {total} odaklandın — geçen haftayla aynı.",
   "@notificationWeeklySummaryBodySame": {
     "placeholders": { "total": { "type": "String" } }
+  },
+  "notificationWeeklySummaryBodyGoalReached": "Bu hafta {total} odaklandın — haftalık hedefin tamam.",
+  "@notificationWeeklySummaryBodyGoalReached": {
+    "description": "Haftalık hedef karşılandığında kıyas cümlesinin yerine geçen hâl (ROADMAP madde 42). Hedefin sayısı geçmiyor: toplam zaten onu ima ediyor.",
+    "placeholders": { "total": { "type": "String" } }
   }
 }

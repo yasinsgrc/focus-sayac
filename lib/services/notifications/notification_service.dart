@@ -11,6 +11,10 @@ import '../../core/l10n/l10n_providers.dart';
 // `domain/flame` de `domain/time` gibi saf bir yaprak (yalnızca ARB'ye bağlı),
 // o yüzden bu bağımlılık da aşağıdaki sınırı çiğnemiyor.
 import '../../domain/flame/flame_tier.dart';
+// Haftalık kapanış "hedef tuttu mu" sorusunu Ekran 02'nin çubuğuyla aynı
+// sınıftan soruyor (ROADMAP madde 42); `weekly_goal.dart` hiçbir şey import
+// etmeyen saf bir yaprak, aşağıdaki sınırı o da çiğnemiyor.
+import '../../domain/stats/weekly_goal.dart';
 // Bildirim gövdesi "Bu hafta 6 saat odaklandın" cümlesini hikâye kartıyla aynı
 // kaynaktan kuruyor; `domain/time` saf bir yaprak olduğu için bu bağımlılık
 // `NotificationPreferences`in `services/storage`den kaçındığı sınıfa girmiyor.
@@ -528,10 +532,24 @@ class NotificationService {
   ///
   /// İki pencere de boşken gönderilmiyor: söyleyecek bir şey yokken hatırlatma
   /// yapmak, tavsiyenin uyardığı "bir görev daha" hissini yaratırdı.
+  ///
+  /// [goalSeconds] kullanıcının haftalık hedefi (0 = kapalı, ROADMAP madde 42).
+  /// Hedef **karşılandıysa** gövde kıyas cümlesinin yerine hedef cümlesini
+  /// alıyor — yanına değil: dört varyantı sekize çıkarmadan hedefi cümleye
+  /// sokmanın yolu bu (madde 24'ün bu işi kapsam dışı bırakma gerekçesi).
+  /// Karşılanmadığında eksiklik hiç dile getirilmiyor; haftayı kapatan bir
+  /// bildirimde kapatılamaz bir eksiği okumak ölçen bir ton kurardı.
+  ///
+  /// Hedef de saniyeler gibi **kurulum anının** değeri: Ekran 07 bir yeniden
+  /// kurma noktası değil, yani ayar değişip uygulama bir daha açılmazsa kurulu
+  /// bildirim eski hedefle kalır. Bu pencere mevcut mimarinin penceresi —
+  /// `notificationsEnabled` kapısı da aynı iki noktadan (açılış + her odak
+  /// tamamlanışı) besleniyor.
   Future<void> rescheduleWeeklySummary({
     required DateTime sendAtUtc,
     required int seconds,
     required int previousSeconds,
+    required int goalSeconds,
   }) async {
     final FlutterLocalNotificationsPlugin? plugin = _plugin;
     if (plugin == null) return;
@@ -546,8 +564,17 @@ class NotificationService {
 
     final String total = spellFocusDuration(_l10n, seconds);
     final int delta = seconds - previousSeconds;
+    // "Tuttu mu" kararı Ekran 02'nin çubuğuyla aynı sınıftan okunuyor: sınırın
+    // dahil olması ve kapalı hedefin hiçbir zaman ulaşılmış sayılmaması madde
+    // 24'ün kararları, burada ikinci bir `>=` yazmak ikisini ayırabilirdi.
+    final WeeklyGoalProgress goal =
+        WeeklyGoalProgress(goalSeconds: goalSeconds, focusedSeconds: seconds);
     final String body;
-    if (previousSeconds == 0) {
+    if (goal.isReached) {
+      // Kıyastan **önce**: hedefin tutması o haftanın daha büyük haberi, ve
+      // ilk haftasında hedefini tutturan kullanıcı da bu cümleyi almalı.
+      body = _l10n.notificationWeeklySummaryBodyGoalReached(total);
+    } else if (previousSeconds == 0) {
       // İlk hafta: kullanıcıya kendi sıfırıyla kıyas sunulmuyor.
       body = _l10n.notificationWeeklySummaryBody(total);
     } else if (delta > 0) {
