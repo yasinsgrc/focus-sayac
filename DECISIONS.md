@@ -3439,3 +3439,108 @@ Yıl gezinme (geriye bir 52 hafta daha), şeritte gün seçimi, ay sınırı eti
 ya da çentikleri, tam genişliğe taşan şerit (hücreyi 4.9dp'ye çıkarırdı ama iki
 ızgaranın hizasını bozardı), şeridin aylık ızgarada açık olan ayı vurgulaması,
 şeridin giriş animasyonu, diğer kartların yıllık pencereye bakması.
+
+---
+
+## Madde 38 — Yayın engelleyicileri: mağaza görselleri
+
+Maddenin üç ayağı vardı (imzalama anahtarı, AdMob kimlikleri, mağaza
+görselleri) ve üçü de **dış kaynak** bekliyordu. Bu turda yalnızca üçüncüsü
+kapandı; ilk ikisi bilinçli olarak açık bırakıldı (§4).
+
+### 1. Ekran görüntüleri: 9:20 değil, zorlanmış 9:16
+
+Play'in kabul ettiği en büyük en-boy oranı 2:1. Emülatörün kendi çözünürlüğü
+1080×2400, yani 9:20 — olduğu gibi çekilen bir ekran görüntüsü Console'a
+yüklenemiyor. Çekim öncesi `wm size 1080x1920` ile tam 9:16'ya zorlanıyor.
+
+Alternatif, 9:20 çekip alt/üstten kırpmaktı; elendi, çünkü kırpma yerleşimi
+yalan söyler: uygulamanın gerçekte o cihazda nereye ne koyduğunu değil, bizim
+neyi kestiğimizi gösterirdi. Boyutu önceden zorlamak uygulamanın kendi düzen
+kararlarını 9:16'da almasını sağlıyor.
+
+Durum çubuğu SystemUI'nin demo kipinde (`9:41`, dolu pil, bildirim yok).
+Uygulamanın çizdiği bir şey değil; tek amacı beş karede tutarlı bir üst şerit.
+
+Beş kare ASO §5'in beş altyazısıyla **birebir aynı sırada**: `01` geri sayım,
+`02` odak seansı, `03` rozetler, `04` istatistik, `05` başarı kartı. Altyazılar
+Console'a ASO §5'ten giriliyor; görsellerin üstünde metin yok — gömülü metin
+yerelleştirilemez ve her metin değişikliğinde beş PNG yeniden üretilirdi.
+
+### 2. Feature graphic: telefonun içi taklit değil
+
+`tool/generate_feature_graphic.py` kompozisyonu ASO §6'dan alıyor (koyu lacivert
+zemin, mor ışıma, solda dev gün sayısı, ortada telefon, sağ altta ad).
+
+Telefon çerçevesinin içine elle çizilmiş bir taklit değil, **`02_odak.png`'nin
+kendisi** yerleştiriliyor. Taklit zamanla uygulamadan ayrışırdı; aynı dosyayı
+kullanmak banner ile mağaza görüntüsünü tek kaynağa bağlıyor.
+
+Banner'daki `132` rakamı ASO §6'nın örnek rakamı ve uygulamanın o anki geri
+sayımına **bilerek bağlanmadı**: banner statik, sayaç her gün değişiyor. Bu
+rakam prototipin demo sayılarından biri, ama DoD'nin yasağı kodda demo sayısı
+bulunmamasıyla ilgili — pazarlama görselinin örnek rakamı o kuralın konusu
+değil.
+
+Yazı tipleri uygulamanın kendi dosyalarından geliyor ve subset edilmiş
+olabilir. Eksik glifte PIL sessizce boş kutu çiziyor (madde 10'un font tuzağı),
+o yüzden her dizge çizilmeden önce `cmap`e karşı doğrulanıyor.
+
+### 3. Emülatörde çıkan gerçek hata: simge temayla renk değiştiriyordu
+
+Mağaza simgesi ile cihazdaki simge aynı görsel olmak zorunda. Emülatörde
+karşılaştırıldığında **olmadıkları** görüldü: Play'e gidecek 512×512 koyu
+zeminli, cihazdaki simge krem zeminliydi.
+
+Sebep `ic_launcher_background.xml`in zemini `@color/focus_bg`e bağlamasıydı. O
+token niteleyiciye göre çözülüyor (`values/` açık `#F4F5FA`, `values-night/`
+koyu `#0B0C14`) ve launcher simgeyi **sistem** temasıyla çözüyor — uygulama
+içindeki tema seçimiyle değil. Yani simge, kullanıcının sistemi açık moddaysa
+krem zeminle çiziliyordu.
+
+Hata sessizdi: kaynak derleniyor, uygulama açılıyor, hiçbir test düşmüyor.
+Yalnızca açık modda bir cihaza bakınca görülüyor — ve proje boyunca hep koyu
+temada bakılmıştı.
+
+Zemin artık düz hex (`#FF0B0C14`), yani temadan bağımsız. `focus_colors.xml`e
+yeni bir token eklenmedi: o dosyanın anahtar kümesini `focus_palette_sync_test`
+Dart paletine karşı birebir kilitliyor, eklenen her ad iki XML'de birden
+karşılık ister. Simgenin zemini bir palet tokeni değil, tek bir sabit.
+
+Yerine `test/android/launcher_icon_background_test.dart` kondu; üç kaynağı
+birbirine bağlıyor: adaptive zemin, `tool/generate_app_icon.py`nin `BG` sabiti
+(Play 512 ve API 26 öncesi mipmap'ler oradan rasterize ediliyor) ve
+`AppColors.dark().bg`. Test ayrıca zeminin niteleyiciye göre çözülen bir tokene
+**yeniden** bağlanmasını yasaklıyor — asıl hata buydu.
+
+Splash ve ana ekran widget'ları `focus_bg`i kullanmaya devam ediyor; orada
+sistem temasını izlemek doğru davranış (bkz. `values/focus_colors.xml` başlığı).
+Değişen yalnızca launcher simgesi.
+
+### 4. Açık bırakılanlar ve nedenleri
+
+- **İmzalama anahtarı.** Üretilmedi. Anahtar kaybolursa uygulama
+  güncellenemiyor; parola ve saklama kararı kullanıcının. Gradle tarafı hazır,
+  `android/key.properties` görüldüğü anda devreye giriyor. AAB şu an hâlâ
+  `CN=Android Debug` ile imzalı.
+- **AdMob kimlikleri.** Google'ın resmî test kimlikleri kullanılmaya devam
+  ediyor; gerçek kimlikler bir AdMob hesabı gerektiriyor. Kod değişikliği
+  gerekmiyor, `--dart-define` tablosu `docs/play/RELEASE.md` §3'te.
+
+### 5. Emülatör doğrulaması (2026-09-19)
+
+`focussayac_verify` (Android 16), release APK.
+
+- Simge düzeltmesi öncesi/sonrası Ayarlar'ın uygulama sayfasından ölçüldü.
+  Zeminin ortalama RGB'si: önce `(225, 226, 231)` (krem), sonra `(57, 58, 65)`.
+- Sistem **açık** moddayken (`cmd uimode night no`) ve **koyu** moddayken
+  alınan iki kare aynı değeri verdi — simge artık temayla değişmiyor.
+- Beş mağaza görüntüsü 1080×1920, feature graphic 1024×500, simge 512×512
+  olarak doğrulandı.
+
+### 6. Kapsam dışı
+
+Tablet ve 7"/10" ekran görüntüleri (Play zorunlu tutmuyor, telefon seti
+yeterli), tanıtım videosu, mağaza görsellerinin İngilizce sürümü, gerçek ARM
+cihazda yeniden çekim (ASO §5'in çekim listesi cihazda da geçerli), Console'a
+yükleme (elle).

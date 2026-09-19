@@ -1264,18 +1264,47 @@ aynı gizli kusur duruyor — orada içerik henüz o kadar uzamıyor").
 
 ---
 
-## 38. Yayın engelleyicileri — imzalama anahtarı, AdMob kimlikleri, mağaza görselleri
+## 38. Yayın engelleyicileri — imzalama anahtarı, AdMob kimlikleri, mağaza görselleri 🟡 görseller bitti, ikisi dış kaynak bekliyor
 
-SPEC §10 DoD'de açık kalan kutular ve `docs/play/RELEASE.md`nin açık kutuları.
-Kod tarafı madde 6 ve 9'da hazır; üçü de **dış kaynak** bekliyor:
+492 test geçiyor (+3). Kararlar: `DECISIONS.md` "Madde 38". Maddenin üç
+ayağından **görseller kapandı**; diğer ikisi bilinçli olarak açık bırakıldı.
 
-- `android/key.properties` yok, AAB şu an `CN=Android Debug` ile imzalı. Şablon
-  `key.properties.example`; format PKCS12 (JKS'te `keytool` uyarı basıyor).
-- Gerçek AdMob birim/App ID'leri bir AdMob hesabı gerektiriyor. Kod değişikliği
-  gerekmiyor, `--dart-define` tablosu `docs/play/RELEASE.md` §3'te; şu an
-  Google'ın resmî test kimlikleri kullanılıyor.
-- Simge/feature graphic/ekran görüntüleri. Bu maddenin emülatörde üretilebilecek
-  kısmı var, ama mağaza görselleri için gerçek bir ARM cihaz hâlâ öneriliyor.
+- **Mağaza görselleri hazır ve depoda.** Beş telefon ekran görüntüsü
+  (`docs/play/store/0{1..5}_*.png`, 1080×1920), feature graphic (1024×500),
+  simge (`assets/logo/export/play_store_512.png`, 512×512). Sıra ASO §5'in beş
+  altyazısıyla birebir; görsellerin üstünde metin yok. Kalan iş yalnızca
+  Console'a **elle yükleme**.
+- **Play'in oran sınırı yerleşimi belirledi.** En büyük kabul edilen en-boy
+  oranı 2:1, emülatörün kendi ekranı 9:20 — çekim öncesi `wm size 1080x1920`
+  ile tam 9:16'ya zorlanıyor. Kırpmak elendi: kırpma uygulamanın yerleşim
+  kararını değil bizim kestiğimizi gösterirdi.
+- **Banner'ın içindeki telefon taklit değil**, `02_odak.png`'nin kendisi —
+  banner ile mağaza görüntüsü tek kaynağa bağlı. Üreteç
+  `tool/generate_feature_graphic.py`; `132` ASO §6'nın örnek rakamı, uygulamanın
+  geri sayımına bilerek bağlanmadı.
+- **Emülatörde gerçek bir hata çıktı: launcher simgesi sistem temasıyla renk
+  değiştiriyordu.** `ic_launcher_background.xml` zemini `@color/focus_bg`e
+  bağlamıştı; o token niteleyiciye göre çözülüyor ve launcher onu **sistem**
+  temasıyla çözüyor, yani açık moddaki bir cihazda simge krem zeminli, Play'e
+  gidecek 512 ise koyu zeminliydi. Zemin düz hex (`#FF0B0C14`) yapıldı.
+  Sessiz hataydı: derleniyor, açılıyor, hiçbir test düşmüyordu — proje boyunca
+  hep koyu temada bakılmıştı.
+  `test/android/launcher_icon_background_test.dart` artık adaptive zemini,
+  `generate_app_icon.py`nin `BG` sabitini ve `AppColors.dark().bg`i birbirine
+  kilitliyor.
+- **Emülatör doğrulandı (2026-09-19).** `focussayac_verify` (Android 16),
+  release APK. Simge zemininin ortalama RGB'si düzeltme öncesi `(225,226,231)`,
+  sonrası `(57,58,65)`; açık ve koyu sistem temasında alınan iki kare aynı
+  değeri verdi.
+- **Açık kalan — imzalama anahtarı:** `android/key.properties` hâlâ yok, AAB
+  `CN=Android Debug` ile imzalı. Şablon `key.properties.example`, format PKCS12
+  (JKS'te `keytool` uyarı basıyor). Anahtar kaybolursa uygulama güncellenemiyor;
+  parola ve saklama kullanıcının kararı.
+- **Açık kalan — AdMob kimlikleri:** gerçek birim/App ID'leri bir AdMob hesabı
+  gerektiriyor. Kod değişikliği gerekmiyor, `--dart-define` tablosu
+  `docs/play/RELEASE.md` §3'te; şu an Google'ın resmî test kimlikleri kullanılıyor.
+- **Kapsam dışı:** tablet ve 7"/10" görüntüleri (Play zorunlu tutmuyor), tanıtım
+  videosu, görsellerin İngilizce sürümü, gerçek ARM cihazda yeniden çekim.
 
 ---
 
@@ -1332,12 +1361,14 @@ sorunu taşıyor.
 - [x] Launcher simgesi üretildi *(kutu bayattı: `mipmap-anydpi-v26/ic_launcher.xml`
       beş yoğunlukta foreground + monochrome katmanlarıyla duruyor, keyline
       kararı dosyanın yorumunda; emülatörde Ayarlar'ın uygulama sayfasında
-      Flutter varsayılanı değil özel simge göründü)*
+      Flutter varsayılanı değil özel simge göründü. Madde 38: zemin sistem
+      temasıyla renk değiştiriyordu, artık temadan bağımsız ve Play'e gidecek
+      512 ile aynı)*
 - [ ] Yayın çıktısı gerçek anahtarla imzalı *(`key.properties` yok, AAB şu an
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(471 test, `flutter test`)*
+- [x] Testler geçiyor *(492 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

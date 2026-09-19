@@ -83,15 +83,37 @@ ayrı ve **FocusSayaç** olarak sabit (uzun ASO adı simgenin altına sığmaz).
 
 ## 5. Görseller
 
-| Öğe | Ölçü | Durum |
-| --- | --- | --- |
-| Uygulama simgesi | 512×512 PNG | ⛔ üretilecek — kaynak `android/app/src/main/res/mipmap-*/ic_launcher.png` |
-| Feature graphic | 1024×500 | ⛔ üretilecek — kompozisyon ASO §6'da tarif edilmiş |
-| Telefon ekran görüntüsü | en az 2, önerilen 5 | ⛔ **cihaz gerekiyor** — çekim listesi ve altyazılar ASO §5'te |
+Hepsi depoda; Console'a elle yüklenecek.
 
-Ekran görüntüleri gerçek cihazda çekilmeli; bu makinede bağlı Android
-cihaz/emülatör yok (madde 8'in `--profile` ölçümüyle aynı engel). Çekilecek
-beş ekran ve altyazıları ASO §5'te sırayla verilmiş.
+| Öğe | Ölçü | Dosya |
+| --- | --- | --- |
+| Uygulama simgesi | 512×512 PNG, alfasız | `assets/logo/export/play_store_512.png` |
+| Feature graphic | 1024×500 PNG | `docs/play/store/feature_graphic_1024x500.png` |
+| Telefon ekran görüntüsü ×5 | 1080×1920 (9:16) PNG | `docs/play/store/0{1..5}_*.png` |
+
+Ekran görüntülerinin sırası ASO §5'in beş altyazısıyla birebir: `01` geri
+sayım, `02` odak seansı, `03` rozetler, `04` istatistik, `05` başarı kartı.
+Altyazılar Console'a ASO §5'ten girilir; görsellerin kendi üstünde metin yok.
+
+Yeniden üretme:
+
+```bash
+python tool/generate_app_icon.py          # 512×512 dâhil tüm simge yüzeyleri
+python tool/generate_feature_graphic.py   # 02_odak.png'yi girdi alır
+```
+
+Ekran görüntüleri emülatörde (`focussayac_verify`, Android 16, release APK)
+çekildi; koşullar ve tohumlanan durum ROADMAP madde 38'de. Play'in kabul
+ettiği en büyük en-boy oranı 2:1 olduğu için cihazın kendi 1080×2400'ü (9:20)
+kullanılamıyor, çekim öncesi `wm size 1080x1920` ile tam 9:16'ya zorlanıyor.
+Durum çubuğu SystemUI'nin demo kipinde (`9:41`, dolu pil, bildirimsiz) —
+uygulamanın çizdiği bir şey değil.
+
+512'lik simge cihazdaki launcher simgesiyle aynı görsel olmak zorunda. Zemin
+bir kez temaya bağlı bir tokene bağlanmıştı ve açık moddaki cihazlarda simge
+krem zeminle çiziliyordu (madde 38); artık düz `#0B0C14` ve
+`test/android/launcher_icon_background_test.dart` sapmayı yakalıyor. Simge
+katmanlarına dokunulursa 512'yi yeniden üretmek gerekiyor.
 
 ## 6. Veri güvenliği formu (Data safety)
 
@@ -119,7 +141,8 @@ beş ekran ve altyazıları ASO §5'te sırayla verilmiş.
 - [ ] Manifest'teki AdMob `APPLICATION_ID` gerçek hesabınki
 - [ ] `focussayac.app/gizlilik` yayında ve `docs/privacy-policy.md` ile aynı
 - [ ] Veri güvenliği formu §6'ya göre dolduruldu
-- [ ] Simge + feature graphic + en az 2 ekran görüntüsü yüklendi (§5)
+- [ ] Simge + feature graphic + 5 ekran görüntüsü Console'a yüklendi
+      *(dosyalar hazır ve depoda — §5; kalan iş yalnızca yükleme)*
 - [ ] Sürüm notu girildi (§4)
 - [ ] Odak ekranı `--profile` modda sürekli 60 fps (ROADMAP madde 8, cihaz)
 - [ ] İç test kanalında bir cihazda kurulup açıldı
