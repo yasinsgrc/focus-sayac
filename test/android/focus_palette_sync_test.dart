@@ -59,6 +59,10 @@ void main() {
         'focus_accent_900': c.accent900,
         'focus_surface_card': c.surfaceCard,
         'focus_divider': c.divider,
+        // Halkanin izleri - ROADMAP madde 44. `RingRenderer` bunlari duz hex
+        // olarak tasiyordu, yani koyu temanin degerlerini iki temada da.
+        'focus_fill_subtle': c.fillSubtle,
+        'focus_hairline': c.hairline,
       };
 
   /// Android niteleyici kurali: niteleyicisiz `values/` varsayilan, yani

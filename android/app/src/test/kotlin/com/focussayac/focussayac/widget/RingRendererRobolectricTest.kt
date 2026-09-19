@@ -98,4 +98,9 @@ class RingRendererRobolectricTest {
     fun `ortadaki yazi ize girmiyor`() {
         RingRendererContract.verifyCenterTextFits(context)
     }
+
+    @Test
+    fun `izler iki temada da zeminden ayriliyor`() {
+        RingRendererContract.verifyTrackContrast(context)
+    }
 }

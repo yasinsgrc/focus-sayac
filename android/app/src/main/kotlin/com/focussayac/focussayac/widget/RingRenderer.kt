@@ -66,14 +66,6 @@ object RingRenderer {
     private val GRADIENT_BACKSHIFT_DEG =
         Math.toDegrees(((TRACK_STROKE / 2f + 2f) / TRACK_RADIUS).toDouble()).toFloat()
 
-    /**
-     * `AppColors.fillSubtle` - dis telin ve emek yayinin izinin rengi. Halkanin
-     * izleri temadan bagimsiz duz hex (madde 39'un sozlesmesi buna gore kurulu);
-     * yalnizca YAYLARIN rengi paletten geliyor.
-     */
-    private const val FILL_SUBTLE = 0x17FFFFFF
-    private const val TRACK_COLOR = 0x12FFFFFF
-
     /** Kicker'in kullanabilecegi kirisin orani - iz ile arasindaki nefes payi. */
     private const val LABEL_FIT = 0.94f
 
@@ -96,15 +88,22 @@ object RingRenderer {
         val cx = sizePx / 2f
         val cy = sizePx / 2f
 
+        // Izler de paletten - ROADMAP madde 44. Once burada duz beyaz-alfa hex
+        // olarak duruyorlardi, yani koyu temanin degerleri iki temada da
+        // geciyordu: acik temada iz zeminden dort ton ayrilip gorunmez
+        // oluyordu. Rol esleme Ekran 02'nin painter'inin aynisi - dis tel ve
+        // emek izi `fillSubtle`, zaman izi `hairline`.
+        val palette = FocusPalette(context)
+
         val outer = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = FILL_SUBTLE
+            color = palette.fillSubtle
             style = Paint.Style.STROKE
             strokeWidth = 1f * scale
         }
         canvas.drawCircle(cx, cy, OUTER_RADIUS * scale, outer)
 
         val track = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = TRACK_COLOR
+            color = palette.hairline
             style = Paint.Style.STROKE
             strokeWidth = TRACK_STROKE * scale
         }
@@ -129,6 +128,7 @@ object RingRenderer {
                 stroke = EFFORT_STROKE * scale,
                 ratio = effortRatio,
                 color = effortColor,
+                trackColor = palette.fillSubtle,
             )
         }
 
@@ -162,7 +162,18 @@ object RingRenderer {
             )
         }
 
-        drawCenterText(context, canvas, cx, cy, sizePx, centerText, labelText, accentColor, muted)
+        drawCenterText(
+            context = context,
+            palette = palette,
+            canvas = canvas,
+            cx = cx,
+            cy = cy,
+            sizePx = sizePx,
+            centerText = centerText,
+            labelText = labelText,
+            accentColor = accentColor,
+            muted = muted,
+        )
         return bitmap
     }
 
@@ -183,9 +194,10 @@ object RingRenderer {
         stroke: Float,
         ratio: Float,
         color: Int,
+        trackColor: Int,
     ) {
         val track = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            this.color = FILL_SUBTLE
+            this.color = trackColor
             style = Paint.Style.STROKE
             strokeWidth = stroke
         }
@@ -285,6 +297,7 @@ object RingRenderer {
 
     private fun drawCenterText(
         context: Context,
+        palette: FocusPalette,
         canvas: Canvas,
         cx: Float,
         cy: Float,
@@ -294,8 +307,6 @@ object RingRenderer {
         accentColor: Int,
         muted: Boolean,
     ) {
-        val palette = FocusPalette(context)
-
         val counter = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = WidgetTypography.counter(context)
             color = if (muted) palette.neutral400 else palette.text

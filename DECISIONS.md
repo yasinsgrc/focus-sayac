@@ -4009,3 +4009,103 @@ gitti, iz kaldı.
 **Kapsam dışı:** `SparkRenderer` ve `FlameRenderer`ın boş durumu (ikisinin
 girdisi sınava bağlı değil); izlerin açık temada görünmemesi (madde 44) — bu
 madde izin rengine değil, dolgunun çizilip çizilmediğine dokunuyor.
+
+---
+
+## Madde 44 — Widget'ın izleri açık temada görünüyor
+
+Tasarım: `docs/superpowers/specs/2026-09-19-widget-iz-renkleri-design.md`.
+
+Madde 41'in emülatör doğrulamasında çıkan, oraya kapsam dışı yazılan kusur.
+`RingRenderer` iz renklerini düz beyaz-alfa hex olarak tutuyordu — dış tel ve
+emek izi `0x17FFFFFF`, zaman izi `0x12FFFFFF`. Bunlar `AppColors.dark()`in
+`fillSubtle`/`hairline` değerleri, yani koyu temanın renkleri **iki temada da**
+geçiyordu. Açık temada widget'ın zemini de açık: ölçülen zemin `(212,212,213)`,
+izin çizdiği renk `(216,216,218)` — dört ton.
+
+Kusur madde 41'den eskiydi; madde 41 yalnızca üçüncü izi ekledi. Sonucu en çok
+emek ekseninde acıtıyordu: hedef açık ama hafta boşken widget'ta o eksenin yeri
+hiç görünmüyor, Ekran 02'de `colors.fillSubtle` ile görünüyordu.
+
+### 1. İzler palete bağlandı
+
+`focus_colors.xml` ve `values-night/focus_colors.xml` iki yeni token aldı,
+`FocusPalette` ikisini açıyor:
+
+| token | açık | koyu |
+| --- | --- | --- |
+| `focus_fill_subtle` | `#14000000` | `#17FFFFFF` |
+| `focus_hairline` | `#12000000` | `#12FFFFFF` |
+
+Değerler uydurulmadı, `AppColors.light()`/`AppColors.dark()`ten birebir
+kopyalandı; `focus_palette_sync_test.dart` sapmayı zaten yakalıyor, `expectedFor`
+haritasına iki satır eklendi. Rol eşlemesi Ekran 02'nin painter'ından aynen
+geliyor: dış tel ve emek izi `fillSubtle`, zaman izi `hairline`. İki yüzey artık
+aynı halkayı aynı tokenlarla boyuyor.
+
+`render` paleti bir kez kuruyor ve `drawCenterText`e o örneği geçiyor — orada
+ikinci bir `FocusPalette(context)` kuruluyordu.
+
+### 2. Sözleşme eşiği renkten değil kontrasttan okuyor
+
+Madde 39'un `RingRendererContract`ı "halkanın izleri `RingRenderer`da düz hex,
+palet değil" diyor ve alfa sondalarını (iz `0x12`, kesikli çember `0x59`, eşik
+`0x80`) buna dayandırıyordu. İzler temaya bağlanınca o cümle düştü. Maddenin
+işaret ettiği iki seçenekten **ikisi de** alındı, çünkü tek başlarına eksikler:
+
+- Alfa sondaları iki temada da tutuyor ama bunu iddia eden bir şey yoktu; biri
+  `fillSubtle`i `0x88`e çekse `drawnFraction`ın eşiği sessizce yalan söylerdi.
+- Alfa bandını sınamak da yetmezdi: bugünkü kusur tam da alfası doğru, **rengi**
+  yanlış bir izdi.
+
+13. iddia `verifyTrackContrast(context)`: `createConfigurationContext` ile iki
+temayı da kuruyor ve her iz için hem alfa bandını (`8 < alfa < 0x80`) hem de
+kontrastı sınıyor.
+
+Kontrast ölçüsü zemini **tahmin etmiyor, aralığını alıyor**: widget kartı
+(`focus_surface_card`) yarı saydam, altında duvar kâğıdı var. Kart en koyu
+(siyah) ve en açık (beyaz) uca bindirilip iz ikisinin de üstünde ölçülüyor. Bir
+iz ancak zeminin **karşı** tarafındaysa iki uçta birden geçer — eski beyaz iz
+açık temada beyaz uçta 0 ton bırakıyordu. Eşik 10; bugünkü izler en kötü uçta
+13-17 ton bırakıyor.
+
+Dış tel sondaya girmiyor: 1 px'lik çizgi üretim ölçeğinde (273/316) bir piksele
+tam oturmuyor, kenar yumuşatma alfayı ölçülemez yapıyor. Emek iziyle **aynı**
+tokenı kullandığı için bağlanması zaten sınanıyor.
+
+### 3. Öteki çiziciler bakıldı, temiz
+
+`StripRenderer`ın izi `withAlpha(palette.text, 0x12)` — `text` zaten temadan
+geliyor. `SparkRenderer`ın taban çizgisi accent renginde; accent doygun bir renk,
+iz değil işaret. `FlameRenderer`ın düz hex'leri alev gövdesi. Madde yalnızca
+`RingRenderer`a dokundu.
+
+**İddianın ısırdığı doğrulandı.** Düzeltme geçici olarak geri alınıp (izler
+yeniden düz hex) koşuldu: yalnızca **açık** tema düştü, koyu geçti — yani
+Robolectric `values-night`ı gerçekten çözüyor, iddia iki temayı ayrı ayrı
+görüyor. Düşen satırlardan biri `acik emek izi #ffd1d1d1 zeminine karışıyor:
+4 ton` — madde 41'in emülatörde ölçtüğü sayının aynısı.
+
+**Emülatör doğrulandı (2026-09-19).** `focussayac_verify`de 29 cihaz testi
+geçiyor. Halka widget'ı gerçekten ana ekrana **yerleştirildi** (widget
+seçiciden sürükleyerek). Taze kurulumda haftalık hedefin varsayılanı 300 dk,
+yani payload maddenin kabul karesi: `weeklyGoalSeconds=18000`,
+`weeklyFocusedSeconds=0`. Ekran görüntüsünden halkanın 9 yönünde (yayın
+çizilmediği taraf) ölçülen değerler:
+
+| tema | kart zemini | zaman izi | emek izi |
+| --- | --- | --- | --- |
+| açık | `(212,212,214)` | `(199,200,203)` — **12 ton** | `(197,198,200)` — **14 ton** |
+| koyu | `(28,29,44)` | `(47,49,65)` — 20 ton | `(50,52,65)` — 23 ton |
+
+Açık temada emek izi 4 tondan 14 tona çıktı; koyu tema kıpırdamadı (o değerlere
+hiç dokunulmadı). Ekran görüntüleri ve renderer dökümleri `.verify/m44/`.
+
+**Yan bulgu (madde 44'ten değil):** sistem teması değiştiğinde widget'ın
+**bitmap'i bayat kalıyor.** Kart zemini (`widget_surface.xml`) host tarafından
+yeniden çözülüyor ama halkayı `RingRenderer` bir `Bitmap`e çizip `RemoteViews`
+ile gönderiyor; sağlayıcı yeniden çizmedikçe o bitmap eski temanın renkleriyle
+duruyor. Koyu temaya geçilince koyu kartın üstünde açık temanın koyu izleri
+kaldı, uygulama açılıp widget tazelenince düzeldi. Madde 44'ten eski ve daha
+geniş: merkezdeki rakam da (`palette.text`) aynı durumda — yani bu kusur izler
+düz hex'ken de vardı, yalnızca izlerde görünmüyordu.

@@ -1529,7 +1529,11 @@ girdisi sınava bağlı değil); izlerin açık temada görünmemesi (madde 44).
 
 ---
 
-## 44. Widget'ın izleri açık temada görünmüyor ⬜ sırada
+## 44. Widget'ın izleri açık temada görünmüyor ✅ bitti
+
+501 Dart testi, 30 Kotlin birim testi (+1) ve 29 cihaz testi (+2) geçiyor.
+Kararlar: `DECISIONS.md` "Madde 44". Tasarım:
+`docs/superpowers/specs/2026-09-19-widget-iz-renkleri-design.md`.
 
 Madde 41'in emülatör doğrulamasında çıkan, kapsam dışı bırakılan kusur.
 
@@ -1557,12 +1561,37 @@ durumdaydı, madde 41 üçüncüyü ekledi.
   ya iki temada da koşmalı ya da eşiği renkten değil **kontrasttan** okumalı.
 - Aynı kusur `StripRenderer` ve `SparkRenderer`da da var mı, bak.
 
-**Kabul ölçütü.** Emülatörde açık temada halka widget'ı yerleştirilip hedef
-açık ama hafta boş bırakılır; emek ekseninin izi görünür. Koyu temada üç izin
-de bugünkü görüntüsü değişmez.
+**Kararlar.** İzler `FocusPalette`e bağlandı (`focus_fill_subtle`,
+`focus_hairline`); değerler `AppColors`ten birebir, palet senkron testi iki satır
+büyüdü. Madde 39'un varsayımı düzeltildi: sözleşmenin 13. iddiası
+(`verifyTrackContrast`) iki temayı da kuruyor ve eşiği renkten değil
+**kontrasttan** okuyor — widget kartı yarı saydam olduğu için zemin tek bir renk
+değil bir aralık, iz o aralığın iki ucunda birden ölçülüyor. `StripRenderer`
+(izi `palette.text`ten), `SparkRenderer` ve `FlameRenderer` bakıldı, temiz.
+
+**Emülatör doğrulandı (2026-09-19).** `focussayac_verify`de halka widget'ı ana
+ekrana **yerleştirildi**; taze kurulumda haftalık hedefin varsayılanı 300 dk
+olduğu için payload tam kabul karesiydi (`weeklyGoalSeconds=18000`,
+`weeklyFocusedSeconds=0`). Halkanın 9 yönünde, yayın çizilmediği tarafta ölçüm:
+
+| tema | kart zemini | zaman izi | emek izi |
+| --- | --- | --- | --- |
+| açık | `(212,212,214)` | `(199,200,203)` — **12 ton** | `(197,198,200)` — **14 ton** |
+| koyu | `(28,29,44)` | `(47,49,65)` — 20 ton | `(50,52,65)` — 23 ton |
+
+Açık temada emek izi 4 tondan 14 tona çıktı, koyu tema kıpırdamadı. İddianın boş
+yere yeşil olmadığı da sınandı: düzeltme geçici olarak geri alınınca **yalnızca
+açık tema** düştü ve mesajı `4 ton` dedi — madde 41'in ölçtüğü sayı. Ekran
+görüntüleri ve renderer dökümleri `.verify/m44/`.
 
 **Kapsam dışı:** yayların (izlerin değil) renkleri — onlar zaten paletten
 geliyor; widget zemininin kendisi (madde 38'de karara bağlandı).
+
+**Yan bulgu (madde 44'ten değil):** sistem teması değişince widget'ın **bitmap'i
+bayat kalıyor.** Kart zeminini host yeniden çözüyor ama halkayı `RingRenderer`
+bir `Bitmap`e çizip `RemoteViews` ile gönderiyor; sağlayıcı tazelemedikçe eski
+temanın renkleri duruyor (uygulama açılınca düzeliyor). Madde 44'ten eski ve
+daha geniş — merkezdeki rakam da (`palette.text`) aynı durumda.
 
 ---
 

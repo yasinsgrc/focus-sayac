@@ -43,4 +43,11 @@
 
     <color name="focus_surface_card">#D11E2030</color>
     <color name="focus_divider">#14FFFFFF</color>
+
+    <!--
+      Halkanin izleri - ROADMAP madde 44. Bu iki deger `RingRenderer`daki duz
+      hex'lerin aynisi; degisen sey acik ikizlerinin de artik var olmasi.
+    -->
+    <color name="focus_fill_subtle">#17FFFFFF</color>
+    <color name="focus_hairline">#12FFFFFF</color>
 </resources>

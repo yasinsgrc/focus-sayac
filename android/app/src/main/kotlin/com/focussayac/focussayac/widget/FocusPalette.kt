@@ -38,6 +38,17 @@ class FocusPalette(context: Context) {
     @ColorInt val divider: Int = context.getColor(R.color.focus_divider)
 
     /**
+     * Halkanin izleri - ROADMAP madde 44. Rol esleme Ekran 02'nin painter'indan:
+     * dis tel ve emek izi [fillSubtle], zaman izi [hairline].
+     *
+     * Ikisi de temanin ustune binen alfa: koyuda beyaz, ACIKTA SIYAH. Once
+     * `RingRenderer`da duz hex olarak koyu temanin degerleri duruyordu, yani
+     * acik temada iz zemine karisiyordu.
+     */
+    @ColorInt val fillSubtle: Int = context.getColor(R.color.focus_fill_subtle)
+    @ColorInt val hairline: Int = context.getColor(R.color.focus_hairline)
+
+    /**
      * Sinav secilmemisken kullanilan sakin vurgu. Accent moru, "izin/bilgi"
      * rolunu tasidigi icin (SPEC 2 "Renk ROL tasir") notr durumun dogal rengi.
      */

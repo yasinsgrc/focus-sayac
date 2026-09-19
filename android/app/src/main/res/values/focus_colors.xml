@@ -44,4 +44,12 @@
 
     <color name="focus_surface_card">#D1FFFFFF</color>
     <color name="focus_divider">#14000000</color>
+
+    <!--
+      Halkanin izleri - ROADMAP madde 44. Once `RingRenderer`da duz beyaz-alfa
+      hex'lerdi (`0x17FFFFFF` / `0x12FFFFFF`), yani koyu temanin degerleri; acik
+      temada iz zeminden dort ton ayrilip gorunmez oluyordu.
+    -->
+    <color name="focus_fill_subtle">#14000000</color>
+    <color name="focus_hairline">#12000000</color>
 </resources>

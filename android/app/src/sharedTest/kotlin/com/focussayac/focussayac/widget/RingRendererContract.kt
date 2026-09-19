@@ -1,6 +1,7 @@
 package com.focussayac.focussayac.widget
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
 import com.focussayac.focussayac.R
@@ -22,10 +23,15 @@ import kotlin.math.sin
  * Madde 33'un koz lekesi iddiasi da buraya tasindi - orada yalnizca
  * Robolectric kosuyordu, artik cihaz da ayni sondaya bakiyor.
  *
- * Iddialar altin goruntu DEGIL. Iki ekseni var: **alfa** (iz 0x12, kesikli
+ * Iddialar altin goruntu DEGIL. Iki ekseni var: **alfa** (iz 0x12-0x17, kesikli
  * cember 0x59, cizilen yaylar 0xFF - 0x80 esigi ikisini ayiriyor) ve
- * **sicaklik** (kirmizi eksi mavi), ikisi de tema niteleyicisinden bagimsiz:
- * halkanin gradyani `RingRenderer`da duz hex, palet degil.
+ * **sicaklik** (kirmizi eksi mavi). Sicaklik tema niteleyicisinden bagimsiz -
+ * halkanin gradyani `RingRenderer`da duz hex.
+ *
+ * Alfa oyle DEGIL: ROADMAP madde 44'ten beri izler paletten geliyor, yani
+ * degerleri temaya bagli. Bandin iki esigi de (izler 8'in ustunde,
+ * `drawnFraction`in `DRAWN`inin altinda) artik varsayim degil, 13. iddianin
+ * konusu - ve ayni iddia izin zeminden gercekten ayrildigini da olcuyor.
  */
 object RingRendererContract {
 
@@ -54,6 +60,15 @@ object RingRendererContract {
 
     /** Cizilen yay ile izi/kesikli cemberi ayiran esik. */
     private const val DRAWN = 0x80
+
+    /**
+     * Izin zeminden ayrilmasi icin gereken en az ton farki - ROADMAP madde 44.
+     *
+     * Bol: bugunku izler en kotu ucta 13-17 ton birakiyor. Esik dar olsaydi
+     * temanin bir tonluk oynamasi testi kirardi; maddenin kovaladigi kusur ise
+     * DORT tonluktu.
+     */
+    private const val MIN_TRACK_CONTRAST = 10
 
     /**
      * Sinav rengi bilerek SOGUK: gunluk yayin yesili ve merkez yazisi ancak
@@ -114,6 +129,22 @@ object RingRendererContract {
     /** Hedefi dolmus hafta - tonu koz degil nane. */
     fun renderMintEffort(context: Context): Bitmap =
         render(context, 0.25f, effortRatio = 1f, effortColor = EFFORT_MINT)
+
+    /**
+     * Madde 44'un kabul karesi iki temada: hedef ACIK, hafta BOS - emek izinin
+     * yay olmadan tek basina durdugu durum. Iddia degil, kanit dokumu.
+     */
+    fun renderThemes(context: Context): Map<String, Bitmap> = listOf(
+        "a_acik" to false,
+        "b_koyu" to true,
+    ).associate { (name, night) ->
+        name to render(
+            themedContext(context, night),
+            0.25f,
+            todayRatio = 0.5f,
+            effortRatio = 0f,
+        )
+    }
 
     fun renderEffortStates(context: Context): List<Bitmap> = listOf(
         render(context, 0.25f),
@@ -400,6 +431,95 @@ object RingRendererContract {
             throw AssertionError(failures.joinToString(separator = "\n", prefix = "\n"))
         }
     }
+
+    /**
+     * 13. Izler her iki temada da zeminden ayriliyor - ROADMAP madde 44.
+     *
+     * Iki sey birden sinaniyor, cunku tek baslarina eksikler:
+     *
+     * - **Alfa bandi.** Sozlesmenin oteki iddialari izin `8 < alfa < DRAWN`
+     *   oldugunu VARSAYIYOR (`verifyTrack` 8'e, `drawnFraction` `DRAWN`e
+     *   bakiyor). Izler madde 44'ten beri paletten geldigi icin bu artik
+     *   temaya bagli bir deger; varsayim kalamaz.
+     * - **Kontrast.** Alfa dogru ama renk yanlis olabilir - maddenin
+     *   kovaladigi kusur tam buydu: acik temada BEYAZ iz, dogru alfayla.
+     *
+     * Zemin tahmin edilmiyor, **araligi** aliniyor: widget karti
+     * (`focus_surface_card`) yari saydam, altinda duvar kagidi var. Kart en
+     * koyu (siyah) ve en acik (beyaz) uca bindirilip iz ikisinin de ustunde
+     * olculuyor. Bir iz ancak zeminin KARSI tarafindaysa iki ucta birden
+     * gecer; beyaz iz acik temada beyaz ucta 0 ton birakiyordu.
+     *
+     * Dis tel sondaya girmiyor: 1 px'lik cizgi uretim olceginde bir piksele
+     * tam oturmuyor, kenar yumusatma alfayi olculemez yapiyor. Emek iziyle
+     * ayni tokeni (`fillSubtle`) kullandigi icin baglanmasi zaten sinaniyor.
+     */
+    fun verifyTrackContrast(context: Context) {
+        val failures = mutableListOf<String>()
+
+        listOf(false to "acik", true to "koyu").forEach { (night, themeName) ->
+            val themed = themedContext(context, night)
+            // Hedef ACIK ama hafta BOS: maddenin kabul olcutundeki kare, emek
+            // izinin yay olmadan tek basina durdugu tek durum.
+            val bitmap = render(themed, 0.25f, effortRatio = 0f)
+
+            val card = themed.getColor(R.color.focus_surface_card)
+            val backgrounds = listOf(Color.BLACK, Color.WHITE).map { over(card, it) }
+
+            listOf("zaman izi" to TRACK_RADIUS, "emek izi" to EFFORT_RADIUS)
+                .forEach { (name, radius) ->
+                    val ink = pixelAt(bitmap, 180.0, radius)
+                    val alpha = Color.alpha(ink)
+                    if (alpha <= 8 || alpha >= DRAWN) {
+                        failures += "$themeName $name alfasi bandin disinda: $alpha " +
+                            "(8 < alfa < $DRAWN bekleniyordu)"
+                    }
+                    backgrounds.forEach { background ->
+                        val delta = channelDelta(over(ink, background), background)
+                        if (delta < MIN_TRACK_CONTRAST) {
+                            failures += "$themeName $name " +
+                                "#${Integer.toHexString(background)} zeminine karisiyor: " +
+                                "$delta ton (en az $MIN_TRACK_CONTRAST)"
+                        }
+                    }
+                }
+        }
+
+        if (failures.isNotEmpty()) {
+            throw AssertionError(failures.joinToString(separator = "\n", prefix = "\n"))
+        }
+    }
+
+    /**
+     * [context]in tema niteleyicisi cevrilmis kopyasi. Widget'lar sistem
+     * temasini izliyor (bkz. `focus_colors.xml` basligi), yani `values` ile
+     * `values-night` arasindaki secim bu yapilandirmadan cikiyor.
+     */
+    private fun themedContext(context: Context, night: Boolean): Context {
+        val configuration = Configuration(context.resources.configuration)
+        configuration.uiMode =
+            (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+            if (night) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
+        return context.createConfigurationContext(configuration)
+    }
+
+    /** [top]u [bottom]un ustune bindirir; [bottom] opak varsayiliyor. */
+    private fun over(top: Int, bottom: Int): Int {
+        val alpha = Color.alpha(top) / 255f
+        fun mix(t: Int, b: Int): Int = (b + (t - b) * alpha).roundToInt()
+        return Color.rgb(
+            mix(Color.red(top), Color.red(bottom)),
+            mix(Color.green(top), Color.green(bottom)),
+            mix(Color.blue(top), Color.blue(bottom)),
+        )
+    }
+
+    /** Iki opak renk arasindaki en buyuk kanal farki. */
+    private fun channelDelta(a: Int, b: Int): Int = maxOf(
+        abs(Color.red(a) - Color.red(b)),
+        abs(Color.green(a) - Color.green(b)),
+        abs(Color.blue(a) - Color.blue(b)),
+    )
 
     /**
      * [radius] cemberinde cizilmis (0x80 ustu) acilarin orani. Yarim derecelik

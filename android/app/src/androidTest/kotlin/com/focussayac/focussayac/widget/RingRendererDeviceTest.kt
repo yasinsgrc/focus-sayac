@@ -97,6 +97,11 @@ class RingRendererDeviceTest {
         RingRendererContract.verifyCenterTextFits(context)
     }
 
+    @Test
+    fun izlerIkiTemadaDaZemindenAyriliyor() {
+        RingRendererContract.verifyTrackContrast(context)
+    }
+
     /**
      * Kanit dokumu - ROADMAP madde 41, kalip madde 31'den. Dort durum uretim
      * olcusunde (273 px) PNG olarak cihaza yaziliyor, `adb pull` ile
@@ -125,6 +130,22 @@ class RingRendererDeviceTest {
         )
         frames.forEach { (name, bitmap) ->
             File(dir, "m41_$name.png").outputStream().use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+        }
+    }
+
+    /**
+     * Kanit dokumu - ROADMAP madde 44. Ayni halka (hedef acik, hafta bos) iki
+     * temada cizilip cihaza yaziliyor, `adb pull` ile `.verify/m44/`'e
+     * aliniyor. Kontrast iddiasi sayiyi soyluyor; bu dosyalar o sayinin goze
+     * ne yaptigini gosteriyor.
+     */
+    @Test
+    fun izPngleriniDok() {
+        val dir = File(context.getExternalFilesDir(null), "m44").apply { mkdirs() }
+        RingRendererContract.renderThemes(context).forEach { (name, bitmap) ->
+            File(dir, "m44_$name.png").outputStream().use { out ->
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
             }
         }
