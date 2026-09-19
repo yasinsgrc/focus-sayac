@@ -1442,7 +1442,7 @@ görünmüyor.** `RingRenderer` iz renklerini düz beyaz-alfa hex olarak tutuyor
 sayıyor); açık temada widget zemini (212,212,213) ile izin rengi (216,216,218)
 arasında dört ton var. Yani hedef açık ve hafta boşken emek ekseninin yeri
 görünmüyor — Ekran 02'de `colors.fillSubtle` ile görünüyor. Üç iz de aynı
-kusurda, madde 41 öncesinde de öyleydi. Ayrı madde olmalı.
+kusurda, madde 41 öncesinde de öyleydi. **Madde 44** oldu.
 
 ---
 
@@ -1472,6 +1472,43 @@ durduğunda aynı durumu iki farklı görsel dille anlatıyorlar.
 
 **Kapsam dışı:** `SparkRenderer` ve `FlameRenderer`ın boş durumu (ikisinin
 girdisi sınava bağlı değil).
+
+---
+
+## 44. Widget'ın izleri açık temada görünmüyor ⬜ sırada
+
+Madde 41'in emülatör doğrulamasında çıkan, kapsam dışı bırakılan kusur.
+
+**Sorun.** `RingRenderer` iz renklerini düz beyaz-alfa hex olarak tutuyor —
+dış tel ve emek izi `0x17FFFFFF`, zaman izi `0x12FFFFFF`. Koyu zeminde bunlar
+`AppColors.fillSubtle` / `hairline`in karşılığı, ama açık temada widget'ın
+zemini de açık: ölçülen değerler zemin `(212,212,213)`, izin çizdiği renk
+`(216,216,218)` — **dört ton fark**, yani üç iz de görünmüyor.
+
+Sonucu en çok emek ekseninde acıtıyor: hedef açık ama hafta boşken widget'ta o
+eksenin yeri hiç görünmüyor, Ekran 02'de `colors.fillSubtle` ile görünüyor.
+Yani madde 41'in kapattığı "aynı halka iki yüzeyde iki farklı şey" ayrışması
+açık temada yarım kalıyor. Kusur madde 41'den eski: mevcut iki iz de aynı
+durumdaydı, madde 41 üçüncüyü ekledi.
+
+**Kapsam.**
+
+- İzleri `FocusPalette`e bağla (`focus_colors.xml` + `values-night`), düz hex'i
+  bırak. Palet senkron testi (`test/android/focus_palette_sync_test.dart`) iki
+  XML'i zaten Dart paletiyle karşılaştırıyor, yeni bir kanal gerekmiyor.
+- **Madde 39'un varsayımını gözden geçir.** `RingRendererContract` "halkanın
+  izleri `RingRenderer`da düz hex, palet değil" diyor ve sondaları buna göre
+  kurulu (alfa eşiği `0x80`, iz `0x12`, kesikli çember `0x59`). İzler temaya
+  bağlanınca alfa sondaları tema niteleyicisine bağımlı hâle gelir — sözleşme
+  ya iki temada da koşmalı ya da eşiği renkten değil **kontrasttan** okumalı.
+- Aynı kusur `StripRenderer` ve `SparkRenderer`da da var mı, bak.
+
+**Kabul ölçütü.** Emülatörde açık temada halka widget'ı yerleştirilip hedef
+açık ama hafta boş bırakılır; emek ekseninin izi görünür. Koyu temada üç izin
+de bugünkü görüntüsü değişmez.
+
+**Kapsam dışı:** yayların (izlerin değil) renkleri — onlar zaten paletten
+geliyor; widget zemininin kendisi (madde 38'de karara bağlandı).
 
 ---
 

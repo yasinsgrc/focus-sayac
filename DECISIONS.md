@@ -3832,4 +3832,4 @@ Sonucu emek ekseninde şu: hedef açık ama hafta boşken widget'ta o eksenin ye
 hiç görünmüyor, Ekran 02'de `colors.fillSubtle` ile görünüyor. Madde 41 bu
 kusuru yaratmadı, mevcut iki ize üçüncüyü ekledi. Düzeltmek izleri
 `FocusPalette`e bağlamayı ve madde 39'un "halkanın izleri temadan bağımsız"
-varsayımını gözden geçirmeyi gerektiriyor — ayrı madde olmalı.
+varsayımını gözden geçirmeyi gerektiriyor — **madde 44** oldu.
