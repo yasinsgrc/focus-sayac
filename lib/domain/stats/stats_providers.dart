@@ -7,6 +7,7 @@ import '../settings/settings_providers.dart';
 import '../subjects/subject_providers.dart';
 import 'focus_stats.dart';
 import 'monthly_heatmap.dart';
+import 'rolling_year_heatmap.dart';
 import 'subject_breakdown.dart';
 import 'weekly_goal.dart';
 import 'weekly_summary.dart';
@@ -40,6 +41,22 @@ final monthlyHeatmapProvider = Provider.family<MonthlyHeatmap, int>((Ref ref, in
     nowUtc: DateTime.now().toUtc(),
     monthOffset: monthOffset,
   );
+});
+
+/// Ekran 06'nın yuvarlanan yıl şeridi (ROADMAP madde 37) — aynı kartta, aylık
+/// ızgaranın altında.
+///
+/// Aile **değil**, düz `Provider`: pencere sabit (son 52 hafta), anahtarlanacak
+/// bir şey yok. Madde 35 aylık olanı aileye çevirmişti çünkü orada ay gezinme
+/// var; yıl gezinme madde 37'nin kapsamı dışında.
+///
+/// Yine aynı akıştan: şeridin toplamı ile ızgaranın ay toplamı ve ekranın
+/// kümülatif odağı tek kaynaktan türüyor, birbirinden sapamaz.
+final Provider<RollingYearHeatmap> rollingYearHeatmapProvider =
+    Provider<RollingYearHeatmap>((Ref ref) {
+  final List<PomodoroSession> sessions =
+      ref.watch(allSessionsProvider).value ?? const <PomodoroSession>[];
+  return calculateRollingYearHeatmap(sessions: sessions, nowUtc: DateTime.now().toUtc());
 });
 
 /// Ekran 06'nın ders dağılımı (ROADMAP madde 30).

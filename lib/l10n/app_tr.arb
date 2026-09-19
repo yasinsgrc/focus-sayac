@@ -493,6 +493,19 @@
       "duration": { "type": "String" }
     }
   },
+  "statsHeatmapYearLabel": "SON 52 HAFTA",
+  "@statsHeatmapYearLabel": {
+    "description": "Aylık ızgaranın altındaki yuvarlanan yıl şeridinin başlığı (ROADMAP madde 37). Takvim yılı değil, bugünün haftasıyla biten 52 haftalık pencere — başlık bu yüzden bir yıl sayısı yazmıyor."
+  },
+  "statsHeatmapYearSemantics": "Son 52 haftanın {activeDays} gününde odaklandın, toplam {duration}.",
+  "@statsHeatmapYearSemantics": {
+    "description": "Yıl şeridinin ekran okuyucu karşılığı (ROADMAP madde 37); ızgaranın özet cümlesinin sonuna ekleniyor. Şerit ayrı bir durak değil — 364 hücre 364 durak demek olurdu. duration uzun hâliyle yazılmış pencere toplamı.",
+    "placeholders": {
+      "activeDays": { "type": "int" },
+      "duration": { "type": "String" }
+    }
+  },
+  "statsHeatmapYearEmptySemantics": "Son 52 haftada henüz odak yok.",
 
   "subjectMath": "Matematik",
   "subjectGeometry": "Geometri",

@@ -1,55 +1,13 @@
 import '../../core/time/app_day.dart';
 import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_enums.dart';
+import 'heatmap_scale.dart';
 
-/// Izgaranın dolu ton sayısı — [kHeatmapLevelThresholds] uzunluğuyla aynı
-/// olmak zorunda (`monthly_heatmap_test.dart` bunu çiviliyor). `const`
-/// kalabilmesi için ayrı yazıldı.
-const int kHeatmapLevels = 4;
-
-/// Seviye sınırları, dakika cinsinden ve **dahil**: 1–24 → 1, 25–49 → 2,
-/// 50–89 → 3, ≥90 → 4.
-///
-/// Eşikler **mutlak**, ayın en yoğun gününe göre ölçeklenmiyor. Bar chart
-/// sütunlarını kendi haftasının en yüksek gününe göre ölçekliyor
-/// (`WeeklyFocusBarPainter`) ama ızgarada aynı şey yanlış bir şey söylerdi:
-/// ayda tek bir 5 dakikalık günü olan kullanıcı o günü en koyu tonda görürdü.
-/// Sınırlar 25 dakikalık varsayılan pomodoronun 1 / 2 / 3+ katları; dakikada
-/// sabit oldukları için iki ay birbiriyle karşılaştırılabiliyor.
-const List<int> kHeatmapLevelThresholds = <int>[1, 25, 50, 90];
-
-/// Bir günün yoğunluk seviyesi (0 = hiç odak yok).
-int heatmapLevel(int minutes) {
-  int level = 0;
-  for (final int threshold in kHeatmapLevelThresholds) {
-    if (minutes >= threshold) level++;
-  }
-  return level;
-}
-
-/// Izgaranın tek bir hücresi.
-class HeatmapDay {
-  const HeatmapDay({
-    required this.dayKey,
-    required this.minutes,
-    required this.level,
-    required this.isFuture,
-  });
-
-  /// `appDayKey` çıktısı — 04:00 TSİ sınırlı uygulama günü.
-  final DateTime dayKey;
-
-  /// O gün **tamamlanmış** odak dakikası.
-  final int minutes;
-
-  /// 0..[kHeatmapLevels]; renk rampasının indeksi.
-  final int level;
-
-  /// Ayın henüz gelmemiş günü. Gelecek günler dolgusuz çiziliyor: ayın
-  /// 2'sinde 28 boş kutu göstermek, yaşanmamış günleri kaçırılmış gün gibi
-  /// okuturdu.
-  final bool isFuture;
-}
+/// Ölçek madde 37'de `heatmap_scale.dart`a çıktı — yuvarlanan 52 haftalık
+/// şerit de aynı eşikleri ve aynı [HeatmapDay]i kullanıyor. Buradan yeniden
+/// dışa veriliyor ki bu dosyayı import eden kart, sağlayıcı ve testler
+/// değişmek zorunda kalmasın.
+export 'heatmap_scale.dart';
 
 /// Ekran 06'nın aylık ısı haritası (ROADMAP madde 29). Pencere madde 35'ten
 /// beri gezilebilir: `monthOffset` ile geçmiş aylar da açılıyor.

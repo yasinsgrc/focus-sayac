@@ -227,11 +227,16 @@ void main() {
     await tester.scrollUntilVisible(find.byKey(heatmapPrevMonthKey), 200);
     await _settle(tester);
     expect(find.text('BU AY'), findsOneWidget);
+    // Şerit ekranda ve `rollingYearHeatmapProvider`dan besleniyor (madde 37).
+    expect(find.text('SON 52 HAFTA'), findsOneWidget);
+    expect(find.byKey(heatmapYearStripKey), findsOneWidget);
 
     // Geçen ayın seansı geri oku açıyor.
     await tester.tap(find.byKey(heatmapPrevMonthKey));
     await _settle(tester);
     expect(find.text('BU AY'), findsNothing);
+    // Izgara ayı değiştirdi, şerit yerinde: pencere sabit.
+    expect(find.text('SON 52 HAFTA'), findsOneWidget);
 
     // Ayın 15'i o ayın ızgarasında ve dolu; dokununca dakikası yazılıyor.
     await tester.tap(find.byKey(heatmapDayCellKey(15)));

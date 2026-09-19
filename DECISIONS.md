@@ -3282,3 +3282,160 @@ O dal test tarafında kapalı (§6, §7).
 banner'ın kaydırma alanının dışında kalması kuralı, Ekran 06'nın aynı
 düzeltmesinin geriye dönük regresyon testi (madde 29'da yazılmamıştı; yeni test
 yalnızca Ekran 02'yi ölçüyor).
+
+---
+
+## Madde 37 — Yıllık ısı haritası penceresi
+
+Tasarım: `docs/superpowers/specs/2026-09-19-yillik-isi-haritasi-design.md`.
+
+### 1. Neden ikinci bir pencere
+
+Madde 29 aylık ızgarayı getirdi, madde 35 onu gezilebilir yaptı. İkisi birlikte
+"bu ay hangi günler çalıştım" ve "geçen ay nasıldı"yı cevaplıyor. Cevaplanmayan
+soru **ölçek**: ritim aylar boyunca nasıl gidiyor, sınav yaklaşırken yoğunlaştı
+mı, yazın nerede koptu. Ayı ay ay gezerek bu görülmüyor — on iki ayrı bakış
+tek bir şekil etmiyor.
+
+Veri zaten bellekte. `allSessionsProvider` tüm kayıtları tutuyor, yani ikinci
+pencere **yeni sorgu değil**, aynı listeden başka bir kesit — madde 35'in
+`monthOffset` kalıbının aynısı.
+
+### 2. Takvim yılı değil, yuvarlanan 52 hafta
+
+52 sütun × 7 satır = 364 gün. Son sütun bugünün içinde bulunduğu hafta
+(Pzt–Paz), ilk sütun ondan 51 hafta öncesi.
+
+Takvim yılı (`2026`) elendi: ocakta pencere neredeyse boş olurdu ve yılın ilk
+haftalarında ritim diye gösterilecek bir şey kalmazdı. Yuvarlanan pencere her
+gün aynı miktarda geçmişi gösteriyor.
+
+Gün sınırı `appDayKey` — 04:00 TSİ (SPEC §5.3), aylık hesaplayıcıyla **aynı
+fonksiyon**. İkinci bir gün tanımı açılmadı. Gelecek günler (bu haftanın
+kalanı) çizilmiyor: madde 29'un kuralı aynen, yaşanmamış günü boş kutu olarak
+göstermek onu kaçırılmış gün gibi okuturdu.
+
+Kullanıcının uygulamayı kurmasından önceki günler seviye 0 olarak çiziliyor,
+pencereden kırpılmıyor — geçmiş bir aya bakmakla aynı davranış.
+
+### 3. Eşikler: ROADMAP'in sorusu, yerleşimin cevabı
+
+ROADMAP "madde 29'un mutlak seviye eşikleri (1/25/50/90 dk) yıllık ölçekte
+yeniden düşünülmeli" diyordu. Düşünüldü: **aynı kalıyor**, ve bu artık bir
+tercih değil, yerleşim kararının sonucu.
+
+Şerit aylık ızgarayla aynı kartta duruyor ve kartın altındaki tek efsane
+(`az ▫▪▪▪ çok`) ikisine birden hizmet ediyor. Tek efsane → tek rampa → tek eşik
+takımı. İkinci bir takım aynı günü iki ızgarada iki farklı tonda gösterirdi ve
+efsane hangisini anlattığını söyleyemezdi.
+
+Madde 29'un "ayın en yoğun gününe ölçekleme" gerekçesi yıllık ölçekte daha da
+güçlü: yılın tek 8 saatlik gününe göre ölçeklenen bir harita, 90 dakikalık
+normal günlerin hepsini soluk gösterirdi. Eşikler dakikada sabit olduğu için
+üstteki ayın koyu kutusu ile alttaki şeridin koyu kutusu aynı şeyi söylüyor.
+
+`heatmapLevel` ve `kHeatmapLevelThresholds` paylaşıldı, kopyalanmadı.
+
+### 4. Sığdırılmış şerit — etkileşim yok, bugün işareti yok
+
+360dp ekranda kullanılabilir genişlik 268dp (360 − 2×26 ekran payı − 2×20 kart
+payı). 52 sütun ve 1dp boşlukla hücre 4.17dp hesaplanıp **8px'e yuvarlanıyor**;
+emülatörde ölçülen 4.0dp.
+
+Bu boyut dokunma hedefi olarak imkânsız, o yüzden şerit `DecoratedBox`'tan
+ibaret — jest ağacı hiç kurulmuyor. Bedel kayıp değil: "bu kutu kaç dakika"
+sorusunu madde 35 zaten üstteki ızgarada cevapladı.
+
+**Bugünün ember çerçevesi yok.** Gelecek günler çizilmediği için son çizilen
+hücre zaten bugün; 4.2dp hücrede 1.5px çerçeve hücrenin üçte biri olurdu.
+
+Elenen iki düzen:
+
+- **Yatay kaydırmalı GitHub şeridi** — hücreyi 10dp'de tutar ve gün seçimini
+  yıllık görünüme taşırdı, ama Ekran 06'nın gövdesi zaten dikey kaydırılıyor;
+  içine yatay kaydırılan bir şerit koymak iki jesti birbirine düşürürdü.
+- **12 mini ay ızgarası** — kartı ~500dp uzatıyor ve on iki takvim düzeni tek
+  bir şekil olarak okunmuyor.
+
+Başlıkta `AY / YIL` segmenti de elendi: yeni bir ekran durumu, yeni bir kontrol
+ve "yıl görünümündeyken oklar ne yapar" sorusu getirirdi. Sabit şerit hiç
+hareketli parça eklemiyor.
+
+### 5. Ay adı etiketi yok
+
+`MaterialLocalizations` kısa ay adı vermiyor (`formatMonthYear` var,
+`formatShortMonth` yok). `DateFormat` ise madde 29 ve 35'in bilerek reddettiği
+şey — 12 yeni ARB anahtarı ya da karta `intl` + `initializeDateFormatting`
+bağımlılığı. Zaman çapası şeridin kendi geometrisi: sağ ucu her zaman "şimdi",
+eni her zaman 52 hafta.
+
+### 6. Paylaşılan ölçek kendi dosyasına çıktı
+
+`HeatmapDay`, `heatmapLevel`, `kHeatmapLevels` ve `kHeatmapLevelThresholds`
+`monthly_heatmap.dart`tan `heatmap_scale.dart`a taşındı. Alternatif, yıllık
+hesaplayıcının aylıktan import etmesiydi — iki pencere arasında olmayan bir
+bağımlılık uydururdu.
+
+`monthly_heatmap.dart` bir `export 'heatmap_scale.dart';` satırı ekledi, böylece
+mevcut beş import edenin (kart, ekran, sağlayıcılar, iki test) hiçbiri
+değişmedi.
+
+Ad `RollingYearHeatmap` — takvim yılı olmadığını adın kendisi söylüyor.
+Sağlayıcı `Provider`, aile değil: pencere sabit, anahtarlanacak bir şey yok.
+Kart parametresi `required`, opsiyonel değil: üretimde her zaman verilecek bir
+alanın null hâli yalnızca testlerin yaşadığı bir kod yolu olurdu.
+
+### 7. Erişilebilirlik ve bir yan bulgu
+
+Şerit kartın mevcut `ExcludeSemantics` bölgesinde kaldı — madde 29 ızgarayı tek
+durak yapmıştı, 364 hücre onu 394 durağa çıkarırdı. Kabın özet cümlesi üç
+parçaya çıktı, görsel sırayla: ızgaranın özeti, şeridin özeti, seçili gün.
+
+**Yan bulgu (düzeltilmedi):** ızgaranın özet cümlesi geçmiş ayda da "Bu ay …"
+diyor (`statsHeatmapSemantics`). Madde 35'ten kalan bir ifade kusuru; ekran
+okuyucu kullanıcısı ağustosa gidince "Bu ay 31 günün…" duyuyor. Madde 37'nin
+kapsamı dışında bırakıldı — yeni ARB anahtarı ve geçmiş ay için ayrı bir cümle
+gerektiriyor. ROADMAP madde 40'a yazıldı.
+
+### 8. Emülatör doğrulaması (2026-09-19)
+
+`focussayac_verify` (Android 16), release APK. `.verify/m37_seed.py` 52 haftanın
+tamamını tohumluyor; desen iddiaların her birini görünür kılacak şekilde
+seçildi.
+
+- **Pencere sınırları:** uygulama 22 Eyl 2025 (Pzt) – 20 Eyl 2026 (Paz) penceresi
+  çizdi — birim testinin hesabıyla birebir aynı.
+- **Satır sırası Pzt..Paz:** piksel profili 6. satırı tekdüze seviye 1 (her
+  cumartesi 20 dk) ve 7. satırı tekdüze `fillSubtle` (her pazar boş) gösterdi.
+  Tohumlanan desenin aynısı.
+- **Son çizilen hücre bugün:** bugün cumartesiydi; son sütunda pazar satırı
+  **yok**, diğer 51 sütunda var (`m37_g_sag_uc.png`).
+- **Sol kenar:** pencerenin ilk gününe konan 95 dk en koyu tonda çizildi, bir
+  gün öncesine konan 240 dk hiç görünmedi ve toplama girmedi
+  (`m37_h_sol_uc.png`).
+- **Pencere ay gezinirken sabit:** ızgara Haziran 2026'ya götürüldüğünde ay
+  toplamı 37 sa 15 dk oldu, şeridin toplamı 334 sa 9 dk olarak kaldı
+  (`m37_k_gecen_ay_serit.png`).
+- **Küçük telefon sınıfı:** `wm size 720x1440` + `wm density 320` → 360×720dp.
+  Şerit okunur kaldı, ölçülen hücre 4.0dp (`m37_m_kucuk_serit.png`).
+- **Koyu tema** aynı ekranda doğrulandı (`m37_p_koyu.png`).
+
+**Yolda çıkan tuzak — `adb push` SELinux kategorisini bozuyor.** Tohumlanan DB
+uygulamanın dizinine push edilince uygulama açılışta
+`SqliteException(14): unable to open database file` ile splash'ta asılı kaldı.
+Sebep MLS kategorisi: dizin `…:c220,c256,c512,c768`, push edilen dosya
+`…:c216,…`. `restorecon` kategoriyi düzeltmiyor; dizinin bağlamını birebir
+uygulamak gerekiyor:
+
+    adb shell chcon u:object_r:app_data_file:s0:c220,c256,c512,c768 <db>
+
+**Cihazda doğrulanamayan hâl:** reklamın açık olduğu dal (madde 36'nın notu —
+emülatörde ağ yok, UMP onay formunun WebView'ü asılı kalıyor). Şerit reklam
+yuvasından bağımsız olduğu için bu dal şeridi etkilemiyor.
+
+### 9. Kapsam dışı
+
+Yıl gezinme (geriye bir 52 hafta daha), şeritte gün seçimi, ay sınırı etiketleri
+ya da çentikleri, tam genişliğe taşan şerit (hücreyi 4.9dp'ye çıkarırdı ama iki
+ızgaranın hizasını bozardı), şeridin aylık ızgarada açık olan ayı vurgulaması,
+şeridin giriş animasyonu, diğer kartların yıllık pencereye bakması.

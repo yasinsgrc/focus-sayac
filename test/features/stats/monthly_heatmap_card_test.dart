@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:focussayac/core/theme/app_colors.dart';
 import 'package:focussayac/domain/stats/monthly_heatmap.dart';
+import 'package:focussayac/domain/stats/rolling_year_heatmap.dart';
 import 'package:focussayac/features/stats/widgets/monthly_heatmap_card.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
@@ -66,6 +67,9 @@ Future<void> _pumpCard(
               nowUtc: _nowUtc,
               monthOffset: monthOffset,
             ),
+            // Şerit aynı seans listesinden besleniyor: ay gezinse de pencere
+            // sabit olduğu için `monthOffset` buraya geçmiyor.
+            year: calculateRollingYearHeatmap(sessions: sessions, nowUtc: _nowUtc),
             selectedDay: selectedDay,
             onDayTap: onDayTap,
             onMonthStep: onMonthStep,
@@ -83,6 +87,22 @@ BoxDecoration _cellDecoration(WidgetTester tester, int dayOfMonth) {
   );
   return box.decoration as BoxDecoration;
 }
+
+BoxDecoration _yearCellDecoration(WidgetTester tester, int index) {
+  final DecoratedBox box = tester.widget<DecoratedBox>(find.byKey(heatmapYearCellKey(index)));
+  return box.decoration as BoxDecoration;
+}
+
+/// Şeritte gerçekten çizilen hücre sayısı. Şeridin kabının altında sayılıyor,
+/// yoksa aylık ızgaranın hücreleri de sayıya karışırdı.
+int _drawnYearCells(WidgetTester tester) => tester
+    .widgetList<DecoratedBox>(
+      find.descendant(
+        of: find.byKey(heatmapYearStripKey),
+        matching: find.byType(DecoratedBox),
+      ),
+    )
+    .length;
 
 void main() {
   testWidgets('kısmi ay: seviyeler renge çevriliyor, gelecek günler çizilmiyor',
@@ -115,17 +135,26 @@ void main() {
     expect(_cellDecoration(tester, 17).border, isNotNull);
     expect(_cellDecoration(tester, 16).border, isNull);
 
-    // Başlık, toplam ve ölçek.
+    // Başlık, toplam ve ölçek. Toplam iki kez: seansların hepsi eylülde, yani
+    // yıl şeridinin toplamı da aynı sayı (biri ızgaranın başlığında, biri
+    // şeridinkinde). Efsane **tek** — ikisine birden hizmet ediyor.
     expect(find.text('BU AY'), findsOneWidget);
-    expect(find.text('3 saat 40 dakika'), findsOneWidget);
+    expect(find.text('SON 52 HAFTA'), findsOneWidget);
+    expect(find.text('3 saat 40 dakika'), findsNWidgets(2));
     expect(find.text('az'), findsOneWidget);
     expect(find.text('çok'), findsOneWidget);
     // Gün başlıkları bar chart'ın ARB kataloğundan.
     expect(find.text('Pzt'), findsOneWidget);
     expect(find.text('Paz'), findsOneWidget);
 
+    // Şeridin cümlesi ızgaranınkinin hemen ardından — görsel sıra. Seansların
+    // hepsi eylülde, yani 52 haftalık pencerenin de içinde: iki cümlenin
+    // sayıları burada bilerek aynı.
     expect(
-      find.bySemanticsLabel('Bu ay 30 günün 4 gününde odaklandın, toplam 3 saat 40 dakika.'),
+      find.bySemanticsLabel(
+        'Bu ay 30 günün 4 gününde odaklandın, toplam 3 saat 40 dakika. '
+        'Son 52 haftanın 4 gününde odaklandın, toplam 3 saat 40 dakika.',
+      ),
       findsOneWidget,
     );
   });
@@ -138,7 +167,10 @@ void main() {
     expect(find.text('BU AY'), findsOneWidget);
     // "0 dakika" ölçen bir ton olurdu (haftalık kapanış kartıyla aynı gerekçe).
     expect(find.textContaining('dakika'), findsNothing);
-    expect(find.bySemanticsLabel('Bu ay henüz odak yok.'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Bu ay henüz odak yok. Son 52 haftada henüz odak yok.'),
+      findsOneWidget,
+    );
 
     // Yaşanmış günlerin hepsi boş dolguda; bugün yine çerçeveli.
     expect(_cellDecoration(tester, 1).color, _colors.fillSubtle);
@@ -159,7 +191,10 @@ void main() {
       );
     }
     expect(
-      find.bySemanticsLabel('Bu ay 30 günün 17 gününde odaklandın, toplam 42 saat 30 dakika.'),
+      find.bySemanticsLabel(
+        'Bu ay 30 günün 17 gününde odaklandın, toplam 42 saat 30 dakika. '
+        'Son 52 haftanın 17 gününde odaklandın, toplam 42 saat 30 dakika.',
+      ),
       findsOneWidget,
     );
   });
@@ -263,11 +298,14 @@ void main() {
       );
 
       expect(find.text('9 Eyl • 1sa 40dk'), findsOneWidget);
-      // Ay toplamı yerinde duruyor: seçim onun yerine geçmiyor.
-      expect(find.text('1 saat 40 dakika'), findsOneWidget);
+      // Ay toplamı yerinde duruyor: seçim onun yerine geçmiyor. İki kez
+      // bulunuyor çünkü tek seans eylülde, yani yıl şeridinin toplamı da aynı
+      // sayı — biri ızgaranın başlığında, biri şeridin başlığında.
+      expect(find.text('1 saat 40 dakika'), findsNWidgets(2));
       expect(
         find.bySemanticsLabel(
           'Bu ay 30 günün 1 gününde odaklandın, toplam 1 saat 40 dakika. '
+          'Son 52 haftanın 1 gününde odaklandın, toplam 1 saat 40 dakika. '
           'Seçili gün 9 Eyl: 1 saat 40 dakika.',
         ),
         findsOneWidget,
@@ -285,6 +323,7 @@ void main() {
       expect(
         find.bySemanticsLabel(
           'Bu ay 30 günün 1 gününde odaklandın, toplam 1 saat 40 dakika. '
+          'Son 52 haftanın 1 gününde odaklandın, toplam 1 saat 40 dakika. '
           'Seçili gün 3 Eyl: odak yok.',
         ),
         findsOneWidget,
@@ -312,6 +351,95 @@ void main() {
       );
 
       expect(_cellDecoration(tester, 17).border!.top.color, _colors.text);
+    });
+  });
+
+  group('yıl şeridi (madde 37)', () {
+    testWidgets('gelecek günler dışında her gün bir hücre', (WidgetTester tester) async {
+      await _pumpCard(tester, <PomodoroSession>[_september(9, minutes: 100)]);
+
+      // 17 Eylül 2026 perşembe: haftanın cuma/cumartesi/pazarı henüz
+      // yaşanmadı, yani 364 günün 361'i çiziliyor.
+      expect(_drawnYearCells(tester), 361);
+      expect(find.byKey(heatmapYearCellKey(0)), findsOneWidget);
+      expect(find.byKey(heatmapYearCellKey(363)), findsNothing);
+    });
+
+    testWidgets('şeridin son çizilen hücresi bugün', (WidgetTester tester) async {
+      await _pumpCard(tester, <PomodoroSession>[_september(17, minutes: 120)]);
+
+      // Bugünün indeksi: 364 − 4 = 360 (pazar 363, perşembe 360).
+      const int todayIndex = 360;
+      expect(find.byKey(heatmapYearCellKey(todayIndex)), findsOneWidget);
+      expect(find.byKey(heatmapYearCellKey(todayIndex + 1)), findsNothing);
+
+      // Bugünün hücresi en üst seviyede ve **çerçevesiz**: şeritte bugün
+      // işareti yok, çünkü son çizilen hücre zaten bugün.
+      final BoxDecoration decoration = _yearCellDecoration(tester, todayIndex);
+      expect(decoration.color, heatmapLevelColor(_colors, kHeatmapLevels));
+      expect(decoration.border, isNull);
+    });
+
+    testWidgets('seviyeler aylık ızgarayla aynı rampadan', (WidgetTester tester) async {
+      await _pumpCard(tester, <PomodoroSession>[_september(16, minutes: 120)]);
+
+      // 16 Eylül çarşamba, bugünden (perşembe) bir gün önce → indeks 359.
+      expect(_yearCellDecoration(tester, 359).color, _cellDecoration(tester, 16).color);
+      expect(_yearCellDecoration(tester, 359).color, heatmapLevelColor(_colors, kHeatmapLevels));
+    });
+
+    testWidgets('boş gün nötr dolguda, şerit boş pencerede de çiziliyor',
+        (WidgetTester tester) async {
+      await _pumpCard(tester, const <PomodoroSession>[]);
+
+      expect(_drawnYearCells(tester), 361);
+      expect(_yearCellDecoration(tester, 0).color, _colors.fillSubtle);
+      expect(find.text('SON 52 HAFTA'), findsOneWidget);
+      // Toplam boş pencerede yazılmıyor — ay toplamıyla aynı gerekçe.
+      expect(find.textContaining('dakika'), findsNothing);
+    });
+
+    testWidgets('şerit dokunmayı karşılamıyor', (WidgetTester tester) async {
+      final List<HeatmapDay> tapped = <HeatmapDay>[];
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_september(9, minutes: 100)],
+        onDayTap: tapped.add,
+      );
+
+      // Aylık hücre `onDayTap`i tetikliyor…
+      await tester.tap(find.byKey(heatmapDayCellKey(9)));
+      await tester.pump();
+      expect(tapped, hasLength(1));
+
+      // …şeridin hücresi tetiklemiyor: 4.2dp dokunma hedefi olamaz, o yüzden
+      // jest ağacı hiç kurulmuyor.
+      await tester.tap(find.byKey(heatmapYearCellKey(0)), warnIfMissed: false);
+      await tester.pump();
+      expect(tapped, hasLength(1));
+    });
+
+    testWidgets('ay gezinince şerit değişmiyor', (WidgetTester tester) async {
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_september(9, minutes: 100), _august(3, minutes: 50)],
+        monthOffset: -1,
+      );
+
+      // Izgara ağustosta ama pencere sabit: şerit yine 361 hücre ve toplamı
+      // iki ayın toplamı (1sa 40dk + 50dk = 2 saat 30 dakika).
+      expect(_drawnYearCells(tester), 361);
+      expect(find.text('2 saat 30 dakika'), findsOneWidget);
+      // Izgaranın cümlesi geçmiş ayda da "Bu ay" diyor — madde 35'ten kalan
+      // bir ifade kusuru, madde 37'nin kapsamı dışında (ROADMAP madde 40).
+      // Buradaki iddia şeridin cümlesi: ay gezinse de sayıları değişmiyor.
+      expect(
+        find.bySemanticsLabel(
+          'Bu ay 31 günün 1 gününde odaklandın, toplam 50 dakika. '
+          'Son 52 haftanın 2 gününde odaklandın, toplam 2 saat 30 dakika.',
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

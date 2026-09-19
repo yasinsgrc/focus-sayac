@@ -4,6 +4,7 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/stats/monthly_heatmap.dart';
+import '../../../domain/stats/rolling_year_heatmap.dart';
 import '../../../domain/time/duration_formatter.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import 'weekly_focus_bar_painter.dart';
@@ -16,6 +17,13 @@ Key heatmapDayCellKey(int dayOfMonth) => ValueKey<String>('heatmap-day-$dayOfMon
 /// ekran okuyucu etiketi ayrı (`statsHeatmapPreviousMonth` / `…NextMonth`).
 const Key heatmapPrevMonthKey = ValueKey<String>('heatmap-prev-month');
 const Key heatmapNextMonthKey = ValueKey<String>('heatmap-next-month');
+
+/// Yuvarlanan yıl şeridinin kabı (ROADMAP madde 37). Testler çizilen hücreleri
+/// bunun altında sayıyor — aylık ızgaranın hücreleriyle karışmasın diye.
+const Key heatmapYearStripKey = ValueKey<String>('heatmap-year-strip');
+
+/// Şeridin [index]. günü (`RollingYearHeatmap.days` sırası: eskiden yeniye).
+Key heatmapYearCellKey(int index) => ValueKey<String>('heatmap-year-$index');
 
 /// Yoğunluk rampası. `sky` tanımı gereği "veri, istatistik"
 /// (`app_colors.dart`) ve bar chart da bu rengi kullanıyor: iki grafik aynı
@@ -32,12 +40,18 @@ Color heatmapLevelColor(AppColors colors, int level) =>
 /// Takvim düzeni bu soruyu doğrudan cevaplıyor — sütunlar haftanın günleri,
 /// satırlar haftalar.
 ///
-/// `CustomPainter` değil widget ağacı: 42 hücre statik ve bir `RepaintBoundary`
+/// Madde 37'den beri kart **iki pencere** taşıyor: üstte gezilebilir aylık
+/// takvim, altında yuvarlanan 52 haftalık şerit. Izgara "bu ay hangi günler"i,
+/// şerit ölçeği söylüyor. İkisi tek efsaneyi ve tek eşik takımını paylaşıyor
+/// (`heatmap_scale.dart`) — aynı ton iki pencerede aynı şeyi anlatıyor.
+///
+/// `CustomPainter` değil widget ağacı: hücreler statik ve bir `RepaintBoundary`
 /// içinde, karşılığında her hücre testten görünüyor. Madde 31 zaten bir
 /// painter'ın doğrulanamamasından açık; ikincisi eklenmedi.
 class MonthlyHeatmapCard extends StatelessWidget {
   const MonthlyHeatmapCard({
     required this.heatmap,
+    required this.year,
     super.key,
     this.selectedDay,
     this.onDayTap,
@@ -45,6 +59,17 @@ class MonthlyHeatmapCard extends StatelessWidget {
   });
 
   final MonthlyHeatmap heatmap;
+
+  /// Aylık ızgaranın altındaki yuvarlanan 52 haftalık şerit (ROADMAP madde 37).
+  ///
+  /// Zorunlu, opsiyonel değil: üretimde her zaman verilecek bir alanın null
+  /// hâli yalnızca testlerin yaşadığı bir kod yolu olurdu. Kart yine **saf** —
+  /// bu da dışarıdan geliyor, madde 29'un "Riverpod kurmadan çizilebilen kart"
+  /// kalıbı bozulmuyor.
+  ///
+  /// Ay gezinirken **değişmiyor**: pencere sabit, `_HeatmapSection`ın offset'i
+  /// yalnızca [heatmap]i etkiliyor.
+  final RollingYearHeatmap year;
 
   /// Seçili günün anahtarı (`HeatmapDay.dayKey`) ya da seçim yokken null.
   ///
@@ -68,6 +93,15 @@ class MonthlyHeatmapCard extends StatelessWidget {
 
   /// Haftada yedi gün — ızgaranın sütun sayısı.
   static const int _columns = 7;
+
+  /// Şeridin ölçüleri. 52 sütun 268dp'ye (360dp ekranda 2×26 ekran payı ve
+  /// 2×20 kart payı düşülünce kalan) sığmak zorunda: 1dp boşlukla hücre
+  /// ~4.2dp kalıyor. Köşe o boyutta 1dp'den fazlasını kaldırmıyor.
+  static const double _yearGap = 1;
+  static const double _yearCellRadius = 1;
+
+  /// Şeridin satır sayısı — haftanın günleri, pazartesiden pazara.
+  static const int _yearRows = 7;
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +138,16 @@ class MonthlyHeatmapCard extends StatelessWidget {
                     _weekdayHeader(colors, l10n),
                     const SizedBox(height: _gap),
                     ..._rows(colors),
+                    // Şerit kartın içinde, ızgarayla **hizalı**: tam genişliğe
+                    // taşırmak hücreyi 4.9dp'ye çıkarırdı ama iki ızgaranın
+                    // aynı kenardan başladığı görsel bağı koparırdı — o bağ,
+                    // ikisinin tek efsaneyi paylaşmasının görünür hâli.
+                    const SizedBox(height: 14),
+                    _divider(colors),
+                    const SizedBox(height: 12),
+                    _yearHeader(colors, l10n),
+                    const SizedBox(height: 8),
+                    _yearStrip(colors),
                     const SizedBox(height: 12),
                     _footer(colors, l10n, dates, selected),
                   ],
@@ -218,9 +262,11 @@ class MonthlyHeatmapCard extends StatelessWidget {
     return null;
   }
 
-  /// Izgara **tek** durak kalıyor (madde 29: hücre hücre gezinme 30 durak
-  /// demekti); seçim özet cümlesinin sonuna ekleniyor. Süre burada uzun
-  /// hâlde — "45dk" harf harf okunurdu.
+  /// Kap **tek** durak kalıyor (madde 29: hücre hücre gezinme 30 durak
+  /// demekti; madde 37'nin 364 hücresiyle 394 olurdu). Üç cümle görsel sırayla
+  /// birleşiyor: aylık ızgaranın özeti, şeridin özeti, seçili gün.
+  ///
+  /// Süreler burada uzun hâlde — "45dk" ve "182sa" harf harf okunurdu.
   String _semanticsLabel(
     AppLocalizations l10n,
     MaterialLocalizations dates,
@@ -233,8 +279,15 @@ class MonthlyHeatmapCard extends StatelessWidget {
             heatmap.activeDays,
             spellFocusDuration(l10n, heatmap.totalMinutes * 60),
           );
-    if (selected == null) return summary;
-    return '$summary '
+    final String yearSummary = year.isEmpty
+        ? l10n.statsHeatmapYearEmptySemantics
+        : l10n.statsHeatmapYearSemantics(
+            year.activeDays,
+            spellFocusDuration(l10n, year.totalMinutes * 60),
+          );
+    final String base = '$summary $yearSummary';
+    if (selected == null) return base;
+    return '$base '
         '${l10n.statsHeatmapDaySelectedSemantics(
           dates.formatShortMonthDay(selected.dayKey),
           selected.minutes > 0
@@ -357,9 +410,104 @@ class MonthlyHeatmapCard extends StatelessWidget {
   }
 
   /// Yalnızca yaşanmış günler için çağrılıyor: doldurulmamış gün nötr bir
-  /// dolgu, dolu gün yoğunluk rampası.
+  /// dolgu, dolu gün yoğunluk rampası. Aylık hücre de yıllık hücre de aynı
+  /// fonksiyondan geçiyor — tek efsanenin gerektirdiği şey.
   Color _cellColor(AppColors colors, HeatmapDay day) =>
       day.level > 0 ? heatmapLevelColor(colors, day.level) : colors.fillSubtle;
+
+  /// İki pencereyi ayıran saç teli. Kartın kendi kenarlığıyla aynı renk:
+  /// "aynı kartın içinde başka bir bölüm" demenin en sessiz yolu.
+  Widget _divider(AppColors colors) => SizedBox(
+        height: 1,
+        child: ColoredBox(color: colors.hairline),
+      );
+
+  /// Şeridin başlığı. Ay başlığının dilbilgisinin aynısı — solda kicker, sağda
+  /// pencerenin toplamı `sky` tonunda. Aynı konum aynı anlam: "bu pencerenin
+  /// toplamı".
+  ///
+  /// Başlık bir yıl sayısı yazmıyor (`SON 52 HAFTA`) çünkü pencere takvim yılı
+  /// değil; sağ ucu her zaman bu hafta.
+  ///
+  /// Toplam boş pencerede hiç yazılmıyor — ay toplamının gerekçesinin aynısı.
+  Widget _yearHeader(AppColors colors, AppLocalizations l10n) {
+    return Row(
+      children: <Widget>[
+        Text(
+          l10n.statsHeatmapYearLabel,
+          style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral600),
+        ),
+        Expanded(
+          child: year.isEmpty
+              ? const SizedBox.shrink()
+              : Text(
+                  spellFocusDuration(l10n, year.totalMinutes * 60),
+                  textAlign: TextAlign.end,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.sky),
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// Yuvarlanan 52 haftalık şerit: sütunlar haftalar (eskiden yeniye), satırlar
+  /// haftanın günleri (pazartesiden pazara). `days[sütun * 7 + satır]`.
+  ///
+  /// Hücre ~4.2dp, yani dokunma hedefi olarak imkânsız — şerit jest ağacı hiç
+  /// kurmuyor. Kayıp değil: "bu kutu kaç dakika" sorusunu madde 35 zaten
+  /// üstteki aylık ızgarada cevapladı. Şeridin işi tek bir şey, yılın şekli.
+  ///
+  /// Ay adı etiketi yok: `MaterialLocalizations` kısa ay adı vermiyor ve
+  /// `DateFormat` madde 29/35'in bilerek reddettiği şey (12 yeni ARB anahtarı
+  /// ya da karta `intl` + `initializeDateFormatting` bağımlılığı). Zaman
+  /// çapası şeridin kendi geometrisi.
+  Widget _yearStrip(AppColors colors) {
+    return Row(
+      key: heatmapYearStripKey,
+      children: <Widget>[
+        for (int week = 0; week < kRollingYearWeeks; week++) ...<Widget>[
+          if (week > 0) const SizedBox(width: _yearGap),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                for (int row = 0; row < _yearRows; row++) ...<Widget>[
+                  if (row > 0) const SizedBox(height: _yearGap),
+                  // `AspectRatio` kendi boyunu kısıtlardan alıyor, çocuğundan
+                  // değil: gelecek gün çizilmese de yuva duruyor, yoksa son
+                  // sütun diğerlerinden kısa kalır ve `Row` onu ortalardı.
+                  AspectRatio(
+                    aspectRatio: 1,
+                    child: _yearCell(colors, week * _yearRows + row),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Şeridin tek hücresi. Gelecek gün — bu haftanın kalanı — çizilmiyor:
+  /// madde 29'un kuralı aynen, yaşanmamış günü boş kutu olarak göstermek onu
+  /// kaçırılmış gün gibi okuturdu.
+  ///
+  /// Bugünün ember çerçevesi **yok**: gelecek günler çizilmediği için son
+  /// çizilen hücre zaten bugün, işaret gereksiz olurdu. Ayrıca 4.2dp hücrede
+  /// 1.5px çerçeve hücrenin üçte biri demek.
+  Widget _yearCell(AppColors colors, int index) {
+    final HeatmapDay day = year.days[index];
+    if (day.isFuture) return const SizedBox.shrink();
+    return DecoratedBox(
+      key: heatmapYearCellKey(index),
+      decoration: BoxDecoration(
+        color: _cellColor(colors, day),
+        borderRadius: BorderRadius.circular(_yearCellRadius),
+      ),
+    );
+  }
 
   /// Rampanın okuma anahtarı (`az ▢▣▤▥ çok`) ve solunda seçili günün
   /// karşılığı: `18 Eyl • 45dk`.

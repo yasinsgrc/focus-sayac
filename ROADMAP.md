@@ -1218,14 +1218,49 @@ aynı gizli kusur duruyor — orada içerik henüz o kadar uzamıyor").
 
 ---
 
-## 37. Yıllık ısı haritası penceresi
+## 37. Yıllık ısı haritası penceresi ✅ bitti
 
-Madde 29 ve 35'in kapsam dışı bıraktığı üç şeyden geriye kalan tek iş. Ekran
-06'daki aylık ızgaranın yanına 52 haftalık bir pencere: yeni sorgu değil,
-`allSessionsProvider`ın aynı listesinden başka bir pencere (madde 35'in
-`monthOffset` kalıbının aynısı). Madde 29'un mutlak seviye eşikleri (1/25/50/90
-dk) yıllık ölçekte yeniden düşünülmeli — bir yılın en yoğun gününe göre
-ölçeklemek aynı sebeple yanlış olur. Gün sınırı yine 04:00 TSİ, tek yerde.
+489 test geçiyor (+18). Kararlar: `DECISIONS.md` "Madde 37", tasarım
+`docs/superpowers/specs/2026-09-19-yillik-isi-haritasi-design.md`. Madde 29 ve
+35'in kapsam dışı bıraktığı üç şeyden geriye kalan sonuncusu; o liste kapandı.
+
+- **Pencere takvim yılı değil, yuvarlanan 52 hafta.** 52 sütun × 7 satır = 364
+  gün; son sütun bugünün içinde bulunduğu hafta (Pzt–Paz). Takvim yılı elendi —
+  ocakta pencere neredeyse boş olur ve ritim diye gösterilecek bir şey kalmazdı.
+  Yeni sorgu yok: `allSessionsProvider`ın aynı listesinden başka bir kesit
+  (madde 35'in kalıbı). Gün sınırı yine `appDayKey`, aylık hesaplayıcıyla aynı
+  fonksiyon.
+- **Eşikler aynı kaldı, ve bu bir tercih değil sonuç.** Şerit aylık ızgarayla
+  aynı kartta durduğu için karttaki **tek efsane** ikisine birden hizmet ediyor:
+  tek efsane → tek rampa → tek eşik takımı. İkinci bir takım aynı günü iki
+  ızgarada iki farklı tonda gösterirdi. `heatmapLevel` ve eşikler paylaşıldı,
+  kopyalanmadı.
+- **Sığdırılmış şerit, salt bakış.** 360dp ekranda hücre 4.17dp hesaplanıp 8px'e
+  yuvarlanıyor (emülatörde ölçülen 4.0dp). Dokunma hedefi olamayacağı için jest
+  ağacı hiç kurulmuyor — "bu kutu kaç dakika" sorusunu madde 35 zaten üstteki
+  ızgarada cevapladı. Bugünün ember çerçevesi de yok: gelecek günler
+  çizilmediği için son çizilen hücre zaten bugün.
+- **Elenen düzenler:** yatay kaydırmalı GitHub şeridi (Ekran 06 zaten dikey
+  kaydırılıyor, iki jest birbirine düşerdi), 12 mini ay ızgarası (kartı ~500dp
+  uzatıyor), başlıkta `AY / YIL` segmenti (yeni durum + "oklar ne yapar"
+  sorusu). Ay adı etiketi yok — `MaterialLocalizations` kısa ay adı vermiyor.
+- **Paylaşılan ölçek `heatmap_scale.dart`a çıktı**, `monthly_heatmap.dart` onu
+  re-export ediyor: mevcut beş import edenin hiçbiri değişmedi. Yeni hesaplayıcı
+  `RollingYearHeatmap`; sağlayıcı aile değil (pencere sabit).
+- **Emülatör doğrulandı (2026-09-19).** `focussayac_verify` (Android 16),
+  release. `.verify/m37_seed.py` 52 haftayı tohumluyor. Doğrulananlar: pencere
+  sınırları birim testiyle birebir aynı (22 Eyl 2025 Pzt – 20 Eyl 2026 Paz);
+  satır sırası Pzt..Paz (6. satır tekdüze seviye 1 = her cumartesi 20 dk, 7.
+  satır tekdüze boş = her pazar); son sütunda pazar çizilmiyor (bugün
+  cumartesiydi); pencerenin ilk günü çiziliyor, bir gün öncesi hiç görünmüyor;
+  ızgara Haziran 2026'ya götürülünce ay toplamı 37 sa 15 dk oldu ama şerit
+  334 sa 9 dk'da kaldı; 360×720dp küçük telefon sınıfı ve koyu tema.
+- **Yolda çıkan tuzak:** `adb push` tohumlanan DB'nin SELinux **MLS
+  kategorisini** bozuyor (dizin `c220`, dosya `c216`) ve uygulama
+  `SqliteException(14)` ile splash'ta asılı kalıyor. `restorecon` düzeltmiyor;
+  dizinin bağlamını `chcon` ile birebir uygulamak gerekiyor.
+- **Kapsam dışı:** yıl gezinme, şeritte gün seçimi, ay sınırı etiketleri, tam
+  genişliğe taşan şerit, şeridin açık olan ayı vurgulaması, giriş animasyonu.
 
 ---
 
@@ -1253,6 +1288,24 @@ yaklaşım hiç çalıştırılmamış kodda **gerçek bir hata** bulmuştu (üs
 kıvılcımlar sessizce atlanıyordu), yani boşluk teorik değil. Uygulamada görünür
 değişiklik yok; kanıt test koşumu. Türkçe yerel ayarı tuzağı (conscrypt tr-TR'de
 `wındows` arıyor) burada da geçerli: test JVM'i `-Duser.language=en` ile koşmalı.
+
+---
+
+## 40. Izgaranın özet cümlesi geçmiş ayda da "Bu ay" diyor
+
+Madde 37'de yolda çıkan, kapsam dışı bırakılan bir ifade kusuru. Madde 35 ay
+gezinmeyi getirdi ve kartın **başlığını** geçmiş ayda ay adına çevirdi
+(`Ağustos 2026`), ama ekran okuyucunun duyduğu cümle
+(`statsHeatmapSemantics`) sabit kaldı: "**Bu ay** 31 günün 1 gününde
+odaklandın…". Gören kullanıcı ağustosa baktığını biliyor, ekran okuyucu
+kullanıcısı bilmiyor — üstelik gezinme okları onun da kullanabildiği iki durak
+(madde 35 bunları bilerek durak yaptı), yani kendi gittiği aya yanlış isim
+duyuyor.
+
+Düzeltme yeni bir ARB anahtarı gerektiriyor (geçmiş ay için ay adını alan bir
+cümle); kart zaten `MaterialLocalizations.formatMonthYear`i elinde tutuyor,
+yani yeni bağımlılık yok. Boş ay dalı (`statsHeatmapEmptySemantics`) aynı
+sorunu taşıyor.
 
 ---
 

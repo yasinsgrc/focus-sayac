@@ -301,6 +301,9 @@ class _HeatmapSectionState extends ConsumerState<_HeatmapSection> {
   Widget build(BuildContext context) {
     return MonthlyHeatmapCard(
       heatmap: ref.watch(monthlyHeatmapProvider(_monthOffset)),
+      // Şerit `_monthOffset`e bakmıyor: pencere sabit (son 52 hafta), ay
+      // gezinirken değişmiyor. Yıl gezinme madde 37'nin kapsamı dışında.
+      year: ref.watch(rollingYearHeatmapProvider),
       selectedDay: _selectedDay,
       onDayTap: _toggleDay,
       onMonthStep: _step,
