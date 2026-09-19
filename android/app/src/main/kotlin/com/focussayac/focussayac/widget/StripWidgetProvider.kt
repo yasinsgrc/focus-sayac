@@ -25,7 +25,12 @@ class StripWidgetProvider : BaseFocusWidgetProvider() {
                 context = render.context,
                 widthPx = render.px(BAR_WIDTH_DP),
                 heightPx = render.px(BAR_HEIGHT_DP),
-                ratio = if (render.muted) 0f else render.ratio,
+                // Oran oldugu gibi gidiyor, `muted` kararini cizici veriyor -
+                // ROADMAP madde 43. Once burada 0'a cevriliyordu ve serit o
+                // sifirdan bir kapak cikariyordu; halka ayni durumda yayi hic
+                // cizmiyor.
+                ratio = render.ratio,
+                muted = render.muted,
                 accentColor = render.accent,
             ),
         )

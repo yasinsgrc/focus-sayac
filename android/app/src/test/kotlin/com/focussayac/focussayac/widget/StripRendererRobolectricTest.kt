@@ -42,6 +42,13 @@ class StripRendererRobolectricTest {
     }
 
     @Test
+    fun `sinav secilmemisken dolgu yok`() {
+        StripRendererContract.verifyMutedHasNoFill(
+            StripRendererContract.render(context, 0.75f, muted = true),
+        )
+    }
+
+    @Test
     fun `dolgu sinav renginden koza gidiyor`() {
         StripRendererContract.verifyGradientDirection(ladder.getValue(100))
     }

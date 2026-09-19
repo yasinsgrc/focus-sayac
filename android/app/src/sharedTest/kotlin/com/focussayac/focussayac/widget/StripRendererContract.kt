@@ -38,13 +38,15 @@ object StripRendererContract {
     /** Merdiven: oran yuzde olarak, bitmap'e. */
     val RATIO_PERCENTS = listOf(5, 25, 50, 75, 100)
 
-    fun render(context: Context, ratio: Float): Bitmap = StripRenderer.render(
-        context = context,
-        widthPx = WIDTH_PX,
-        heightPx = HEIGHT_PX,
-        ratio = ratio,
-        accentColor = ACCENT,
-    )
+    fun render(context: Context, ratio: Float, muted: Boolean = false): Bitmap =
+        StripRenderer.render(
+            context = context,
+            widthPx = WIDTH_PX,
+            heightPx = HEIGHT_PX,
+            ratio = ratio,
+            muted = muted,
+            accentColor = ACCENT,
+        )
 
     fun renderLadder(context: Context): Map<Int, Bitmap> =
         RATIO_PERCENTS.associateWith { render(context, it / 100f) }
@@ -95,19 +97,39 @@ object StripRendererContract {
     }
 
     /**
-     * 3. Cok kucuk oranlarda dolgu kaybolmuyor: en az bir yuvarlak uc kadar
-     * kaliyor. Renderer'in kendi sozu; oran sifirken de gecerli, cunku
-     * `StripWidgetProvider` sinav secilmemisken 0 gonderiyor ve serit o zaman
-     * bos bir izle degil, bir kapakla duruyor.
+     * 3. Cok kucuk ama SIFIR OLMAYAN oranlarda dolgu kaybolmuyor: en az bir
+     * yuvarlak uc kadar kaliyor. Renderer'in kendi sozu - ROADMAP madde 43'ten
+     * beri yalnizca bu kapsamda.
+     *
+     * Merdivenin alt ucu 0.06: `FocusWidgetSnapshot.progressRatio` orani
+     * `clamp(1 - days/400, 0.06, 1)` ile kirpiyor, yani uretimde bundan kucuk
+     * bir oran hic gelmiyor. Renderer yine de 0.001'i kaldiriyor - girdisinin
+     * kirpilmis geldigine guvenmiyor.
      */
     fun verifyMinimumFill(context: Context) {
-        listOf(0f, 0.001f).forEach { ratio ->
+        listOf(0.001f, 0.06f).forEach { ratio ->
             val measured = fillWidth(render(context, ratio))
+            val expected = (WIDTH_PX * ratio).coerceAtLeast(HEIGHT_PX.toFloat())
             assertTrue(
-                "oran $ratio: dolgu ${measured}px, beklenen ~$HEIGHT_PX px (bir kapak)",
-                abs(measured - HEIGHT_PX) <= 2f,
+                "oran $ratio: dolgu ${measured}px, beklenen ~${expected}px",
+                abs(measured - expected) <= 2f,
             )
         }
+    }
+
+    /**
+     * 5. Sinav secilmemisken dolgu hic cizilmiyor - `muted` izi birakiyor,
+     * dolguyu almiyor. `RingRendererContract.verifyMutedHasNoArc`in birebir
+     * ikizi: ROADMAP madde 43, iki widget yan yana dururken bos durumu ayni
+     * gorsel dille anlatsin diye.
+     *
+     * Onceki davranis soldaki yuvarlak uc kadar bir kapakti; halkanin emek
+     * yayinda ayni sey bilerek kapatilmis ("sifir uzunluklu yay yuvarlak ucla
+     * nokta birakirdi").
+     */
+    fun verifyMutedHasNoFill(bitmap: Bitmap) {
+        verifyTrack(bitmap)
+        assertEquals("sinav yokken dolgu cizilmis", 0f, fillWidth(bitmap), 0f)
     }
 
     /**

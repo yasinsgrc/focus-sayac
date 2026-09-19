@@ -1490,16 +1490,42 @@ noktası yapmak (üç bildirimin hepsini ilgilendirir, bkz. `DECISIONS.md`).
 
 ---
 
-## 43. Ring ile Strip boş durumda aynı dili konuşmuyor ⬜ sırada
+## 43. Ring ile Strip boş durumda aynı dili konuşmuyor ✅ bitti
+
+501 Dart testi ve 29 + 27 Kotlin testi geçiyor. Kararlar: `DECISIONS.md`
+"Madde 43". Tasarım:
+`docs/superpowers/specs/2026-09-19-serit-bos-durum-design.md`.
 
 Madde 39'un sözleşmeyi yazarken bulduğu, kapsam dışı bıraktığı ayrışma. Sınav
-seçilmemişken (`muted`) `StripRenderer` boş iz yerine bir kapak çiziyor,
+seçilmemişken (`muted`) `StripRenderer` boş iz yerine bir kapak çiziyordu,
 `RingRenderer` ise yayı hiç çizmiyor. Sözleşme ikisinin bugünkü davranışını
 sabitledi ama hangisinin doğru olduğuna karar vermedi; iki widget yan yana
-durduğunda aynı durumu iki farklı görsel dille anlatıyorlar.
+durduğunda aynı durumu iki farklı görsel dille anlatıyordu.
+
+**Karar: halkanın dili doğru — boş, çıplak iz.** Üç dayanak:
+
+- Şeridin kapağı `fillWidth`in tabanının yan ürünüydü. Taban "çok küçük
+  oranlarda çubuk kayboluyordu" diye yazılmış, ama `progressRatio` oranı
+  0.06'ya kırpıyor: sınav varken taban hiç ateşlenmiyor, yalnızca `muted` için
+  gönderilen `0f`'ta çalışıyordu — tam da halkanın hiçbir şey çizmediği durumda.
+- Aynı kusur halkada iki yüzeyde birden bilerek kapatılmış
+  (`RingRenderer.drawEffortArc` ve `countdown_ring_painter.dart`): *"sıfır
+  uzunluklu yay yuvarlak uçla nokta bırakırdı"*. Şeridin kapağı o leke.
+- Şeridin uygulama içinde ikizi yok; "boş" dilini kuran tek otorite halka.
+
+`StripRenderer.render` artık `muted` alıyor ve sağlayıcı gerçek oranı geçiyor —
+karar halkadaki gibi çizicinin içinde. Taban silinmedi, kapsamı daraldı: sıfır
+olmayan oran için geçerli. Sözleşmenin 3. iddiası buna göre yeniden yazıldı
+(`0f, 0.001f` → `0.001f, 0.06f`) ve `verifyMutedHasNoFill` eklendi —
+`verifyMutedHasNoArc`ın birebir ikizi.
+
+**Emülatör doğrulandı (2026-09-19).** Çizicinin üretim ölçüsündeki çıktısında
+boş karede `0x80` üstü **0 px**, iz uçtan uca 0x12; %25 karesinde dolgu 158 px.
+Şerit widget'ı ana ekrana konup sınav seçiliyken turuncu dolgu 275 px ölçüldü,
+`pm clear` sonrası "HEDEF SEÇİLMEDİ" karesinde o satırda tek turuncu piksel yok.
 
 **Kapsam dışı:** `SparkRenderer` ve `FlameRenderer`ın boş durumu (ikisinin
-girdisi sınava bağlı değil).
+girdisi sınava bağlı değil); izlerin açık temada görünmemesi (madde 44).
 
 ---
 

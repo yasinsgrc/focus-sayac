@@ -15,6 +15,9 @@ import android.graphics.Shader
  *
  * Dolgu, sinavin accent renginden ember rengine giden bir gradyan: sinav
  * yaklastikca cubugun ucu isiniyor.
+ *
+ * Bos durumun dili halkaninkiyle ayni (ROADMAP madde 43): `muted`'ken iz kalir,
+ * dolgu cizilmez.
  */
 object StripRenderer {
 
@@ -23,6 +26,7 @@ object StripRenderer {
         widthPx: Int,
         heightPx: Int,
         ratio: Float,
+        muted: Boolean,
         accentColor: Int,
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
@@ -40,8 +44,21 @@ object StripRenderer {
             track,
         )
 
-        // Dolgu genisligi en az bir yuvarlak uc kadar: cok kucuk oranlarda
-        // cubuk tamamen kayboluyordu.
+        // Sinav secilmemisken (ve sinav gectiginde) yalnizca iz kaliyor -
+        // ROADMAP madde 43. Halkanin `if (!muted)` kuralinin ikizi: ses
+        // kisilinca iz duruyor, dolgu alinmiyor.
+        //
+        // Onceki hali asagidaki tabanin yan urunuydu: oran 0 gelince cubugun
+        // solunda bir yuvarlak uc kaliyordu. Halkanin emek yayinda ayni sey
+        // bilerek kapatilmis ("sifir uzunluklu yay yuvarlak ucla nokta
+        // birakirdi"), serit onu kapatmamisti.
+        if (muted) return bitmap
+
+        // Dolgu genisligi en az bir yuvarlak uc kadar: cok kucuk - ama sifir
+        // olmayan - oranlarda cubuk tamamen kayboluyordu. Uretimde
+        // `FocusWidgetSnapshot.progressRatio` orani 0.06'ya kirpiyor, yani bu
+        // taban hic ateslenmiyor; yine de duruyor, renderer girdisinin kirpilmis
+        // geldigine guvenmiyor.
         val fillWidth = (widthPx * ratio.coerceIn(0f, 1f)).coerceAtLeast(heightPx.toFloat())
         val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = LinearGradient(

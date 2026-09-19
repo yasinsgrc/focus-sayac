@@ -3934,3 +3934,78 @@ sığmıyor.
 
 İkinci satır karşı kontrol: hedef tutmayınca bugünkü dört varyant bozulmadan
 duruyor, ve hedef cümlesi "her hâlde çıkan" bir metin değil.
+
+---
+
+## Madde 43 — Ring ile Strip boş durumda aynı dili konuşuyor
+
+Madde 39 sözleşmeyi yazarken iki çizicinin boş durumda ayrıştığını bulmuş, ama
+hangisinin doğru olduğuna karar vermeden ikisinin **bugünkü** davranışını
+sabitlemişti: sınav seçilmemişken halka yayı hiç çizmiyor, şerit ise solda bir
+kapak bırakıyordu. Ana ekranda yan yana duran iki widget aynı durumu iki farklı
+görsel dille anlatıyordu.
+
+Tasarım: `docs/superpowers/specs/2026-09-19-serit-bos-durum-design.md`.
+
+### 1. Halkanın dili doğru: boş, çıplak iz
+
+Şeridin kapağı `fillWidth`in tabanından (`coerceAtLeast(heightPx)`) geliyordu.
+O tabanın yorumu "çok küçük oranlarda çubuk tamamen kayboluyordu" diyor — ama
+`FocusWidgetSnapshot.progressRatio` oranı `clamp(1 - days/400, 0.06, 1)` ile
+kırpıyor, ve %6 dolgu 240×6dp'lik çubukta ~14.4dp, yani tabandan iki kat uzun.
+Taban üretimde **yalnızca** `StripWidgetProvider`ın `muted` için gönderdiği
+`0f`'ta ateşleniyordu; yani yazılış gerekçesinin dışındaki tek durumda, tam da
+halkanın hiçbir şey çizmemeyi seçtiği durumda.
+
+Kapağı doğru kabul etmek tersi yönde çalışırdı: aynı kusur halkada iki yüzeyde
+birden bilerek kapatılmış. `RingRenderer.drawEffortArc` ve
+`countdown_ring_painter.dart` aynı cümleyi taşıyor — *"sıfır uzunluklu yay
+yuvarlak uçla nokta bırakırdı; haftanın başında ekranda açıklanamayan bir leke
+olurdu"*. Şeridin kapağı o lekenin düz çizgiye açılmış hali. Üstelik şeridin
+uygulama içinde ikizi yok (`lib`'de doğrusal doluluk çubuğu bulunmuyor), yani
+"boş" dilini kuran tek otorite halka; kapağı seçmek madde 41'in yeni kapattığı
+Dart ↔ Kotlin paritesini yeniden açardı.
+
+### 2. Karar sağlayıcıdan çizicinin içine taşındı
+
+`StripRenderer.render` `muted: Boolean` alıyor, `StripWidgetProvider` gerçek
+oranı geçiyor — `ratio = if (render.muted) 0f else render.ratio` numarası
+kalktı. Halkada karar zaten çizicinin içindeydi (`if (!muted)`); iki imza
+böylece aynı dili konuşuyor.
+
+Örtük "0 = boş" eşlemesi de böylece kalktı. Onunla %0 ile %0.1 arasında
+hiçlik→tam kapak uçurumu vardı; aradaki fark artık sayısal değil anlamsal.
+`EXPIRED` de `muted` sayıldığı için sınav geçtiğinde oran 1.0 gelse bile dolgu
+çizilmiyor — bugünkü davranış korundu.
+
+### 3. Taban silinmedi, kapsamı daraldı
+
+`coerceAtLeast(heightPx)` yerinde: sözü değişmiyor, yalnızca **sıfır olmayan**
+oran için geçerli. Üretimdeki 0.06 kırpması onu zaten ateşlemiyor ama renderer
+kendi girdisinin kırpılmış geldiğine güvenmemeli. Sözleşmenin 3. iddiası da
+buna göre yeniden yazıldı: merdiven `0f, 0.001f` yerine `0.001f, 0.06f`, ve
+iddianın "şerit boş bir izle değil bir kapakla duruyor" diyen yorumu — maddenin
+yanlış saydığı cümle — kaldırıldı.
+
+### 4. Yeni iddia halkanınkinin ikizi
+
+`StripRendererContract.verifyMutedHasNoFill`, `verifyMutedHasNoArc` ile aynı
+biçimde: iz kesintisiz duruyor **ve** orta satırda `0x80` üstü tek piksel yok.
+İki koşum evi de (Robolectric NATIVE + cihaz) alıyor.
+
+**Emülatör doğrulandı (2026-09-19).** `focussayac_verify`de 27 cihaz testi
+geçiyor. Çizicinin kendi çıktısı üretim ölçüsünde (630×15) PNG olarak döküldü:
+
+| kare | dolgu (alfa ≥ 0x80) | orta satır alfa |
+| --- | --- | --- |
+| `m43_a_serit_bos` | 0 px | 18..18 (0x12, uçtan uca) |
+| `m43_b_serit_dolu` (%25) | 158 px (≈ 630×0,25) | 18..255 |
+
+Sonra şerit widget'ı gerçekten ana ekrana kondu. Sınav seçiliyken (YKS, 274 gün)
+çubuğun turuncu dolgusu x=104..378 arasında, 275 px; `pm clear` sonrası aynı
+widget "HEDEF SEÇİLMEDİ" derken o satırda **tek turuncu piksel yok** — kapak
+gitti, iz kaldı.
+
+**Kapsam dışı:** `SparkRenderer` ve `FlameRenderer`ın boş durumu (ikisinin
+girdisi sınava bağlı değil); izlerin açık temada görünmemesi (madde 44) — bu
+madde izin rengine değil, dolgunun çizilip çizilmediğine dokunuyor.
