@@ -29,6 +29,18 @@ data class FocusWidgetSnapshot(
     val sessionActive: Boolean,
     /** Tum zamanlarin tamamlanmis odak suresi (saniye) - mesale widget'inin girdisi. */
     val cumulativeFocusSeconds: Int,
+    /**
+     * Haftalik hedef (saniye); 0 = hedef kapali. Dart'taki
+     * `WeeklyGoalProgress.goalSeconds`in ikizi.
+     */
+    val weeklyGoalSeconds: Int,
+    /**
+     * Hedefin penceresinde tamamlanmis odak suresi (saniye) -
+     * `WeeklyGoalProgress.focusedSeconds`. [weeklyMinutes]'in toplami DEGIL:
+     * o liste gun basina `saniye / 60` tasiyor ve tam dakika olmayan bir
+     * seansta widget ile Ekran 02 farkli bir yay cizerdi.
+     */
+    val weeklyFocusedSeconds: Int,
 ) {
     enum class State { NO_EXAM, COUNTING, TODAY, EXPIRED }
 
@@ -47,6 +59,27 @@ data class FocusWidgetSnapshot(
      */
     fun progressRatio(nowMillis: Long): Float =
         (1f - daysLeft(nowMillis) / 400f).coerceIn(0.06f, 1f)
+
+    /**
+     * Haftalik hedefin dolulugu (0..1), hedef kapaliyken `null` - halka
+     * widgetinin emek yayi (ROADMAP madde 41).
+     *
+     * `0f` DEGIL `null`: bos bir yay "hedefinin %0'indasin" derdi, oysa
+     * kullanicinin koydugu bir hedef yok. `CountdownRingPainter.effortRatio`in
+     * ayni karari.
+     */
+    fun weeklyEffortRatio(): Float? {
+        if (weeklyGoalSeconds <= 0) return null
+        return (weeklyFocusedSeconds.toFloat() / weeklyGoalSeconds).coerceIn(0f, 1f)
+    }
+
+    /**
+     * Sinir DAHIL: hedefi tam karsilayan hafta tamamlanmis sayiliyor
+     * (`WeeklyGoalProgress.isReached` ile ayni kural). Oranin kendisinden
+     * okunamaz - oran 1.0'da kirpili.
+     */
+    fun weeklyGoalReached(): Boolean =
+        weeklyGoalSeconds > 0 && weeklyFocusedSeconds >= weeklyGoalSeconds
 
     fun state(nowMillis: Long): State = when {
         !hasActiveExam -> State.NO_EXAM
@@ -84,6 +117,8 @@ data class FocusWidgetSnapshot(
                 weeklyMinutes = parseWeekly(all.str("weeklyMinutes")),
                 sessionActive = all.bool("sessionActive"),
                 cumulativeFocusSeconds = all.int("cumulativeFocusSeconds"),
+                weeklyGoalSeconds = all.int("weeklyGoalSeconds"),
+                weeklyFocusedSeconds = all.int("weeklyFocusedSeconds"),
             )
         }
 

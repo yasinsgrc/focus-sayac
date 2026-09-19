@@ -1384,6 +1384,97 @@ testinde sabit.
 
 ---
 
+## 41. Widget'ın halkasında emek yayı yok ✅ bitti
+
+496 Dart testi (495 + 1), 28 Kotlin birim testi (+10), 25 cihaz testi (+5)
+geçiyor. Kararlar: `DECISIONS.md` "Madde 41". Tasarım:
+`docs/superpowers/specs/2026-09-19-widget-emek-yayi-design.md`.
+
+Madde 27'nin kapsam dışı bıraktığı iş. Geri sayım halkasına ikinci bir eksen —
+haftalık hedefin emek yayı — eklendi ama yalnızca Ekran 02'ye. Ana ekran
+widget'ının Kotlin ikizi `RingRenderer.kt` hâlâ madde 27 öncesinin halkası:
+zaman yayı ve günün döngüsü var, emek yayı yok. Aynı halka iki yüzeyde iki
+farklı şey anlatıyor; üstelik widget'ın gösterdiği zaman yayı tam da madde
+27'nin şikâyet ettiği ölü aralıkta duran yay.
+
+**Kapsam.**
+
+- Payload'a iki yeni anahtar: `weeklyGoalSeconds` ve `weeklyFocusedSeconds` —
+  `WeeklyGoalProgress`in iki alanı birebir. Oran ve "hedef doldu" kararı Kotlin
+  tarafında türetiliyor, gönderilmiyor.
+- Yay uygulamadakiyle aynı yere: r=119, kalınlık 4, köz → dolunca nane, altında
+  soluk iz. Zaman yayının hiçbir ölçüsü değişmiyor.
+- **Hedef kapalıyken yay da izi de çizilmiyor** (`null` ≠ `0.0`) —
+  `CountdownRingPainter`ın kararı aynen taşınıyor.
+- Günün döngüsü yayı (r=112, madde 28) yerinde kalıyor: halka üç yaylı oluyor.
+- Kicker'ın sığma kirişi zaman izinin iç kenarından (125.5) emek yayının iç
+  kenarına (117) iniyor — madde 39'un `labelFitFor`u yeni iç sınırı görmeli,
+  yoksa uzun durum adları yeni yayın üstüne biner.
+- `RingRendererContract`a yeni iddialar; hem Robolectric hem cihaz koşumu.
+
+**Emülatör doğrulandı (2026-09-19).** `focussayac_verify`de halka widget'ı
+gerçekten ana ekrana **yerleştirildi** (widget seçiciden sürükleyerek; madde
+39'un notu hâlâ geçerli, `appwidget` kabuk komutu koymuyor). Veritabanındaki
+haftalık hedef üç kez değiştirilip uygulama açıldı, her seferinde ana ekran
+görüntüsü alındı ve yaylar piksel piksel ölçüldü:
+
+| durum | zaman (mavi) | emek | gün (nane) |
+| --- | --- | --- | --- |
+| hedef kapalı | %32.8 | **yok** (iz dahil) | %75.3 |
+| 605 dk / 1440 dk | %32.8 | **%42.6 köz** | %75.3 |
+| 605 dk / 600 dk | %32.8 | **%100 nane** | %75.3 |
+
+Zaman yayı üçünde de kıpırdamadı (beklenen `1−274/400` = %31.5, üstü yuvarlak
+uç payı) — iki eksen gerçekten bağımsız. Emek oranı payload'daki iki ham
+sayıyla birebir (`36300 / 86400` = %42.0). Uçtan uca sözleşme de doğrulandı:
+`shared_prefs`te `weeklyGoalSeconds` ve `weeklyFocusedSeconds` göründü ve
+`weeklyFocusedSeconds` = `weeklyMinutes` toplamı × 60 çıktı. Ekran görüntüleri
+`.verify/m41_w_*.png`, renderer çıktıları `.verify/m41/m41_*.png`.
+
+**Kapsam dışı:** `StripRenderer`ın haftalık hedefi (şeridin kendi dili var),
+widget'ta hedefe kalan sürenin metni. `PanoramaWidgetProvider` kapsam **içinde**
+kaldı: halkayı aynı `RingRenderer` çiziyor, orada `null` geçmek maddenin
+kapattığı ayrışmayı iki widget arasında kurardı.
+
+**Yan bulgu (madde 41'den değil):** widget'ın **izleri açık temada
+görünmüyor.** `RingRenderer` iz renklerini düz beyaz-alfa hex olarak tutuyor
+(`0x17FFFFFF` / `0x12FFFFFF`, madde 39'un sözleşmesi bunu temadan bağımsız
+sayıyor); açık temada widget zemini (212,212,213) ile izin rengi (216,216,218)
+arasında dört ton var. Yani hedef açık ve hafta boşken emek ekseninin yeri
+görünmüyor — Ekran 02'de `colors.fillSubtle` ile görünüyor. Üç iz de aynı
+kusurda, madde 41 öncesinde de öyleydi. Ayrı madde olmalı.
+
+---
+
+## 42. Pazar bildirimi haftalık hedeften habersiz ⬜ sırada
+
+Madde 24'ün kapsam dışı bıraktığı iş. Haftalık kapanış bildirimi
+(`weekly_summary.dart`) toplamı ve geçen haftayla farkı söylüyor ama
+kullanıcının kendi koyduğu hedefe hiç değinmiyor — hedefini tutturmuş kullanıcı
+da tutturamamış kullanıcı da aynı cümleyi alıyor.
+
+Madde 24'ün notu iki riski işaret ediyor: dört bildirim varyantını sekize
+çıkarmak, ve `weekly_summary.dart`ın "yüzde değil **fark**" kararıyla çelişen
+bir dil kurmak ("hedefinin %80'i"). Maddenin asıl işi metin değil, varyant
+sayısını büyütmeden hedefi cümleye sokan bir kural bulmak.
+
+**Kapsam dışı (şimdilik):** hedef dolmadığında ayrı bir hatırlatma bildirimi.
+
+---
+
+## 43. Ring ile Strip boş durumda aynı dili konuşmuyor ⬜ sırada
+
+Madde 39'un sözleşmeyi yazarken bulduğu, kapsam dışı bıraktığı ayrışma. Sınav
+seçilmemişken (`muted`) `StripRenderer` boş iz yerine bir kapak çiziyor,
+`RingRenderer` ise yayı hiç çizmiyor. Sözleşme ikisinin bugünkü davranışını
+sabitledi ama hangisinin doğru olduğuna karar vermedi; iki widget yan yana
+durduğunda aynı durumu iki farklı görsel dille anlatıyorlar.
+
+**Kapsam dışı:** `SparkRenderer` ve `FlameRenderer`ın boş durumu (ikisinin
+girdisi sınava bağlı değil).
+
+---
+
 ## Yayın öncesi son kontrol (SPEC §10 DoD)
 
 - [x] `flutter analyze` 0 hata / 0 uyarı
@@ -1414,7 +1505,7 @@ testinde sabit.
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(495 test, `flutter test`)*
+- [x] Testler geçiyor *(496 test `flutter test`; 28 Kotlin birim, 25 cihaz testi)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.

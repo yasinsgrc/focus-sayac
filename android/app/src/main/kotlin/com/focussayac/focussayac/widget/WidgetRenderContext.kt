@@ -76,6 +76,20 @@ class WidgetRenderContext(
     val todayRatio: Float = (snapshot.todayPomodoros / DAILY_CYCLE).coerceIn(0f, 1f)
 
     /**
+     * Haftalik hedefin dolulugu - halkanin emek yayi (ROADMAP madde 41).
+     * Hedef kapaliyken `null`, yani yay da izi de cizilmiyor.
+     *
+     * `muted`a BAGLI DEGIL: sinav secilmemisken bile duruyor. Gunluk yayin
+     * gerekcesiyle ayni - geri sayim durmus olabilir ama odak birikmeye devam
+     * ediyor ve bu yayin anlattigi sey sinav degil, hafta.
+     */
+    val effortRatio: Float? = snapshot.weeklyEffortRatio()
+
+    /** Hedef dolunca ton kozden naneye doner - uygulamanin tamamlanma dili. */
+    val effortColor: Int =
+        if (snapshot.weeklyGoalReached()) palette.mint else palette.ember
+
+    /**
      * Halka widgetinin alt satiri: "12 gun · 3 pomodoro". Sinav adi ustte
      * duruyor; bu satir widget'i bir geri sayimdan bir aliskanlik
      * hatirlaticisina cevirmek icin var.

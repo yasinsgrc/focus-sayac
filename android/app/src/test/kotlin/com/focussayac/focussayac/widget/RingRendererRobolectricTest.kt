@@ -65,6 +65,36 @@ class RingRendererRobolectricTest {
     }
 
     @Test
+    fun `emek yayi orana bagli`() {
+        RingRendererContract.verifyEffortLadder(
+            RingRendererContract.renderEffortLadder(context),
+        )
+    }
+
+    @Test
+    fun `hedef kapaliyken emek yayi da izi de yok`() {
+        RingRendererContract.verifyEffortOffDrawsNothing(
+            goalOff = RingRendererContract.render(context, 0.25f),
+            goalOnEmpty = RingRendererContract.render(context, 0.25f, effortRatio = 0f),
+        )
+    }
+
+    @Test
+    fun `emek yayi kendi rengini tasiyor`() {
+        RingRendererContract.verifyEffortColor(
+            ember = RingRendererContract.render(context, 0.25f, effortRatio = 0.5f),
+            mint = RingRendererContract.renderMintEffort(context),
+        )
+    }
+
+    @Test
+    fun `zaman yayi emek yayindan etkilenmiyor`() {
+        RingRendererContract.verifyTimeArcUnaffected(
+            RingRendererContract.renderEffortStates(context),
+        )
+    }
+
+    @Test
     fun `ortadaki yazi ize girmiyor`() {
         RingRendererContract.verifyCenterTextFits(context)
     }

@@ -20,6 +20,8 @@ class HomeWidgetSnapshot {
     required this.weeklyMinutes,
     required this.sessionActive,
     required this.cumulativeFocusSeconds,
+    required this.weeklyGoalSeconds,
+    required this.weeklyFocusedSeconds,
     required this.updatedAtUtc,
   }) : assert(weeklyMinutes.length == weeklyLength, 'weeklyMinutes 7 elemanlı olmalı');
 
@@ -32,6 +34,8 @@ class HomeWidgetSnapshot {
     required List<int> weeklyMinutes,
     required bool sessionActive,
     required int cumulativeFocusSeconds,
+    required int weeklyGoalSeconds,
+    required int weeklyFocusedSeconds,
     required DateTime updatedAtUtc,
   }) {
     return HomeWidgetSnapshot(
@@ -45,6 +49,8 @@ class HomeWidgetSnapshot {
       weeklyMinutes: weeklyMinutes,
       sessionActive: sessionActive,
       cumulativeFocusSeconds: cumulativeFocusSeconds,
+      weeklyGoalSeconds: weeklyGoalSeconds,
+      weeklyFocusedSeconds: weeklyFocusedSeconds,
       updatedAtUtc: updatedAtUtc,
     );
   }
@@ -92,6 +98,19 @@ class HomeWidgetSnapshot {
   /// türetilmiş değeri ayrıca göndermek ikinci bir gerçek kaynağı olurdu.
   final int cumulativeFocusSeconds;
 
+  /// Haftalık hedef (saniye); `0` = hedef kapalı. `WeeklyGoalProgress`in iki
+  /// alanı **ham** gönderiliyor, oran gönderilmiyor: halka widget'ının emek
+  /// yayı (ROADMAP madde 41) oranı da "hedef doldu" kararını da Kotlin tarafında
+  /// aynı formülle türetiyor. Oranı hazır yollasaydık `isReached` ayrıca
+  /// gerekirdi — oran 1.0'da kırpılı, hedefi aşmakla tam tutturmak aynı sayı.
+  final int weeklyGoalSeconds;
+
+  /// Hedefin penceresinde tamamlanmış odak süresi (saniye) —
+  /// `WeeklySummary.seconds`. [weeklyMinutes]'ın toplamı **değil**: o liste gün
+  /// başına `saniye ~/ 60` taşıyor, yani tam dakika olmayan bir seansta widget
+  /// ile Ekran 02 sessizce farklı bir yay çizerdi.
+  final int weeklyFocusedSeconds;
+
   final DateTime updatedAtUtc;
 
   bool get hasActiveExam => targetUtc != null;
@@ -111,6 +130,8 @@ class HomeWidgetSnapshot {
       keyWeeklyMinutes: weeklyMinutes.join(','),
       keySessionActive: sessionActive,
       keyCumulativeFocusSeconds: cumulativeFocusSeconds,
+      keyWeeklyGoalSeconds: weeklyGoalSeconds,
+      keyWeeklyFocusedSeconds: weeklyFocusedSeconds,
       keyUpdatedAtMillis: updatedAtUtc.millisecondsSinceEpoch,
     };
   }
@@ -139,6 +160,8 @@ class HomeWidgetSnapshot {
   static const String keyWeeklyMinutes = 'weeklyMinutes';
   static const String keySessionActive = 'sessionActive';
   static const String keyCumulativeFocusSeconds = 'cumulativeFocusSeconds';
+  static const String keyWeeklyGoalSeconds = 'weeklyGoalSeconds';
+  static const String keyWeeklyFocusedSeconds = 'weeklyFocusedSeconds';
   static const String keyUpdatedAtMillis = 'updatedAtMillis';
 
   /// Payload'ın tüm anahtarları — servis testinin eksik anahtar yakalaması için.
@@ -154,6 +177,8 @@ class HomeWidgetSnapshot {
     keyWeeklyMinutes,
     keySessionActive,
     keyCumulativeFocusSeconds,
+    keyWeeklyGoalSeconds,
+    keyWeeklyFocusedSeconds,
     keyUpdatedAtMillis,
   ];
 }

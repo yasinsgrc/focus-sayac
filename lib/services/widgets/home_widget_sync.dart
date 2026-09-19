@@ -12,6 +12,7 @@ import '../../domain/pomodoro/pomodoro_phase.dart';
 import '../../domain/pomodoro/pomodoro_stats_providers.dart';
 import '../../domain/stats/focus_stats.dart';
 import '../../domain/stats/stats_providers.dart';
+import '../../domain/stats/weekly_goal.dart';
 import '../../domain/widgets/home_widget_snapshot.dart';
 import '../storage/app_database.dart';
 import 'home_widget_service.dart';
@@ -39,6 +40,11 @@ final Provider<HomeWidgetSnapshot?> homeWidgetSnapshotProvider =
   final int todayMinutes = today.totalSeconds ~/ 60;
   final int cumulativeFocusSeconds = stats.cumulativeSeconds;
 
+  // Halkanın emek ekseni (ROADMAP madde 41). Ekran 02'nin halkası ve `BUGÜN`
+  // kartının çubuğu ile **aynı** örnekten okunuyor; widget'ın ayrı bir hesabı
+  // olsaydı iki yüzey aynı hafta için farklı bir yay çizebilirdi.
+  final WeeklyGoalProgress weeklyGoal = ref.watch(weeklyGoalProgressProvider);
+
   final Exam? exam = activeExam.value;
   if (exam == null) {
     return HomeWidgetSnapshot.noExam(
@@ -48,6 +54,8 @@ final Provider<HomeWidgetSnapshot?> homeWidgetSnapshotProvider =
       weeklyMinutes: weeklyMinutes,
       sessionActive: sessionActive,
       cumulativeFocusSeconds: cumulativeFocusSeconds,
+      weeklyGoalSeconds: weeklyGoal.goalSeconds,
+      weeklyFocusedSeconds: weeklyGoal.focusedSeconds,
       updatedAtUtc: nowUtc,
     );
   }
@@ -66,6 +74,8 @@ final Provider<HomeWidgetSnapshot?> homeWidgetSnapshotProvider =
     weeklyMinutes: weeklyMinutes,
     sessionActive: sessionActive,
     cumulativeFocusSeconds: cumulativeFocusSeconds,
+    weeklyGoalSeconds: weeklyGoal.goalSeconds,
+    weeklyFocusedSeconds: weeklyGoal.focusedSeconds,
     updatedAtUtc: nowUtc,
   );
 });

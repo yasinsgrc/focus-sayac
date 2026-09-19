@@ -23,6 +23,8 @@ void main() {
       weeklyMinutes: week,
       sessionActive: false,
       cumulativeFocusSeconds: 3600,
+      weeklyGoalSeconds: 36000,
+      weeklyFocusedSeconds: 15000,
       updatedAtUtc: updatedAt,
     );
   }
@@ -73,6 +75,8 @@ void main() {
       weeklyMinutes: week,
       sessionActive: false,
       cumulativeFocusSeconds: 0,
+      weeklyGoalSeconds: 36000,
+      weeklyFocusedSeconds: 15000,
       updatedAtUtc: updatedAt,
     );
 
@@ -107,6 +111,8 @@ void main() {
         weeklyMinutes: const <int>[1, 2, 3],
         sessionActive: false,
         cumulativeFocusSeconds: 0,
+        weeklyGoalSeconds: 0,
+        weeklyFocusedSeconds: 0,
         updatedAtUtc: updatedAt,
       ),
       throwsA(isA<AssertionError>()),
@@ -123,6 +129,8 @@ void main() {
       weeklyMinutes: const <int>[0, 0, 0, 0, 0, 25, 50],
       sessionActive: false,
       cumulativeFocusSeconds: 223200,
+      weeklyGoalSeconds: 0,
+      weeklyFocusedSeconds: 0,
       updatedAtUtc: DateTime.utc(2026, 9, 12),
     );
 
@@ -131,6 +139,16 @@ void main() {
       HomeWidgetSnapshot.payloadKeys,
       contains(HomeWidgetSnapshot.keyCumulativeFocusSeconds),
     );
+  });
+
+  test('haftalik hedef payloadda oran degil iki ham sayi olarak durur', () {
+    // ROADMAP madde 41. Oran, "hedef kapali" ve "hedef doldu" kararlarini
+    // Kotlin tarafi bu iki sayidan turetiyor; oran hazir gonderilseydi
+    // `isReached` ayrica gerekirdi (oran 1.0'da kirpili, tam tutturmakla
+    // asmak ayni sayi).
+    final Map<String, Object> payload = snapshotWith().toPayload();
+    expect(payload[HomeWidgetSnapshot.keyWeeklyGoalSeconds], 36000);
+    expect(payload[HomeWidgetSnapshot.keyWeeklyFocusedSeconds], 15000);
   });
 
   test('gecmis tarihli sinav da yazilir, kirpilmaz', () {

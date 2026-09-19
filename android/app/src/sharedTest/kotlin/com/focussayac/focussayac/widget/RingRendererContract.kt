@@ -43,9 +43,14 @@ object RingRendererContract {
     private const val DASHED_RADIUS = 112f * SCALE
     private const val TRACK_STROKE = 9f * SCALE
     private const val HABIT_STROKE = 5f * SCALE
+    private const val EFFORT_RADIUS = 119f * SCALE
+    private const val EFFORT_STROKE = 4f * SCALE
 
-    /** Ortadaki yazinin carpmamasi gereken sinir: izin IC kenari. */
-    private const val INNER_EDGE = TRACK_RADIUS - TRACK_STROKE / 2f
+    /**
+     * Ortadaki yazinin carpmamasi gereken sinir: en icteki DOLU yayin ic
+     * kenari. Madde 41'den beri bu, zaman izi degil emek yayi.
+     */
+    private const val INNER_EDGE = EFFORT_RADIUS - EFFORT_STROKE / 2f
 
     /** Cizilen yay ile izi/kesikli cemberi ayiran esik. */
     private const val DRAWN = 0x80
@@ -58,8 +63,23 @@ object RingRendererContract {
     private val ACCENT = 0xFF63B4FF.toInt()
     private val HABIT = 0xFF4FE0B4.toInt()
 
+    /**
+     * Emek yayinin iki tonu. Kozden naneye donme KARARI renderer'da degil
+     * `WidgetRenderContext.effortColor`da (orasi `FocusWidgetSnapshotTest`in
+     * isi); burada sinanan sey renderer'in kendisine verilen rengi tasidigi -
+     * zaman yayinin gradyanina dusmedigi.
+     */
+    private val EFFORT_EMBER = 0xFFFFB03A.toInt()
+    private val EFFORT_MINT = 0xFF4FE0B4.toInt()
+
     /** Merdiven: oran yuzde olarak, bitmap'e. */
     val RATIO_PERCENTS = listOf(10, 25, 50, 75, 90, 100)
+
+    /**
+     * Emek merdiveni. %0 disarida: sifir yay CIZILMIYOR (yuvarlak uc nokta
+     * birakirdi), onun sozu 10. iddiada ayri duruyor.
+     */
+    val EFFORT_PERCENTS = listOf(10, 42, 75, 100)
 
     fun render(
         context: Context,
@@ -68,6 +88,8 @@ object RingRendererContract {
         todayRatio: Float = 0f,
         centerText: String = "128",
         labelText: String = "GUN",
+        effortRatio: Float? = null,
+        effortColor: Int = EFFORT_EMBER,
     ): Bitmap = RingRenderer.render(
         context = context,
         sizePx = SIZE_PX,
@@ -78,10 +100,27 @@ object RingRendererContract {
         muted = muted,
         todayRatio = todayRatio,
         habitColor = HABIT,
+        effortRatio = effortRatio,
+        effortColor = effortColor,
     )
 
     fun renderLadder(context: Context): Map<Int, Bitmap> =
         RATIO_PERCENTS.associateWith { render(context, it / 100f) }
+
+    /** Zaman orani sabit; degisen tek sey emek yayi. */
+    fun renderEffortLadder(context: Context): Map<Int, Bitmap> =
+        EFFORT_PERCENTS.associateWith { render(context, 0.25f, effortRatio = it / 100f) }
+
+    /** Hedefi dolmus hafta - tonu koz degil nane. */
+    fun renderMintEffort(context: Context): Bitmap =
+        render(context, 0.25f, effortRatio = 1f, effortColor = EFFORT_MINT)
+
+    fun renderEffortStates(context: Context): List<Bitmap> = listOf(
+        render(context, 0.25f),
+        render(context, 0.25f, effortRatio = 0f),
+        render(context, 0.25f, effortRatio = 0.42f),
+        render(context, 0.25f, effortRatio = 1f, effortColor = EFFORT_MINT),
+    )
 
     /**
      * 1. Cizim gercekten oldu ve iz halkasi kesintisiz: yayin nerede bittigi
@@ -226,6 +265,101 @@ object RingRendererContract {
 
         val idle = drawnFraction(withoutHabit, DASHED_RADIUS)
         assertEquals("pomodoro yokken gunluk yay cizilmis", 0.0, idle, 0.0)
+    }
+
+    /**
+     * 9. Emek yayi (ROADMAP madde 41) kendi yaricapinda ve kapladigi aci
+     * orana esit. Gunluk yayla ayni sonda, ayri bir cemberde: iki eksenin
+     * birbirinin yerine gecmedigi ancak ikisi ayri olculunce anlasiliyor.
+     */
+    fun verifyEffortLadder(bitmaps: Map<Int, Bitmap>) {
+        val capSpan = 2.0 * Math.toDegrees((EFFORT_STROKE / 2f / EFFORT_RADIUS).toDouble()) / 360.0
+
+        val failures = mutableListOf<String>()
+        EFFORT_PERCENTS.forEach { percent ->
+            val expected = (percent / 100.0 + capSpan).coerceAtMost(1.0)
+            val measured = drawnFraction(bitmaps.getValue(percent), EFFORT_RADIUS)
+            if (abs(measured - expected) > 0.02) {
+                failures += "%$percent emek yayi: beklenen ~${fmt(expected)}, olculen ${fmt(measured)}"
+            }
+        }
+        if (failures.isNotEmpty()) {
+            throw AssertionError(failures.joinToString(separator = "\n", prefix = "\n"))
+        }
+
+        val fractions = EFFORT_PERCENTS.map { drawnFraction(bitmaps.getValue(it), EFFORT_RADIUS) }
+        fractions.zipWithNext().forEachIndexed { i, (shorter, longer) ->
+            assertTrue(
+                "%${EFFORT_PERCENTS[i]} -> %${EFFORT_PERCENTS[i + 1]} emek yayi uzamiyor " +
+                    "(${fmt(shorter)} -> ${fmt(longer)})",
+                longer > shorter,
+            )
+        }
+    }
+
+    /**
+     * 10. Hedef kapaliyken o cemberde HICBIR SEY yok - izi de dahil. Bos bir iz
+     * "hedefinin %0'indasin" derdi, oysa kullanicinin koydugu bir hedef yok
+     * (`CountdownRingPainter`in `null` != `0.0` karari).
+     *
+     * Ikinci yarisi sozun diger yuzu: hedef acikken ve yay sifirken iz duruyor.
+     * Sifir uzunluklu yay yuvarlak ucla nokta birakirdi, o yuzden yay degil
+     * yalnizca iz bekleniyor.
+     */
+    fun verifyEffortOffDrawsNothing(goalOff: Bitmap, goalOnEmpty: Bitmap) {
+        var degrees = 0.0
+        while (degrees < 360.0) {
+            val alpha = Color.alpha(pixelAt(goalOff, degrees, EFFORT_RADIUS))
+            assertEquals("hedef kapaliyken $degrees derecede cizim var", 0, alpha)
+            degrees += 5.0
+        }
+
+        assertEquals(
+            "hedef acikken sifir yay cizilmis",
+            0.0,
+            drawnFraction(goalOnEmpty, EFFORT_RADIUS),
+            0.0,
+        )
+        assertTrue(
+            "hedef acikken emek izi yok",
+            Color.alpha(pixelAt(goalOnEmpty, 180.0, EFFORT_RADIUS)) > 8,
+        )
+    }
+
+    /**
+     * 11. Emek yayi kendisine verilen rengi tasiyor, zaman yayinin gradyanini
+     * degil. Kozden naneye donme KARARI renderer'da degil
+     * `WidgetRenderContext.effortColor`da; burada sinanan sey rengin yaya
+     * gercekten ulastigi.
+     */
+    fun verifyEffortColor(ember: Bitmap, mint: Bitmap) {
+        val warm = warmthAt(ember, 90.0, EFFORT_RADIUS)
+        assertTrue("emek yayi kozde sicak degil (sicaklik $warm)", warm > 40)
+
+        val cool = warmthAt(mint, 90.0, EFFORT_RADIUS)
+        assertTrue("emek yayi nanede soguk degil (sicaklik $cool)", cool < -40)
+
+        val pixel = pixelAt(mint, 90.0, EFFORT_RADIUS)
+        assertTrue(
+            "nane yayi yesil degil: #${Integer.toHexString(pixel)}",
+            Color.green(pixel) > Color.red(pixel) && Color.green(pixel) > Color.blue(pixel),
+        )
+    }
+
+    /**
+     * 12. Iki eksen gercekten bagimsiz: emek yayi ne yaparsa yapsin zaman yayi
+     * ayni orani ciziyor. Madde 27'nin kabulunun widget tarafindaki karsiligi.
+     */
+    fun verifyTimeArcUnaffected(bitmaps: List<Bitmap>) {
+        val fractions = bitmaps.map { drawnFraction(it, TRACK_RADIUS) }
+        fractions.zipWithNext().forEachIndexed { i, (a, b) ->
+            assertEquals(
+                "emek durumu ${i + 1} -> ${i + 2} arasinda zaman yayi kipirdadi",
+                a,
+                b,
+                0.005,
+            )
+        }
     }
 
     /**

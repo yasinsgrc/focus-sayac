@@ -28,6 +28,12 @@ class PanoramaWidgetProvider : BaseFocusWidgetProvider() {
                 // tek parcaydi.
                 todayRatio = render.todayRatio,
                 habitColor = render.palette.mint,
+                // Emek yayi burada da var (ROADMAP madde 41): halka ayni
+                // halka. Panoramada `null` gecmek, tam da bu maddenin
+                // kapattigi ayrismayi -ayni halka iki yuzeyde iki farkli sey-
+                // widget'larin arasinda yeniden kurardi.
+                effortRatio = render.effortRatio,
+                effortColor = render.effortColor,
             ),
         )
         views.setTextViewText(R.id.widget_panorama_name, render.examLine())

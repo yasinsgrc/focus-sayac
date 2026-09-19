@@ -25,6 +25,8 @@ class RingWidgetProvider : BaseFocusWidgetProvider() {
                 muted = render.muted,
                 todayRatio = render.todayRatio,
                 habitColor = render.palette.mint,
+                effortRatio = render.effortRatio,
+                effortColor = render.effortColor,
             ),
         )
         views.setTextViewText(R.id.widget_ring_exam, render.examLine())

@@ -33,6 +33,24 @@ object RingRenderer {
     private const val HABIT_STROKE = 5f
 
     /**
+     * Emek ekseni - ROADMAP madde 41, olculeri Ekran 02'den birebir
+     * (`CountdownRingPainter._effortRadius` / `_effortStrokeWidth`).
+     *
+     * Prototipin BOS bandina oturuyor: zaman izinin ic kenari 125.5, kesikli
+     * cember 112. Yeniden olculmedi - madde 27 bu sayilari zaten kirmisti ve
+     * iki yuzey ayni yay icin ayni yaricapi kullanmak zorunda.
+     */
+    private const val EFFORT_RADIUS = 119f
+    private const val EFFORT_STROKE = 4f
+
+    /**
+     * Halkanin icine yazi koyan her seyin sigmasi gereken cember: en icteki
+     * DOLU yayin ic kenari. Madde 41'den beri bu, zaman izi (125.5) degil emek
+     * yayi. `CountdownRingPainter.innerContentRadius` ile ayni sayi.
+     */
+    private const val INNER_CONTENT_RADIUS = EFFORT_RADIUS - EFFORT_STROKE / 2f
+
+    /**
      * Gradyani yayin GERISINE kaydiran aci - ROADMAP madde 33.
      *
      * Cap.ROUND baslangic ucunu strokeWidth/2 kadar geriye tasiyor; SweepGradient
@@ -48,7 +66,12 @@ object RingRenderer {
     private val GRADIENT_BACKSHIFT_DEG =
         Math.toDegrees(((TRACK_STROKE / 2f + 2f) / TRACK_RADIUS).toDouble()).toFloat()
 
-    private const val OUTER_COLOR = 0x17FFFFFF
+    /**
+     * `AppColors.fillSubtle` - dis telin ve emek yayinin izinin rengi. Halkanin
+     * izleri temadan bagimsiz duz hex (madde 39'un sozlesmesi buna gore kurulu);
+     * yalnizca YAYLARIN rengi paletten geliyor.
+     */
+    private const val FILL_SUBTLE = 0x17FFFFFF
     private const val TRACK_COLOR = 0x12FFFFFF
 
     /** Kicker'in kullanabilecegi kirisin orani - iz ile arasindaki nefes payi. */
@@ -64,6 +87,8 @@ object RingRenderer {
         muted: Boolean,
         todayRatio: Float,
         habitColor: Int,
+        effortRatio: Float?,
+        effortColor: Int,
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -72,7 +97,7 @@ object RingRenderer {
         val cy = sizePx / 2f
 
         val outer = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = OUTER_COLOR
+            color = FILL_SUBTLE
             style = Paint.Style.STROKE
             strokeWidth = 1f * scale
         }
@@ -87,6 +112,24 @@ object RingRenderer {
 
         if (!muted) {
             drawProgressArc(canvas, cx, cy, TRACK_RADIUS * scale, TRACK_STROKE * scale, progressRatio)
+        }
+
+        // Emek ekseni - ROADMAP madde 41. Zaman yayi sinava 300 gun kalan
+        // kullanicida aylarca ~%25'te duruyordu: gecen zamani gosteriyor,
+        // harcanan emegi degil. Bu yay her tamamlanan seansta kipirdiyor.
+        //
+        // `muted` disinda tutuluyor (gunluk yayla ayni gerekce): geri sayim
+        // durmus olabilir ama odak birikmeye devam ediyor.
+        if (effortRatio != null) {
+            drawEffortArc(
+                canvas = canvas,
+                cx = cx,
+                cy = cy,
+                radius = EFFORT_RADIUS * scale,
+                stroke = EFFORT_STROKE * scale,
+                ratio = effortRatio,
+                color = effortColor,
+            )
         }
 
         drawDashedCircle(
@@ -121,6 +164,42 @@ object RingRenderer {
 
         drawCenterText(context, canvas, cx, cy, sizePx, centerText, labelText, accentColor, muted)
         return bitmap
+    }
+
+    /**
+     * Haftalik hedefin dolulugu. Gradyan YOK: zaman yayi uc duraklik gradyanla
+     * dekoratif, emek yayi tek duz tonla anlamsal - ikisi ayni boyayi
+     * paylassaydi goz onlari tek bir gostergenin iki parcasi sanirdi.
+     *
+     * Iz her zaman ciziliyor (yay sifirken bile ekseni gosteriyor), ama sifir
+     * uzunluklu yay yuvarlak ucla nokta birakirdi: haftanin basinda halkada
+     * aciklanamayan bir leke olurdu.
+     */
+    private fun drawEffortArc(
+        canvas: Canvas,
+        cx: Float,
+        cy: Float,
+        radius: Float,
+        stroke: Float,
+        ratio: Float,
+        color: Int,
+    ) {
+        val track = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = FILL_SUBTLE
+            style = Paint.Style.STROKE
+            strokeWidth = stroke
+        }
+        canvas.drawCircle(cx, cy, radius, track)
+
+        if (ratio <= 0f) return
+        val rect = RectF(cx - radius, cy - radius, cx + radius, cy + radius)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color
+            style = Paint.Style.STROKE
+            strokeWidth = stroke
+            strokeCap = Paint.Cap.ROUND
+        }
+        canvas.drawArc(rect, -90f, 360f * ratio.coerceIn(0f, 1f), false, paint)
     }
 
     /**
@@ -254,6 +333,11 @@ object RingRenderer {
      *
      * Kiris etiketin TABANINDA olculuyor: kicker merkezin altinda duruyor,
      * yani en dar yeri alt kenari.
+     *
+     * Madde 41: sinir zaman izinin ic kenarindan (125.5) emek yayinin ic
+     * kenarina (117) indi. KOSULSUZ iniyor, hedefin acik olmasina baglanmiyor -
+     * punto hedefe gore degisseydi kullanici ayari acip kapattiginda widget'in
+     * yazisi boy degistirirdi.
      */
     private fun labelFitFor(
         paint: Paint,
@@ -261,7 +345,7 @@ object RingRenderer {
         sizePx: Int,
         baselineOffset: Float,
     ): Float {
-        val innerEdge = (TRACK_RADIUS - TRACK_STROKE / 2f) * (sizePx / VIEW_BOX)
+        val innerEdge = INNER_CONTENT_RADIUS * (sizePx / VIEW_BOX)
         val bottom = baselineOffset + paint.descent()
         val halfChord = sqrt((innerEdge * innerEdge - bottom * bottom).coerceAtLeast(0f))
         val maxWidth = halfChord * 2f * LABEL_FIT

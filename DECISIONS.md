@@ -3705,3 +3705,131 @@ veriyor; (b) emülatörün toybox `grep`i `\+` ile eşleşmiyor, XML host'a
 - Boş geçmiş ay dalının emülatörde görülmesi: geri okun kapısı en eski seansa
   bağlı (`hasEarlier`), yani tohumlanmış veriyle boş bir geçmiş aya gezinmek
   mümkün değil. Dal widget testinde sabitlendi.
+
+---
+
+## Madde 41 — Widget'ın halkasındaki emek yayı
+
+Madde 27'nin kapsam dışı bıraktığı iş. Geri sayım halkasına ikinci bir eksen
+(haftalık hedefin emek yayı) eklenmişti ama yalnızca Ekran 02'ye;
+`RingRenderer.kt` madde 27 öncesinin halkası olarak kaldı. Aynı halka iki
+yüzeyde iki farklı şey anlatıyordu — üstelik widget'ın çizdiği tek "sınav" yayı
+tam da madde 27'nin ölü aralık dediği, aylarca kıpırdamayan yaydı.
+
+Tasarım: `docs/superpowers/specs/2026-09-19-widget-emek-yayi-design.md`.
+
+### 1. Payload iki ham sayı taşıyor, oran taşımıyor
+
+Yeni anahtarlar `weeklyGoalSeconds` ve `weeklyFocusedSeconds` —
+`WeeklyGoalProgress`in iki alanının birebir karşılığı. Oran, "hedef kapalı" ve
+"hedef doldu" Kotlin tarafında aynı formüllerle türetiliyor
+(`FocusWidgetSnapshot.weeklyEffortRatio` / `weeklyGoalReached`).
+
+Oranı hazır göndermek işe yaramazdı: oran `1.0`'da kırpılı, yani hedefi tam
+tutturmakla üçe katlamak aynı sayı — `isReached` için ikinci bir anahtar yine
+gerekirdi, ama bu kez türetilmiş olanı. İki operand gönderince Kotlin
+`WeeklyGoalProgress`in üç sorusunu da kendisi cevaplıyor.
+
+`weeklyMinutes`i (payloadda zaten duran 7 günlük liste) Kotlin'de toplamak da
+reddedildi: pencere aynı pencere ama liste gün başına `saniye ~/ 60` taşıyor.
+Bugün seanslar tam dakika olduğu için toplam tutuyor — emülatörde birebir
+doğrulandı (`36300` = `0+0+117+124+131+138+95` × 60) — ama tutmadığı gün widget
+ile Ekran 02 sessizce farklı bir yay çizerdi. Madde 27'nin "ikisi aynı örnekten
+besleniyor, ayrışamazlar" güvencesi ancak sayı **aynı sayı** olursa taşınır.
+
+Bu, `FocusWidgetSnapshot.kt`in "türetilmiş değer Dart'tan okunmaz" kuralıyla
+çelişmiyor. O kuralın gerekçesi **bayatlama**: kalan gün ve meşale kademesi
+zaman geçtikçe yanlışlaşır. `weeklyFocusedSeconds` zamanla değişmiyor, yalnızca
+bir seans tamamlanınca değişiyor, o da zaten yeni bir push tetikliyor.
+
+### 2. Geometri Ekran 02'den birebir; halka üç yaylı oldu
+
+r=119, kalınlık 4, yuvarlak uç, 12 yönünden — madde 27'nin ölçüleri yeniden
+ölçülmeden taşındı. Günün döngüsü yayı (r=112, madde 28) **yerinde kaldı**:
+emek yayı onun yerine geçmiyor, ikisi farklı soruların cevabı (bugün ne yaptım
+/ bu hafta hedefin neresindeyim). Yarıçap paritesi korunduğu için üçüncü yay
+yeni bir bant açmadı; emülatörde üç yay rahat ayrılıyor, sıkışıklık yok.
+
+Ton `_WeeklyGoalRow` ile aynı: hedefe giderken köz, dolunca nane. Gradyan yok —
+zaman yayı üç duraklı gradyanla dekoratif, emek yayı tek düz tonla anlamsal.
+
+### 3. `muted` emek yayını almıyor, hedef kapalı alıyor
+
+Sınav seçilmemişken ve sınav geçtiğinde zaman yayı çizilmiyor ama emek yayı
+çiziliyor: günün yayının gerekçesiyle aynı — geri sayım durmuş olabilir, odak
+birikmeye devam ediyor ve bu yayın anlattığı şey sınav değil, hafta.
+
+Hedef kapalıyken ise yay **da izi de** çizilmiyor (`effortRatio` `0.0` değil
+`null`). Boş bir iz "hedefinin %0'ındasın" derdi, oysa kullanıcının koyduğu bir
+hedef yok — `CountdownRingPainter`ın ve `_WeeklyGoalRow`un kararı.
+
+### 4. Kicker'ın sığma kirişi 125.5'ten 117'ye indi
+
+Madde 39 uzun durum adlarının izin üstüne binmesini `labelFitFor` ile çözmüştü;
+kiriş zaman izinin iç kenarından ölçülüyordu. Halkanın en içteki dolu yayı artık
+emek yayı, yani yeni sınır `EFFORT_RADIUS - EFFORT_STROKE/2` = 117 —
+`CountdownRingPainter.innerContentRadius` ile aynı sayı.
+
+Sınır **koşulsuz** indi, hedefin açık olmasına bağlanmadı: punto hedefe göre
+değişseydi kullanıcı ayarı açıp kapattığında widget'ın yazısı boy değiştirirdi.
+Sözleşmenin 8. iddiası yeni sınıra bağlandı ve dört kicker × beş sayı
+kombinasyonunun hepsi daralmış sınırda da geçti — merkez yazısı için ek bir
+küçültme gerekmedi.
+
+### 5. Panorama kapsam dışı değil
+
+`PanoramaWidgetProvider` halkayı aynı `RingRenderer` ile çiziyor (84dp). Orada
+`effortRatio = null` geçmek, bu maddenin kapattığı ayrışmayı bu kez iki
+widget'ın arasında kurardı.
+
+### 6. Emülatör doğrulandı (2026-09-19)
+
+`focussayac_verify` (Android 16, 1080×1920, açık tema). İki katman:
+
+**a) Çizim yolu.** `RingRendererContract`a dört yeni iddia eklendi (emek
+merdiveni, hedef kapalıyken o çemberde hiçbir şey yok, yayın kendi rengini
+taşıması, zaman yayının etkilenmemesi); madde 39'un kalıbıyla hem Robolectric
+hem cihaz koşuyor. 25 cihaz testi geçti, beş durumun PNG'si döküldü
+(`.verify/m41/`).
+
+**b) Uçtan uca.** Halka widget'ı gerçekten ana ekrana yerleştirildi (widget
+seçiciden sürükleyerek — madde 39'un notu duruyor, `appwidget` kabuk komutu
+widget koymuyor). Veritabanındaki `weekly_goal_minutes` üç kez değiştirilip
+uygulama açıldı; `shared_prefs`te iki yeni anahtar göründü ve ana ekran
+görüntüsünden yaylar piksel piksel ölçüldü:
+
+| durum | payload | zaman | emek | gün |
+| --- | --- | --- | --- | --- |
+| hedef kapalı | `0 / 0` | %32.8 | yok | %75.3 |
+| yolda | `36300 / 86400` | %32.8 | %42.6 köz | %75.3 |
+| doldu | `36300 / 36000` | %32.8 | %100 nane | %75.3 |
+
+Zaman yayı üçünde de kıpırdamadı (beklenen `1−274/400` = %31.5 + yuvarlak uç
+payı) — iki eksen gerçekten bağımsız, madde 27'nin kabulünün widget
+karşılığı. Ekran görüntüleri `.verify/m41_w_*.png`.
+
+**Tuzak:** widget bir tur bayat çiziyordu. İlk kare hedef kapalı olması
+gerekirken önceki hedefin oranını (%30.1) gösterdi; aynı durum daha uzun
+beklemeyle tekrarlandığında %0 çıktı. Push ile launcher'ın yeniden çizmesi
+arasında birkaç saniye var, ekran görüntüsü o aralığa düşmemeli.
+
+### 7. Kapsam dışı
+
+- `StripRenderer`ın haftalık hedefi: şeridin kendi dili var, ikinci bir eksen
+  orada aynı boş bandı bulmuyor.
+- Widget'ta hedefe kalan sürenin **metni** — halka widget'ının alt satırı zaten
+  dolu (`5 gün seri · 3 pomodoro`).
+- Dart ↔ Kotlin piksel paritesi (madde 39'dan beri kapsam dışı).
+
+### 8. Yan bulgu: widget'ın izleri açık temada görünmüyor
+
+`RingRenderer` iz renklerini düz beyaz-alfa hex olarak tutuyor (`0x17FFFFFF` /
+`0x12FFFFFF`); madde 39'un sözleşmesi bunları bilerek temadan bağımsız sayıyor
+ve sondaları buna göre kurulu. Açık temada widget zemini (212,212,213) ile izin
+çizdiği renk (216,216,218) arasında dört ton var — yani üç iz de görünmüyor.
+
+Sonucu emek ekseninde şu: hedef açık ama hafta boşken widget'ta o eksenin yeri
+hiç görünmüyor, Ekran 02'de `colors.fillSubtle` ile görünüyor. Madde 41 bu
+kusuru yaratmadı, mevcut iki ize üçüncüyü ekledi. Düzeltmek izleri
+`FocusPalette`e bağlamayı ve madde 39'un "halkanın izleri temadan bağımsız"
+varsayımını gözden geçirmeyi gerektiriyor — ayrı madde olmalı.

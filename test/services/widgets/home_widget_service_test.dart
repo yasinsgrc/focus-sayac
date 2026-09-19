@@ -34,6 +34,8 @@ void main() {
       weeklyMinutes: const <int>[0, 0, 25, 25, 50, 0, 50],
       sessionActive: true,
       cumulativeFocusSeconds: 5400,
+      weeklyGoalSeconds: 36000,
+      weeklyFocusedSeconds: 9000,
       updatedAtUtc: DateTime.utc(2026, 6, 1),
     );
   }
