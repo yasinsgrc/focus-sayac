@@ -271,6 +271,62 @@ void main() {
     });
   });
 
+  group('özet cümlesinin ayı (madde 40)', () {
+    testWidgets('geçmiş ayda cümle ay adını söylüyor', (WidgetTester tester) async {
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_august(3, minutes: 45)],
+        monthOffset: -1,
+      );
+
+      // Gören kullanıcı başlıktan ağustosa baktığını biliyor; ekran okuyucu
+      // kullanıcısı yalnızca bu cümleden biliyor — üstelik gezinme okları
+      // onun da kullanabildiği iki durak (madde 35).
+      expect(
+        find.bySemanticsLabel(
+          'Ağustos 2026: 31 günün 1 gününde odaklandın, toplam 45 dakika. '
+          'Son 52 haftanın 1 gününde odaklandın, toplam 45 dakika.',
+        ),
+        findsOneWidget,
+      );
+      // "Bu ay" hiçbir durakta geçmiyor: başlık da ay adına çevrilmişti.
+      expect(find.bySemanticsLabel(RegExp('Bu ay')), findsNothing);
+    });
+
+    testWidgets('boş geçmiş ayda da ay adını söylüyor', (WidgetTester tester) async {
+      // Seanslar eylülde: ağustos boş, şerit dolu.
+      await _pumpCard(
+        tester,
+        <PomodoroSession>[_september(10)],
+        monthOffset: -1,
+      );
+
+      expect(
+        find.bySemanticsLabel(
+          'Ağustos 2026: henüz odak yok. '
+          'Son 52 haftanın 1 gününde odaklandın, toplam 25 dakika.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel(RegExp('Bu ay')), findsNothing);
+    });
+
+    testWidgets('içinde bulunulan ay "Bu ay" demeye devam ediyor',
+        (WidgetTester tester) async {
+      await _pumpCard(tester, <PomodoroSession>[_september(10)]);
+
+      // Bugünün ayında ay adı yazmak, başlığın `BU AY` demesiyle çelişirdi.
+      expect(
+        find.bySemanticsLabel(
+          'Bu ay 30 günün 1 gününde odaklandın, toplam 25 dakika. '
+          'Son 52 haftanın 1 gününde odaklandın, toplam 25 dakika.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel(RegExp('Eylül')), findsNothing);
+    });
+  });
+
   group('gün seçimi (madde 35)', () {
     testWidgets('hücreye dokunmak o günü bildiriyor', (WidgetTester tester) async {
       final List<HeatmapDay> tapped = <HeatmapDay>[];
@@ -430,12 +486,11 @@ void main() {
       // iki ayın toplamı (1sa 40dk + 50dk = 2 saat 30 dakika).
       expect(_drawnYearCells(tester), 361);
       expect(find.text('2 saat 30 dakika'), findsOneWidget);
-      // Izgaranın cümlesi geçmiş ayda da "Bu ay" diyor — madde 35'ten kalan
-      // bir ifade kusuru, madde 37'nin kapsamı dışında (ROADMAP madde 40).
       // Buradaki iddia şeridin cümlesi: ay gezinse de sayıları değişmiyor.
+      // Izgaranınki ağustosa geçti (madde 40), şeridinki iki ayın toplamında.
       expect(
         find.bySemanticsLabel(
-          'Bu ay 31 günün 1 gününde odaklandın, toplam 50 dakika. '
+          'Ağustos 2026: 31 günün 1 gününde odaklandın, toplam 50 dakika. '
           'Son 52 haftanın 2 gününde odaklandın, toplam 2 saat 30 dakika.',
         ),
         findsOneWidget,

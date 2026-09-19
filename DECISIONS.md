@@ -3638,3 +3638,70 @@ kalmıyor, ve dosyalar `/sdcard/...` yerine
   okuması da doğru. Sözleşme davranışı sabitliyor, karar ayrı bir maddeye
   bırakıldı.
 - Sağlayıcıların `RemoteViews` tarafı (metin, tıklama hedefi, yenileme).
+
+---
+
+## Madde 40 — Izgaranın özet cümlesindeki ay
+
+### 1. Kusur: başlık ayı biliyordu, cümle bilmiyordu
+
+Madde 35 ay gezinmeyi getirip kartın **başlığını** geçmiş ayda ay adına
+çevirmişti (`BU AY` → `Ağustos 2026`), ama ekran okuyucunun duyduğu cümle
+sabit kalmıştı: "**Bu ay** 31 günün 24 gününde odaklandın…". Gören kullanıcı
+ağustosa baktığını başlıktan biliyor; ekran okuyucu kullanıcısı yalnızca bu
+cümleden biliyor — üstelik gezinme okları onun da kullanabildiği iki durak
+(madde 35 bunları bilerek durak yapmıştı), yani **kendi gittiği aya** yanlış
+isim duyuyordu.
+
+Boş ay dalı (`statsHeatmapEmptySemantics`) aynı kusuru taşıyordu.
+
+### 2. Ay adı cümleye ekle değil iki noktayla bağlanıyor
+
+Türkçenin doğal hâli "Ağustos 2026'da 31 günün…" olurdu ama bulunma eki
+yıla göre değişiyor: `2026'da`, `2027'de`, `2023'te`. Ay adı
+`MaterialLocalizations.formatMonthYear`den, yani yerelleştirme
+kütüphanesinden geliyor; ekin ünlü uyumu kodda bilinemez. "Ağustos 2026
+ayında" hem gereksiz hem kulağa takılıyor.
+
+Seçilen kalıp `{month}: …` — kartın **kendi cümlesinde zaten var**
+(`statsHeatmapDaySelectedSemantics`: "Seçili gün 9 Eyl: 1 saat 40 dakika.").
+Tek utterance içinde iki farklı dilbilgisi kurmak yerine olanı tekrarlıyor,
+TalkBack iki noktayı duraklama olarak okuyor.
+
+İki yeni anahtar: `statsHeatmapPastMonthSemantics` ve
+`statsHeatmapPastMonthEmptySemantics`. `MaterialLocalizations` kartın elinde
+zaten vardı (başlık onu kullanıyor), yeni bağımlılık gerekmedi — madde 29/35'in
+`intl` + `initializeDateFormatting` reddi bozulmadı.
+
+### 3. Bu ay "Bu ay" demeye devam ediyor
+
+Ayrım başlığınkiyle aynı kapıdan (`heatmap.isCurrentMonth`): içinde bulunulan
+ayda cümle de başlık da "bu ay" diyor. Bugünün ayında ay adı yazmak kartın
+`BU AY` başlığıyla çelişirdi ve "eylül" duyan kullanıcı geçmişe gittiğini
+sanabilirdi.
+
+### 4. Emülatör doğrulandı (2026-09-19)
+
+`focussayac_verify` (Android 16, 1080×1920), bir yıllık tohumlanmış veri.
+Doğrulama ekran görüntüsüyle **yapılamazdı** — cümle çizilmiyor, okunuyor.
+TalkBack (`settings put secure enabled_accessibility_services …/TalkBackService`)
+açılıp `uiautomator dump` ile platformun gördüğü `content-desc` okundu:
+
+- Bu ay: `Bu ay 30 günün 16 gününde odaklandın, toplam 32 saat 33 dakika. Son
+  52 haftanın 264 gününde odaklandın, toplam 337 saat 52 dakika.`
+- Geri ok → `Ağustos 2026: 31 günün 24 gününde odaklandın, toplam 39 saat 15
+  dakika. Son 52 haftanın …` — başlıktaki `Ağustos 2026` ve sağdaki
+  `39 saat 15 dakika` ile birebir.
+
+İki tuzak: (a) Flutter semantics ağacını yalnızca bir erişilebilirlik istemcisi
+bağlıyken kuruyor — TalkBack açılmadan `uiautomator dump` 19 boş düğüm
+veriyor; (b) emülatörün toybox `grep`i `\+` ile eşleşmiyor, XML host'a
+çekilip orada taranmalı. Çıktılar `.verify/m40_*`.
+
+### 5. Kapsam dışı
+
+- Şeridin cümlesi (`SON 52 HAFTA`): penceresi ay gezinmesinden etkilenmiyor,
+  "son 52 hafta" her ayda doğru.
+- Boş geçmiş ay dalının emülatörde görülmesi: geri okun kapısı en eski seansa
+  bağlı (`hasEarlier`), yani tohumlanmış veriyle boş bir geçmiş aya gezinmek
+  mümkün değil. Dal widget testinde sabitlendi.

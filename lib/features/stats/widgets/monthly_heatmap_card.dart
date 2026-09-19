@@ -267,18 +267,33 @@ class MonthlyHeatmapCard extends StatelessWidget {
   /// birleşiyor: aylık ızgaranın özeti, şeridin özeti, seçili gün.
   ///
   /// Süreler burada uzun hâlde — "45dk" ve "182sa" harf harf okunurdu.
+  ///
+  /// Izgaranın cümlesi başlıkla aynı ayrımı yapıyor (madde 40): bu ayda
+  /// "Bu ay", gezinilen geçmiş ayda ayın adı. Gören kullanıcı hangi aya
+  /// baktığını başlıktan biliyor, ekran okuyucu kullanıcısı yalnızca bu
+  /// cümleden — üstelik gezinme okları onun da durakları.
   String _semanticsLabel(
     AppLocalizations l10n,
     MaterialLocalizations dates,
     HeatmapDay? selected,
   ) {
-    final String summary = heatmap.isEmpty
-        ? l10n.statsHeatmapEmptySemantics
-        : l10n.statsHeatmapSemantics(
-            heatmap.days.length,
-            heatmap.activeDays,
-            spellFocusDuration(l10n, heatmap.totalMinutes * 60),
-          );
+    final String month = dates.formatMonthYear(heatmap.month);
+    final String summary;
+    if (heatmap.isEmpty) {
+      summary = heatmap.isCurrentMonth
+          ? l10n.statsHeatmapEmptySemantics
+          : l10n.statsHeatmapPastMonthEmptySemantics(month);
+    } else {
+      final String total = spellFocusDuration(l10n, heatmap.totalMinutes * 60);
+      summary = heatmap.isCurrentMonth
+          ? l10n.statsHeatmapSemantics(heatmap.days.length, heatmap.activeDays, total)
+          : l10n.statsHeatmapPastMonthSemantics(
+              month,
+              heatmap.days.length,
+              heatmap.activeDays,
+              total,
+            );
+    }
     final String yearSummary = year.isEmpty
         ? l10n.statsHeatmapYearEmptySemantics
         : l10n.statsHeatmapYearSemantics(

@@ -472,6 +472,23 @@
     }
   },
   "statsHeatmapEmptySemantics": "Bu ay henüz odak yok.",
+  "statsHeatmapPastMonthSemantics": "{month}: {dayCount} günün {activeDays} gününde odaklandın, toplam {duration}.",
+  "@statsHeatmapPastMonthSemantics": {
+    "description": "Geçmiş bir aya gezinildiğinde ızgaranın ekran okuyucu karşılığı (ROADMAP madde 40). statsHeatmapSemantics'in 'Bu ay'ı burada ay adına dönüşüyor: gezinme okları ekran okuyucu kullanıcısının da durakları, yani kendi gittiği ayın adını duyması gerekiyor. month MaterialLocalizations.formatMonthYear'dan ('Ağustos 2026') — ay adı yerelleştirme kütüphanesinden geldiği için ekin ünlü uyumu bilinemiyor ('2026'da' ↔ '2027'de'), o yüzden cümle ekle değil iki noktayla bağlanıyor; aynı kalıp statsHeatmapDaySelectedSemantics'te zaten var.",
+    "placeholders": {
+      "month": { "type": "String" },
+      "dayCount": { "type": "int" },
+      "activeDays": { "type": "int" },
+      "duration": { "type": "String" }
+    }
+  },
+  "statsHeatmapPastMonthEmptySemantics": "{month}: henüz odak yok.",
+  "@statsHeatmapPastMonthEmptySemantics": {
+    "description": "statsHeatmapEmptySemantics'in geçmiş ay hâli (ROADMAP madde 40). Boş dal da aynı kusuru taşıyordu.",
+    "placeholders": {
+      "month": { "type": "String" }
+    }
+  },
   "statsHeatmapLegendLow": "az",
   "statsHeatmapLegendHigh": "çok",
   "statsHeatmapPreviousMonth": "Önceki ay",

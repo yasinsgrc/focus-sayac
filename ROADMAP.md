@@ -1347,21 +1347,40 @@ davranışı sabitliyor, ikisini aynı dile getirmek ayrı bir maddenin işi.
 
 ---
 
-## 40. Izgaranın özet cümlesi geçmiş ayda da "Bu ay" diyor
+## 40. Izgaranın özet cümlesi geçmiş ayda da "Bu ay" diyordu ✅ bitti
+
+495 Dart testi geçiyor (492 + 3 yeni). Kararlar: `DECISIONS.md` "Madde 40".
 
 Madde 37'de yolda çıkan, kapsam dışı bırakılan bir ifade kusuru. Madde 35 ay
 gezinmeyi getirdi ve kartın **başlığını** geçmiş ayda ay adına çevirdi
 (`Ağustos 2026`), ama ekran okuyucunun duyduğu cümle
-(`statsHeatmapSemantics`) sabit kaldı: "**Bu ay** 31 günün 1 gününde
-odaklandın…". Gören kullanıcı ağustosa baktığını biliyor, ekran okuyucu
-kullanıcısı bilmiyor — üstelik gezinme okları onun da kullanabildiği iki durak
-(madde 35 bunları bilerek durak yaptı), yani kendi gittiği aya yanlış isim
-duyuyor.
+(`statsHeatmapSemantics`) sabit kalmıştı: "**Bu ay** 31 günün 24 gününde
+odaklandın…". Gören kullanıcı ağustosa baktığını biliyordu, ekran okuyucu
+kullanıcısı bilmiyordu — üstelik gezinme okları onun da kullanabildiği iki
+durak (madde 35 bunları bilerek durak yaptı), yani kendi gittiği aya yanlış
+isim duyuyordu. Boş ay dalı da aynı kusurdaydı.
 
-Düzeltme yeni bir ARB anahtarı gerektiriyor (geçmiş ay için ay adını alan bir
-cümle); kart zaten `MaterialLocalizations.formatMonthYear`i elinde tutuyor,
-yani yeni bağımlılık yok. Boş ay dalı (`statsHeatmapEmptySemantics`) aynı
-sorunu taşıyor.
+İki yeni ARB anahtarı (`statsHeatmapPastMonthSemantics`,
+`…PastMonthEmptySemantics`); kart `MaterialLocalizations.formatMonthYear`i
+başlık için zaten elinde tutuyordu, yeni bağımlılık gerekmedi. Ay adı cümleye
+**ekle değil iki noktayla** bağlanıyor (`Ağustos 2026: 31 günün…`): bulunma eki
+yıla göre değişiyor (`2026'da` ↔ `2023'te`) ve ay adı yerelleştirme
+kütüphanesinden geliyor, ünlü uyumu kodda bilinemez. Kalıp kartın kendi
+cümlesinde zaten vardı (`Seçili gün 9 Eyl: …`).
+
+**Emülatör doğrulandı (2026-09-19).** Cümle çizilmiyor, okunuyor — ekran
+görüntüsü kanıt olamazdı. `focussayac_verify`de TalkBack açılıp
+`uiautomator dump` ile platformun gördüğü `content-desc` okundu: geri okla
+ağustosa gidildiğinde `Ağustos 2026: 31 günün 24 gününde odaklandın, toplam
+39 saat 15 dakika.` — başlıkla ve kartın sağ üstündeki toplamla birebir.
+Çıktılar `.verify/m40_*`. Flutter semantics ağacını yalnızca bir
+erişilebilirlik istemcisi bağlıyken kuruyor; TalkBack kapalıyken dump 19 boş
+düğüm veriyor.
+
+**Kapsam dışı:** şeridin cümlesi (penceresi ay gezinmesinden etkilenmiyor) ve
+boş geçmiş ay dalının emülatörde görülmesi — geri okun kapısı en eski seansa
+bağlı, tohumlanmış veriyle boş bir geçmiş aya gezinilemiyor; dal widget
+testinde sabit.
 
 ---
 
@@ -1395,7 +1414,7 @@ sorunu taşıyor.
       `CN=Android Debug`)*
 - [x] Odak seansında dekoratif animasyonlar duruyor
 - [x] Kodda hard-coded Türkçe metin yok
-- [x] Testler geçiyor *(492 test, `flutter test`)*
+- [x] Testler geçiyor *(495 test, `flutter test`)*
 - [x] `DECISIONS.md` her kararı gerekçesiyle içeriyor
 
 Play Console tarafının kendi kontrol listesi ayrı: `docs/play/RELEASE.md` §7.
