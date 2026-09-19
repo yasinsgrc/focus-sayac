@@ -8,6 +8,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.SweepGradient
+import kotlin.math.sqrt
 
 /**
  * Ekran 02 icindeki CountdownRingPainter
@@ -49,6 +50,9 @@ object RingRenderer {
 
     private const val OUTER_COLOR = 0x17FFFFFF
     private const val TRACK_COLOR = 0x12FFFFFF
+
+    /** Kicker'in kullanabilecegi kirisin orani - iz ile arasindaki nefes payi. */
+    private const val LABEL_FIT = 0.94f
 
     fun render(
         context: Context,
@@ -233,7 +237,36 @@ object RingRenderer {
             letterSpacing = WidgetTypography.KICKER_LETTER_SPACING
             textSize = sizePx * 0.058f
         }
-        canvas.drawText(labelText, cx, cy + sizePx * 0.20f, label)
+        val baselineOffset = sizePx * 0.20f
+        label.textSize *= labelFitFor(label, labelText, sizePx, baselineOffset)
+        canvas.drawText(labelText, cx, cy + baselineOffset, label)
+    }
+
+    /**
+     * Kicker halkanin ICINE yaziliyor, altina degil - ROADMAP madde 39.
+     *
+     * Punto sabitken uzun durum adlari ("HEDEF SEÇİLMEDİ", "SINAVIN GEÇTİ")
+     * bu satirda izin iki yanindan tasip stroke'un uzerine biniyordu; kisa
+     * olanlar ("GÜN KALDI", "BUGÜN") sigdigi icin kimse gormemis. Punto
+     * olculup kirise sigacak kadar kuculuyor - `counterSizeFor`un rakama
+     * yaptiginin ayni, yalniz olcu karakter sayisindan degil metnin
+     * kendisinden geliyor (ceviri uzarsa da tutsun diye).
+     *
+     * Kiris etiketin TABANINDA olculuyor: kicker merkezin altinda duruyor,
+     * yani en dar yeri alt kenari.
+     */
+    private fun labelFitFor(
+        paint: Paint,
+        text: String,
+        sizePx: Int,
+        baselineOffset: Float,
+    ): Float {
+        val innerEdge = (TRACK_RADIUS - TRACK_STROKE / 2f) * (sizePx / VIEW_BOX)
+        val bottom = baselineOffset + paint.descent()
+        val halfChord = sqrt((innerEdge * innerEdge - bottom * bottom).coerceAtLeast(0f))
+        val maxWidth = halfChord * 2f * LABEL_FIT
+        val measured = paint.measureText(text)
+        return if (measured <= maxWidth) 1f else maxWidth / measured
     }
 
     /**

@@ -3544,3 +3544,97 @@ Tablet ve 7"/10" ekran görüntüleri (Play zorunlu tutmuyor, telefon seti
 yeterli), tanıtım videosu, mağaza görsellerinin İngilizce sürümü, gerçek ARM
 cihazda yeniden çekim (ASO §5'in çekim listesi cihazda da geçerli), Console'a
 yükleme (elle).
+
+---
+
+## Madde 39 — Ring / Strip / Spark doğrulaması
+
+Tasarım: `docs/superpowers/specs/2026-09-19-kotlin-renderer-dogrulama-design.md`
+
+### 1. Kalıp madde 31'den kopyalandı, Gradle'a dokunulmadı
+
+Üç renderer da yalnızca gerçek bir widget yerleştirildiğinde çalışıyor, o da
+adb ile sürülemiyor — madde 31'in çıkarımı burada da geçerli: boşluk ekran
+görüntüsüyle değil **testle** kapanıyor. İddialar `src/sharedTest` altında üç
+sözleşme dosyasında, koşucular ince; `build.gradle.kts` bu dizini iki kaynak
+kümesine zaten ekliyordu, yeni ayar gerekmedi.
+
+Madde 33'ün iki iddiası (`yayin baslangicinda koz lekesi yok`,
+`iki uc da yuvarlak kaliyor`) `RingRendererRobolectricTest`ten
+`RingRendererContract`a taşındı. Orada sözleşmesiz ve cihazsız duruyorlardı;
+gradyanın nerede örneklendiği gerçek grafik yığınında da sınanmalı.
+
+### 2. Sondalar iki eksende, ikisi de temadan bağımsız
+
+**Alfa:** iz `0x12`, kesikli çember `0x59`, çizilen yaylar/dolgular opak —
+`0x80` eşiği "çizildi mi" sorusunu tek başına yanıtlıyor.
+**Sıcaklık** (kırmızı − mavi): halkanın gradyanı `RingRenderer`da düz hex, köz
+ise iki niteleyicide de sıcak (`#FFA35D00` / `#FFFFB03A`). Robolectric
+varsayılan olarak **açık** temada koşuyor, emülatör koyuda — iddialar ikisinde
+de aynı sayıyı veriyor, çünkü hiçbiri palet renginin kendisine bakmıyor.
+
+Ölçüler sağlayıcıların `dp` sabitlerinden: halka 273², şerit 630×15, sütun
+grafiği **iki** yerleşimde (seri 220×68, panorama 367×57). İkincisi önemliydi —
+hata tam oradan çıktı.
+
+### 3. Bulunan hata: sütun grafiğinin tabanı yatay eksenden geliyordu
+
+`minHeight = radius * 2f` ve `radius = barWidth * 0.26f`, yani boş günün
+bıraktığı taban **sütun genişliğine** bağlıydı. Panoramada sütunlar geniş, kare
+alçak: taban grafiğin **%32'si**. Sonuç, 120 dakikalık bir haftada 20 dakika
+odaklanılmış gün ile hiç odaklanılmamış günün **aynı** çizilmesi. Seri
+yerleşiminde %16.
+
+Bu, madde 31'in kıvılcım hatasıyla aynı sınıftan: kod derleniyor, açılıyor,
+hiçbir test düşmüyor ve grafik sessizce yanlış şey söylüyor.
+
+Düzeltme payı dikey eksene taşıyor — `minHeight = heightPx * 0.06f`. Taban
+duruyor (boş hafta "veri yok" değil "sıfır" okunmalı, dosyanın kendi sözü) ama
+artık bir günün odağı gibi görünmüyor. `radius`a dokunulmadı: onun küçük
+tutulma gerekçesi ayrı ve dosyada belgeli.
+
+### 4. Bulunan hata: halkanın kicker'ı izin üstünden geçiyordu
+
+Kicker'ın puntosu sabitti (`sizePx * 0.058f`). "GÜN KALDI" (9) ve "BUGÜN" (5)
+sığıyor; **"HEDEF SEÇİLMEDİ"** 238 px çiziliyor, o satırda izin iç kenarına
+kadar kalan kiriş 183 px. Yazı halkanın stroke'unun üzerinden geçiyordu ve bu,
+sınav seçmemiş kullanıcının — yani yeni kullanıcının — gördüğü tek hâl.
+"SINAVIN GEÇTİ" de aynı şekilde taşıyordu.
+
+Düzeltme `counterSizeFor`un rakama yaptığını kicker'a yapıyor: punto ölçülüp
+kirişe sığacak kadar küçülüyor (`labelFitFor`, pay `LABEL_FIT = 0.94`). Kiriş
+etiketin **tabanında** ölçülüyor, çünkü kicker merkezin altında ve en dar yeri
+alt kenarı. Ölçü karakter sayısından değil `measureText`ten geliyor —
+`counterSizeFor`un uzunluk tablosu bir çeviri uzadığında sessizce yanılırdı.
+
+Sığan etiketler hiç küçülmüyor: yaygın durumda görünür değişiklik yok.
+
+### 5. Emülatör doğrulandı (2026-09-19)
+
+`focussayac_verify` (Android 16). `connectedDebugAndroidTest`: **20 test, sıfır
+hata** (madde 31'in 3'ü + bu maddenin 17'si). Çıktılar PNG olarak döküldü ve
+`.verify/m39_*.png` olarak çekildi; kontak sayfaları `m39_halka_tablosu.png`,
+`m39_serit_tablosu.png`, `m39_sutun_tablosu.png`.
+
+Gözle: halka merdiveni %10→%100 düzgün büyüyor, yayın başı her basamakta mavi
+(köz lekesi yok), `muted` karesinde yay hiç yok, günlük yay kesikli çemberin
+üstünde yeşil duruyor. Şerit merdiveninde %0 karesi bir kapak, gradyan soldan
+sağa ısınıyor. Sütun grafiğinde artan hafta artık gerçek bir merdiven, boş
+hafta ince bir taban çizgisi.
+
+Madde 31'in iki tuzağı yine geçerliydi:
+`-Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true` olmadan PNG
+kalmıyor, ve dosyalar `/sdcard/...` yerine
+`/data/media/0/Android/data/<pkg>/files/` altından, `MSYS_NO_PATHCONV=1` ile
+çekiliyor.
+
+### 6. Kapsam dışı
+
+- Widget'ı ana ekrana adb ile yerleştirmek (hâlâ mümkün değil).
+- Dart ↔ Kotlin piksel paritesi.
+- `StripRenderer`ın `muted` davranışı: sınav seçilmemişken oran 0 gidiyor ve
+  şerit boş iz yerine bir kapakla duruyor; halka o durumda yayı hiç çizmiyor.
+  İkisi tam aynı dili konuşmuyor ama kapak grafiğin %2.4'ü ve "yüzde sıfır"
+  okuması da doğru. Sözleşme davranışı sabitliyor, karar ayrı bir maddeye
+  bırakıldı.
+- Sağlayıcıların `RemoteViews` tarafı (metin, tıklama hedefi, yenileme).

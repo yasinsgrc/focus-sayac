@@ -1308,15 +1308,42 @@ ayağından **görseller kapandı**; diğer ikisi bilinçli olarak açık bırak
 
 ---
 
-## 39. Kotlin renderer'ların doğrulama boşluğu (Ring / Strip / Spark)
+## 39. Kotlin renderer'ların doğrulama boşluğu (Ring / Strip / Spark) ✅ bitti
 
-Madde 31'in kapsam dışı bıraktığı iş: `FlameRenderer` için kurulan iki koşum
-evli sözleşme testi kalıbı (`src/sharedTest` + Robolectric NATIVE + instrumented)
-`RingRenderer`, `StripRenderer` ve `SparkRenderer`a uygulanmadı. Madde 31'de bu
-yaklaşım hiç çalıştırılmamış kodda **gerçek bir hata** bulmuştu (üst kademelerde
-kıvılcımlar sessizce atlanıyordu), yani boşluk teorik değil. Uygulamada görünür
-değişiklik yok; kanıt test koşumu. Türkçe yerel ayarı tuzağı (conscrypt tr-TR'de
-`wındows` arıyor) burada da geçerli: test JVM'i `-Duser.language=en` ile koşmalı.
+492 Dart testi geçiyor (değişmedi) + Gradle tarafında 18 Robolectric / 20 cihaz
+testi. Kararlar: `DECISIONS.md` "Madde 39". Tasarım:
+`docs/superpowers/specs/2026-09-19-kotlin-renderer-dogrulama-design.md`.
+
+Madde 31'in kalıbı üç renderer'a taşındı: iddialar `src/sharedTest` altında üç
+sözleşme dosyasında, koşucular ince, iki koşum evi de aynı gövdeyi derliyor.
+`build.gradle.kts` bu dizini zaten iki kaynak kümesine ekliyordu — yeni ayar
+gerekmedi. Madde 33'ün iki halka iddiası da sözleşmeye taşındı; orada
+cihazsızdı, artık emülatörde de koşuyor.
+
+**Beklentinin aksine iki gerçek hata çıktı** — madde 31'deki gibi, hiç
+koşulmamış kodda:
+
+- **Sütun grafiğinin tabanı sütun genişliğine bağlıydı** (`radius * 2f`).
+  Panorama yerleşiminde (140×22dp) taban grafiğin **%32'si** oluyordu: 120
+  dakikalık bir haftada 20 dakika odaklanılmış gün ile hiç odaklanılmamış gün
+  aynı çiziliyordu. Pay dikey eksene taşındı (`heightPx * 0.06f`); taban duruyor
+  ama artık bir günün odağı gibi görünmüyor.
+- **Halkanın kicker'ı uzun durum adlarında izin üstünden geçiyordu.**
+  "HEDEF SEÇİLMEDİ" 238 px, o satırdaki kiriş 183 px — üstelik bu, sınav
+  seçmemiş kullanıcının gördüğü tek hâl. Punto artık `measureText` ile ölçülüp
+  kirişe sığdırılıyor (`labelFitFor`); sığan etiketler hiç küçülmüyor.
+
+**Emülatör doğrulandı (2026-09-19).** `focussayac_verify` (Android 16), 20 test
+sıfır hata. Çıktı PNG'leri `.verify/m39_*.png`, kontak sayfaları
+`m39_{halka,serit,sutun}_tablosu.png` — ekran görüntüsü değil, çizim
+yollarının çıktısının kendisi.
+
+Türkçe yerel ayarı tuzağı (conscrypt tr-TR'de `wındows` arıyor) burada da
+geçerliydi; `tasks.withType<Test>` zaten `-Duser.language=en` veriyor.
+
+**Kapsam dışı:** `StripRenderer`ın `muted` davranışı — sınav seçilmemişken
+şerit boş iz yerine bir kapakla duruyor, halka ise yayı hiç çizmiyor. Sözleşme
+davranışı sabitliyor, ikisini aynı dile getirmek ayrı bir maddenin işi.
 
 ---
 

@@ -2,62 +2,58 @@ package com.focussayac.focussayac.widget
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
-import org.robolectric.annotation.GraphicsMode
 
 /**
- * `RingRenderer`in cihazsiz kapisi - ROADMAP madde 33 (koz lekesi) ve
- * madde 39 (sozlesme + cihaz kosumu).
+ * `RingRenderer`in emulator/cihaz kosumu - ROADMAP madde 39.
  *
- * Madde 33'te bu dosya tek iddiayi kendi icinde tutuyordu ve cihazda hic
- * kosmuyordu; madde 39 iddialari `RingRendererContract`a tasidi, boylece ayni
- * govdeyi `RingRendererDeviceTest` de derliyor. `@GraphicsMode` Robolectric'e
- * ozel oldugu icin sozlesmede degil burada.
+ * Madde 33'un koz lekesi iddiasi yalnizca Robolectric'te kosuyordu; halkanin
+ * gradyani gercek grafik yiginda da ayni yerde orneklenmeli, o yuzden artik
+ * cihaz da ayni sondaya bakiyor.
+ *
+ * Iddialar `RingRendererContract`ta, Robolectric kosumuyla ayni dosyada.
  */
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
-@GraphicsMode(GraphicsMode.Mode.NATIVE)
-class RingRendererRobolectricTest {
+@RunWith(AndroidJUnit4::class)
+class RingRendererDeviceTest {
 
     private val context: Context get() = ApplicationProvider.getApplicationContext()
 
     @Test
-    fun `iz halkasi kesintisiz`() {
+    fun izHalkasiKesintisiz() {
         RingRendererContract.verifyTrack(RingRendererContract.render(context, 0.25f))
     }
 
     @Test
-    fun `ilerleme yayi orana bagli`() {
+    fun ilerlemeYayiOranaBagli() {
         RingRendererContract.verifyProgressLadder(RingRendererContract.renderLadder(context))
     }
 
     @Test
-    fun `gradyan gokyuzunden koza gidiyor`() {
+    fun gradyanGokyuzundenKozaGidiyor() {
         RingRendererContract.verifyGradientDirection(RingRendererContract.render(context, 0.9f))
     }
 
     @Test
-    fun `yayin baslangicinda koz lekesi yok`() {
+    fun yayinBaslangicindaKozLekesiYok() {
         RingRendererContract.verifyNoEmberAtStart(RingRendererContract.render(context, 0.25f))
     }
 
     @Test
-    fun `iki uc da yuvarlak kaliyor`() {
+    fun ikiUcDaYuvarlakKaliyor() {
         RingRendererContract.verifyRoundCaps(RingRendererContract.render(context, 0.25f))
     }
 
     @Test
-    fun `sinav secilmemisken yay yok`() {
+    fun sinavSecilmemiskenYayYok() {
         RingRendererContract.verifyMutedHasNoArc(
             RingRendererContract.render(context, 0.75f, muted = true),
         )
     }
 
     @Test
-    fun `gunun dongusu ayri bir yay`() {
+    fun gununDongusuAyriBirYay() {
         RingRendererContract.verifyHabitArc(
             withHabit = RingRendererContract.render(context, 0.25f, todayRatio = 0.5f),
             withoutHabit = RingRendererContract.render(context, 0.25f),
@@ -65,7 +61,7 @@ class RingRendererRobolectricTest {
     }
 
     @Test
-    fun `ortadaki yazi ize girmiyor`() {
+    fun ortadakiYaziIzeGirmiyor() {
         RingRendererContract.verifyCenterTextFits(context)
     }
 }

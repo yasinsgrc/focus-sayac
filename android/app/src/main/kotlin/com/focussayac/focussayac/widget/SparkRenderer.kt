@@ -21,6 +21,9 @@ object SparkRenderer {
     private const val PAST_ALPHA = 0x4D
     private const val CORNER_RATIO = 0.26f
 
+    /** Sifir gunun tabani: grafigin yuksekliginin bu kadari. */
+    private const val BASELINE_RATIO = 0.06f
+
     fun render(
         context: Context,
         widthPx: Int,
@@ -40,7 +43,15 @@ object SparkRenderer {
         val radius = barWidth * CORNER_RATIO
         // Odak yapilmamis gun bosluk degil, ince bir taban birakir: bos hafta
         // "veri yok" degil "sifir" olarak okunmali.
-        val minHeight = radius * 2f
+        //
+        // Pay grafigin YUKSEKLIGINDEN aliniyor - ROADMAP madde 39. Onceden
+        // `radius * 2f` idi, yani sutun GENISLIGINE bagliydi ve genis sutunlu
+        // yerlesimde tabani bir sutun boyuna cikariyordu: panoramada
+        // (140x22dp) taban yuksekligin %32'si oluyor, 120 dakikalik bir
+        // haftada 20 dakikalik gun ile hic odaklanilmamis gun AYNI
+        // ciziliyordu. Grafik sessizce yaniltiyordu; hicbir test kosmadigi
+        // icin gorulmemisti.
+        val minHeight = heightPx * BASELINE_RATIO
 
         val maxValue = (values.maxOrNull() ?: 0).coerceAtLeast(1)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
