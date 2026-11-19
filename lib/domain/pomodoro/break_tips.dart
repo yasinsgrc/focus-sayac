@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../l10n/gen/app_localizations.dart';
 
@@ -14,12 +14,12 @@ enum BreakTipTint { mint, sky }
 /// molada rastgele 2 tanesi**. İkon/renk çevrilebilir metin değil, o yüzden
 /// burada kalıyor; yalnızca [text] ARB'den geliyor.
 enum BreakTip {
-  lookAway(PhosphorIconsRegular.eye, BreakTipTint.mint),
-  drinkWater(PhosphorIconsRegular.drop, BreakTipTint.sky),
-  standUp(PhosphorIconsRegular.footprints, BreakTipTint.mint),
-  breathe(PhosphorIconsRegular.wind, BreakTipTint.sky),
-  stretch(PhosphorIconsRegular.armchair, BreakTipTint.mint),
-  closeEyes(PhosphorIconsRegular.eyeClosed, BreakTipTint.sky);
+  lookAway(AppIconsRegular.eye, BreakTipTint.mint),
+  drinkWater(AppIconsRegular.drop, BreakTipTint.sky),
+  standUp(AppIconsRegular.footprints, BreakTipTint.mint),
+  breathe(AppIconsRegular.wind, BreakTipTint.sky),
+  stretch(AppIconsRegular.armchair, BreakTipTint.mint),
+  closeEyes(AppIconsRegular.eyeClosed, BreakTipTint.sky);
 
   const BreakTip(this.icon, this.tint);
 

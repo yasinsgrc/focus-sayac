@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -191,7 +191,7 @@ class _StoryCardScreenState extends ConsumerState<StoryCardScreen> {
               RiseIn(
                 delay: RiseIn.step * 4,
                 child: _SecondaryButton(
-                  icon: PhosphorIconsRegular.downloadSimple,
+                  icon: AppIconsRegular.downloadSimple,
                   label: l10n.storyCardSave,
                   roleColor: colors.mint,
                   enabled: !_busy,
@@ -248,7 +248,7 @@ class _CloseButton extends StatelessWidget {
             shape: BoxShape.circle,
             border: Border.all(color: colors.fillMedium),
           ),
-          child: Icon(PhosphorIconsRegular.x, size: 16, color: colors.neutral400),
+          child: Icon(AppIconsRegular.x, size: 16, color: colors.neutral400),
         ),
       ),
     );
@@ -370,7 +370,7 @@ class _ShareButton extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(PhosphorIconsRegular.shareNetwork, size: 19, color: colors.accent200),
+                    Icon(AppIconsRegular.shareNetwork, size: 19, color: colors.accent200),
                     const SizedBox(width: 10),
                     Text(
                       AppLocalizations.of(context).storyCardShare,

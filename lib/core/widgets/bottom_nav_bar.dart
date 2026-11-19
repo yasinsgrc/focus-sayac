@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../domain/pomodoro/pomodoro_controller.dart';
 import '../../domain/pomodoro/pomodoro_phase.dart';
@@ -106,12 +106,12 @@ class BottomNavBar extends ConsumerWidget {
     final List<_NavSlot> slots = <_NavSlot>[
       _NavSlot(
         tab: AppNavTab.countdown,
-        icon: PhosphorIconsRegular.timer,
+        icon: AppIconsRegular.timer,
         label: l10n.navCountdown,
         pill: _PillStyle.forRole(
           colors: colors,
           label: l10n.navCountdown,
-          icon: PhosphorIconsFill.timer,
+          icon: AppIconsFill.timer,
           role: colors.accent400,
           deep: colors.accent900,
           darkStart: colors.accent400.withValues(alpha: 0.55),
@@ -120,12 +120,12 @@ class BottomNavBar extends ConsumerWidget {
       ),
       _NavSlot(
         tab: AppNavTab.badges,
-        icon: PhosphorIconsRegular.medal,
+        icon: AppIconsRegular.medal,
         label: l10n.badgesTitle,
         pill: _PillStyle.forRole(
           colors: colors,
           label: l10n.badgesTitle,
-          icon: PhosphorIconsFill.medal,
+          icon: AppIconsFill.medal,
           role: colors.mint,
           deep: colors.mintDeep,
           darkStart: colors.mint.withValues(alpha: 0.45),
@@ -134,12 +134,12 @@ class BottomNavBar extends ConsumerWidget {
       ),
       _NavSlot(
         tab: AppNavTab.stats,
-        icon: PhosphorIconsRegular.chartBar,
+        icon: AppIconsRegular.chartBar,
         label: l10n.navStats,
         pill: _PillStyle.forRole(
           colors: colors,
           label: l10n.navStats,
-          icon: PhosphorIconsFill.chartBar,
+          icon: AppIconsFill.chartBar,
           role: colors.sky,
           deep: colors.skyDeep,
           // Tek opak başlangıç: diğer dördünün aksine prototipte burada
@@ -152,11 +152,11 @@ class BottomNavBar extends ConsumerWidget {
       // hapı bu yüzden nötr — vurgu değil yalnızca "buradasın" işareti.
       _NavSlot(
         tab: AppNavTab.settings,
-        icon: PhosphorIconsRegular.gear,
+        icon: AppIconsRegular.gear,
         label: l10n.settingsTitle,
         pill: _PillStyle(
           label: l10n.settingsTitle,
-          icon: PhosphorIconsFill.gear,
+          icon: AppIconsFill.gear,
           gradient: <Color>[colors.neutral800, colors.neutral900],
           foreground: colors.neutral300,
         ),
@@ -254,7 +254,7 @@ class _FocusActionSlot extends StatelessWidget {
                 colors: <Color>[colors.emberDeep, colors.emberDeep.withValues(alpha: 0)],
               ),
             ),
-            child: Icon(PhosphorIconsFill.play, size: 19, color: colors.ember),
+            child: Icon(AppIconsFill.play, size: 19, color: colors.ember),
           ),
         ),
       ),

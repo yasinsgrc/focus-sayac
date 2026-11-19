@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../services/storage/storage_enums.dart';
@@ -43,4 +43,4 @@ Color examAccentDeepColor(ExamAccentRole role, AppColors colors) {
 /// olarak veriye bağlamış ama somut bir değer vermemiş (yalnızca
 /// `hint-placeholder-count`); tüm sınavlar için tek, tutarlı bir "sınav"
 /// ikonu (mezuniyet kepi) kullanılıyor, rol rengiyle boyanıyor.
-IconData examAccentIcon() => PhosphorIconsDuotone.graduationCap;
+IconData examAccentIcon() => AppIconsDuotone.graduationCap;

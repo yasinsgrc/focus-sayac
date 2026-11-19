@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -106,9 +106,9 @@ class _AppToastState extends State<_AppToast> with SingleTickerProviderStateMixi
   Widget build(BuildContext context) {
     final AppColors colors = Theme.of(context).extension<AppColors>()!;
     final (IconData icon, Color tint) = switch (widget.tone) {
-      AppToastTone.success => (PhosphorIconsDuotone.checkCircle, colors.mint),
-      AppToastTone.info => (PhosphorIconsDuotone.info, colors.accent400),
-      AppToastTone.error => (PhosphorIconsDuotone.warningCircle, colors.rose),
+      AppToastTone.success => (AppIconsDuotone.checkCircle, colors.mint),
+      AppToastTone.info => (AppIconsDuotone.info, colors.accent400),
+      AppToastTone.error => (AppIconsDuotone.warningCircle, colors.rose),
     };
 
     final Widget card = Container(

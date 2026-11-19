@@ -60,7 +60,6 @@ dependencies:
   drift: 2.31.0
   flutter_riverpod: 3.1.0
   riverpod_annotation: 4.0.0
-  phosphor_flutter: ^2.1.0
   # Ana ekran widget'ları (Faz 16). Dart yalnızca anlık görüntüyü paylaşılan
   # `SharedPreferences`e yazar; çizim ve zaman hesabı Kotlin tarafında
   # (`android/.../widget/`). Bkz.
@@ -115,6 +114,16 @@ flutter:
     - assets/data/exam_dates.json
 
   fonts:
+    # Phosphor ikonları (MIT) — bkz. lib/core/icons/app_icons.dart
+    - family: PhosphorRegular
+      fonts:
+        - asset: assets/fonts/phosphor/Phosphor.ttf
+    - family: PhosphorFill
+      fonts:
+        - asset: assets/fonts/phosphor/Phosphor-Fill.ttf
+    - family: PhosphorDuotone
+      fonts:
+        - asset: assets/fonts/phosphor/Phosphor-Duotone.ttf
     - family: Space Grotesk
       fonts:
         - asset: assets/fonts/SpaceGrotesk-400.ttf

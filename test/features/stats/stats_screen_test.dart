@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
@@ -134,7 +134,7 @@ void main() {
     await _settle(tester);
     expect(find.text('GÜN KALDI'), findsOneWidget);
 
-    await tester.tap(find.byIcon(PhosphorIconsRegular.chartBar));
+    await tester.tap(find.byIcon(AppIconsRegular.chartBar));
     // Ekran 02'nin sonsuz-tekrarlı halka animasyonu `pumpAndSettle`i engelliyor.
     await _settle(tester, rounds: 8);
 

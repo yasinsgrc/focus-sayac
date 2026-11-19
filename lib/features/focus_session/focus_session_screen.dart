@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/router/route_paths.dart';
@@ -411,7 +411,7 @@ class _FocusBody extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(PhosphorIconsRegular.eyeSlash, size: 14, color: colors.neutral600),
+                    Icon(AppIconsRegular.eyeSlash, size: 14, color: colors.neutral600),
                     const SizedBox(width: 6),
                     Text(l10n.focusAdHidden,
                         style: AppTypography.body(fontSize: AppTextSize.sm, color: colors.neutral600)),
@@ -494,7 +494,7 @@ class _FocusBody extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   _RingIconButton(
-                    icon: PhosphorIconsRegular.x,
+                    icon: AppIconsRegular.x,
                     color: colors.neutral500,
                     onTap: () => _confirmCancel(context, ref, phase),
                   ),
@@ -634,7 +634,7 @@ class _FocusHintLineState extends State<_FocusHintLine> {
         ),
         child: Row(
           children: <Widget>[
-            Icon(PhosphorIconsDuotone.deviceMobileSlash, size: 21, color: widget.iconColor),
+            Icon(AppIconsDuotone.deviceMobileSlash, size: 21, color: widget.iconColor),
             const SizedBox(width: 12),
             Expanded(
                 child: Text(widget.text,
@@ -707,7 +707,7 @@ class _PlayPauseButton extends StatelessWidget {
             customBorder: const CircleBorder(),
             onTap: onTap,
             child: Icon(
-              running ? PhosphorIconsFill.pause : PhosphorIconsFill.play,
+              running ? AppIconsFill.pause : AppIconsFill.play,
               size: 36,
               color: const Color(0xFFFFF6E6),
             ),
@@ -769,7 +769,7 @@ class _BreakBody extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        Icon(PhosphorIconsRegular.checkCircle, size: 14, color: colors.mint),
+                        Icon(AppIconsRegular.checkCircle, size: 14, color: colors.mint),
                         const SizedBox(width: 6),
                         Text(l10n.breakPomodoroDone(phase.cyclePosition),
                             style: AppTypography.body(
@@ -804,7 +804,7 @@ class _BreakBody extends ConsumerWidget {
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      Icon(PhosphorIconsDuotone.coffee, size: 64, color: colors.mint),
+                      Icon(AppIconsDuotone.coffee, size: 64, color: colors.mint),
                       const SizedBox(height: 2),
                       // Koyu temada sayaç neredeyse beyaz bir nane tonu;
                       // açık zeminde o ton kaybolduğu için gövde metnine
@@ -865,7 +865,7 @@ class _BreakBody extends ConsumerWidget {
                 Expanded(
                   child: AppPillButton(
                     label: l10n.breakExtend,
-                    icon: PhosphorIconsRegular.plus,
+                    icon: AppIconsRegular.plus,
                     roleColor: canExtend ? colors.neutral300 : colors.neutral700,
                     roleDeepColor: Colors.transparent,
                     onPressed: canExtend ? () => ref.read(pomodoroControllerProvider.notifier).extendBreak() : null,
@@ -876,7 +876,7 @@ class _BreakBody extends ConsumerWidget {
                   flex: 2,
                   child: AppPillButton(
                     label: l10n.breakReturnToFocus,
-                    icon: PhosphorIconsFill.play,
+                    icon: AppIconsFill.play,
                     roleColor: colors.ember,
                     roleDeepColor: colors.emberDeep,
                     onPressed: () => ref.read(pomodoroControllerProvider.notifier).endBreakEarly(),
@@ -941,7 +941,7 @@ class _CancelConfirmDialog extends StatelessWidget {
             // "flame" mevcut) — prototipin `ph-duotone ph-flame-slash`
             // ikonuna en yakın karşılık, aynı "seri kesiliyor" anlamını rose
             // renkle taşıyor (Faz 5 kararı).
-            Icon(PhosphorIconsDuotone.flame, size: 46, color: colors.rose),
+            Icon(AppIconsDuotone.flame, size: 46, color: colors.rose),
             const SizedBox(height: 18),
             Text(l10n.cancelDialogTitle,
                 style: AppTypography.display(
@@ -957,7 +957,7 @@ class _CancelConfirmDialog extends StatelessWidget {
               decoration: BoxDecoration(color: colors.fillFaint, borderRadius: BorderRadius.circular(16)),
               child: Row(
                 children: <Widget>[
-                  Icon(PhosphorIconsRegular.clockCountdown, size: 19, color: colors.mint),
+                  Icon(AppIconsRegular.clockCountdown, size: 19, color: colors.mint),
                   const SizedBox(width: 11),
                   Expanded(
                     child: Text(

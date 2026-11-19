@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
@@ -116,7 +116,7 @@ SessionRingPainter _ringPainter(WidgetTester tester) {
 }
 
 /// Mola gövdesinin işareti — Ekran 09'un 64px kahve ikonu.
-Finder get _breakBody => find.byIcon(PhosphorIconsDuotone.coffee, skipOffstage: false);
+Finder get _breakBody => find.byIcon(AppIconsDuotone.coffee, skipOffstage: false);
 
 void main() {
   // ROADMAP madde 19: 25 dakika bitiyordu ve ekran öylece mola gövdesine

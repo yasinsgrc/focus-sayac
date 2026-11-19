@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -215,7 +215,7 @@ class SubjectBreakdownCard extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Icon(PhosphorIconsDuotone.bookOpen, size: 22, color: colors.sky),
+          Icon(AppIconsDuotone.bookOpen, size: 22, color: colors.sky),
           const SizedBox(width: 13),
           Expanded(
             child: Text(

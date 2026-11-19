@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
@@ -64,7 +64,7 @@ class ExamExpiredScreen extends ConsumerWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: colors.borderStrong),
                       ),
-                      child: Icon(PhosphorIconsDuotone.calendarX, size: 46, color: colors.neutral600),
+                      child: Icon(AppIconsDuotone.calendarX, size: 46, color: colors.neutral600),
                     ),
                     const SizedBox(height: 26),
                     Text(l10n.examExpiredTitle,

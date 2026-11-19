@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
@@ -287,7 +287,7 @@ class _NoExamBody extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: colors.borderStrong),
                   ),
-                  child: Icon(PhosphorIconsDuotone.calendarBlank, size: 46, color: colors.neutral600),
+                  child: Icon(AppIconsDuotone.calendarBlank, size: 46, color: colors.neutral600),
                 ),
               ],
             ),
@@ -443,7 +443,7 @@ class _CountdownBody extends ConsumerWidget {
                                               fontSize: AppTextSize.titleLg, color: colors.text),
                                         ),
                                         const SizedBox(width: 8),
-                                        Icon(PhosphorIconsRegular.caretDown, size: 14, color: colors.ember),
+                                        Icon(AppIconsRegular.caretDown, size: 14, color: colors.ember),
                                       ],
                                     ),
                                   ],
@@ -459,7 +459,7 @@ class _CountdownBody extends ConsumerWidget {
                                     shape: BoxShape.circle,
                                     border: Border.all(color: colors.fillMedium),
                                   ),
-                                  child: Icon(PhosphorIconsRegular.plus, size: 18, color: colors.neutral400),
+                                  child: Icon(AppIconsRegular.plus, size: 18, color: colors.neutral400),
                                 ),
                               ),
                             ],
@@ -675,7 +675,7 @@ class _CountdownBody extends ConsumerWidget {
                                                 // vurgu ilk build'de çalışmıyor.
                                                 PopOnIncrease(
                                                   value: streak,
-                                                  child: Icon(PhosphorIconsFill.flame, size: 13, color: colors.ember),
+                                                  child: Icon(AppIconsFill.flame, size: 13, color: colors.ember),
                                                 ),
                                                 const SizedBox(width: 5),
                                                 RollingNumber(
@@ -867,7 +867,7 @@ class _CountdownBody extends ConsumerWidget {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: <Widget>[
-                                          Icon(PhosphorIconsFill.play, size: 16, color: colors.ember),
+                                          Icon(AppIconsFill.play, size: 16, color: colors.ember),
                                           const SizedBox(width: 10),
                                           Text(focusButtonLabel,
                                               style: AppTypography.label(

@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../l10n/gen/app_localizations.dart';
@@ -95,52 +95,52 @@ class BadgeDefinition {
 const List<BadgeDefinition> kBadgeCatalog = <BadgeDefinition>[
   BadgeDefinition(
     key: BadgeKeys.firstSpark,
-    icon: PhosphorIconsFill.sparkle,
+    icon: AppIconsFill.sparkle,
     tint: BadgeTint.ember,
   ),
   BadgeDefinition(
     key: BadgeKeys.focusTorch,
-    icon: PhosphorIconsFill.flame,
+    icon: AppIconsFill.flame,
     tint: BadgeTint.ember,
   ),
   BadgeDefinition(
     key: BadgeKeys.morningStar,
-    icon: PhosphorIconsFill.sunHorizon,
+    icon: AppIconsFill.sunHorizon,
     tint: BadgeTint.mint,
   ),
   BadgeDefinition(
     key: BadgeKeys.nightWatch,
-    icon: PhosphorIconsDuotone.moonStars,
+    icon: AppIconsDuotone.moonStars,
     tint: BadgeTint.sky,
   ),
   BadgeDefinition(
     key: BadgeKeys.weeklyStreak,
-    icon: PhosphorIconsDuotone.calendarCheck,
+    icon: AppIconsDuotone.calendarCheck,
     tint: BadgeTint.accent,
   ),
   BadgeDefinition(
     key: BadgeKeys.marathon,
-    icon: PhosphorIconsDuotone.personSimpleRun,
+    icon: AppIconsDuotone.personSimpleRun,
     tint: BadgeTint.rose,
   ),
   BadgeDefinition(
     key: BadgeKeys.tenHours,
-    icon: PhosphorIconsDuotone.hourglass,
+    icon: AppIconsDuotone.hourglass,
     tint: BadgeTint.sky,
   ),
   BadgeDefinition(
     key: BadgeKeys.fiftyHours,
-    icon: PhosphorIconsDuotone.medal,
+    icon: AppIconsDuotone.medal,
     tint: BadgeTint.mint,
   ),
   BadgeDefinition(
     key: BadgeKeys.hundredHours,
-    icon: PhosphorIconsDuotone.trophy,
+    icon: AppIconsDuotone.trophy,
     tint: BadgeTint.accent,
   ),
   BadgeDefinition(
     key: BadgeKeys.twoFiftyHours,
-    icon: PhosphorIconsDuotone.crown,
+    icon: AppIconsDuotone.crown,
     tint: BadgeTint.ember,
   ),
 ];

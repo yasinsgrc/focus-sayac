@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -101,7 +101,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(color: colors.fillMedium),
                       ),
-                      child: Icon(PhosphorIconsRegular.x, size: 16, color: colors.neutral400),
+                      child: Icon(AppIconsRegular.x, size: 16, color: colors.neutral400),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -139,7 +139,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                                 const SizedBox(height: 8),
                                 _PickerField(
                                   text: DateFormat('d MMMM y', 'tr').format(_date),
-                                  icon: PhosphorIconsRegular.calendarDots,
+                                  icon: AppIconsRegular.calendarDots,
                                   colors: colors,
                                   onTap: _pickDate,
                                 ),
@@ -156,7 +156,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                                 const SizedBox(height: 8),
                                 _PickerField(
                                   text: _timeOfDayText,
-                                  icon: PhosphorIconsRegular.clock,
+                                  icon: AppIconsRegular.clock,
                                   colors: colors,
                                   onTap: _pickTime,
                                 ),
@@ -192,7 +192,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            Icon(PhosphorIconsRegular.info, size: 18, color: colors.sky),
+                            Icon(AppIconsRegular.info, size: 18, color: colors.sky),
                             const SizedBox(width: 11),
                             Expanded(
                               child: Text(
@@ -212,7 +212,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                 decoration: BoxDecoration(color: colors.fillFaint, borderRadius: BorderRadius.circular(18)),
                 child: Row(
                   children: <Widget>[
-                    Icon(PhosphorIconsFill.timer, size: 20, color: colors.ember),
+                    Icon(AppIconsFill.timer, size: 20, color: colors.ember),
                     const SizedBox(width: 12),
                     Text.rich(
                       TextSpan(
@@ -255,7 +255,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
-                            Icon(PhosphorIconsRegular.check, size: 17, color: canSave ? colors.mint : colors.neutral600),
+                            Icon(AppIconsRegular.check, size: 17, color: canSave ? colors.mint : colors.neutral600),
                             const SizedBox(width: 9),
                             Text(
                               l10n.addExamSave,

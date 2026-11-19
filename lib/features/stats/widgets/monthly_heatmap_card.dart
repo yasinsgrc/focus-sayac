@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -180,7 +180,7 @@ class MonthlyHeatmapCard extends StatelessWidget {
         _monthArrow(
           colors,
           key: heatmapPrevMonthKey,
-          icon: PhosphorIconsRegular.caretLeft,
+          icon: AppIconsRegular.caretLeft,
           label: l10n.statsHeatmapPreviousMonth,
           enabled: heatmap.hasEarlier,
           step: -1,
@@ -196,7 +196,7 @@ class MonthlyHeatmapCard extends StatelessWidget {
         _monthArrow(
           colors,
           key: heatmapNextMonthKey,
-          icon: PhosphorIconsRegular.caretRight,
+          icon: AppIconsRegular.caretRight,
           label: l10n.statsHeatmapNextMonth,
           enabled: heatmap.hasLater,
           step: 1,

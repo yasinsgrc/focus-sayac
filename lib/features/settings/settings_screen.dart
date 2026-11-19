@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -209,7 +209,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 child: Column(
                   children: <Widget>[
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.bell,
+                      icon: AppIconsDuotone.bell,
                       iconColor: colors.accent400,
                       label: l10n.settingsNotifications,
                       value: _onOff(l10n, settings.notificationsEnabled),
@@ -219,7 +219,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.speakerHigh,
+                      icon: AppIconsDuotone.speakerHigh,
                       iconColor: colors.accent400,
                       label: l10n.settingsSound,
                       value: _onOff(l10n, settings.soundEnabled),
@@ -227,7 +227,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       onTap: () => _write(AppSettingsTableCompanion(soundEnabled: Value<bool>(!settings.soundEnabled))),
                     ),
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.vibrate,
+                      icon: AppIconsDuotone.vibrate,
                       iconColor: colors.accent400,
                       label: l10n.settingsHaptics,
                       value: _onOff(l10n, settings.hapticEnabled),
@@ -235,7 +235,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       onTap: () => _write(AppSettingsTableCompanion(hapticEnabled: Value<bool>(!settings.hapticEnabled))),
                     ),
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.flame,
+                      icon: AppIconsDuotone.flame,
                       iconColor: colors.ember,
                       label: l10n.settingsStreakReminder,
                       value: _onOff(l10n, settings.streakReminderEnabled),
@@ -247,7 +247,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     // Seri hatırlatmasının hemen altında: ikisi de ana
                     // "Bildirimler" anahtarının altındaki tip kapıları.
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.calendarCheck,
+                      icon: AppIconsDuotone.calendarCheck,
                       iconColor: colors.accent400,
                       label: l10n.settingsWeeklySummary,
                       value: _onOff(l10n, settings.weeklySummaryEnabled),
@@ -259,7 +259,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.circleHalf,
+                      icon: AppIconsDuotone.circleHalf,
                       iconColor: colors.accent400,
                       label: l10n.settingsTheme,
                       value: _themeLabel(l10n, settings.themeMode),
@@ -276,7 +276,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.graduationCap,
+                      icon: AppIconsDuotone.graduationCap,
                       iconColor: colors.sky,
                       label: l10n.settingsExamSelection,
                       value: activeExam?.name ?? l10n.settingsNoExamSelected,
@@ -285,7 +285,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       onTap: () => showExamPickerSheet(context),
                     ),
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.clockCountdown,
+                      icon: AppIconsDuotone.clockCountdown,
                       iconColor: colors.neutral500,
                       label: l10n.settingsDayStartsAt,
                       // SPEC.md §5.3'ün gün sınırı — dokunulacak bir hedefi yok,
@@ -295,7 +295,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       onTap: null,
                     ),
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.star,
+                      icon: AppIconsDuotone.star,
                       iconColor: colors.ember,
                       label: l10n.settingsRateApp,
                       value: '',
@@ -304,7 +304,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       onTap: _openStoreListing,
                     ),
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.info,
+                      icon: AppIconsDuotone.info,
                       iconColor: colors.accent400,
                       label: l10n.settingsAbout,
                       value: '',
@@ -313,7 +313,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       onTap: () => _showInfoDialog(title: l10n.settingsAboutTitle, body: l10n.settingsAboutBody),
                     ),
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.shieldCheck,
+                      icon: AppIconsDuotone.shieldCheck,
                       iconColor: colors.mint,
                       label: l10n.settingsPrivacy,
                       value: '',
@@ -322,7 +322,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       onTap: () => _showInfoDialog(title: l10n.settingsPrivacyTitle, body: l10n.settingsPrivacyBody),
                     ),
                     _SettingsRow(
-                      icon: PhosphorIconsDuotone.trash,
+                      icon: AppIconsDuotone.trash,
                       iconColor: colors.rose,
                       label: l10n.settingsResetData,
                       value: '',
@@ -538,7 +538,7 @@ class _SettingsRow extends StatelessWidget {
                 Text(value, style: AppTypography.label(fontSize: AppTextSize.md, color: valueColor)),
               if (showCaret) ...<Widget>[
                 const SizedBox(width: 10),
-                Icon(PhosphorIconsRegular.caretRight, size: 13, color: colors.neutral700),
+                Icon(AppIconsRegular.caretRight, size: 13, color: colors.neutral700),
               ],
             ],
           ),
@@ -565,7 +565,7 @@ class _RemoveAdsRow extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Icon(PhosphorIconsDuotone.sealCheck, size: 21, color: colors.ember.withValues(alpha: 0.75)),
+          Icon(AppIconsDuotone.sealCheck, size: 21, color: colors.ember.withValues(alpha: 0.75)),
           const SizedBox(width: 13),
           Expanded(
             child: Text(
@@ -662,7 +662,7 @@ class _ResetConfirmDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(PhosphorIconsDuotone.trash, size: 46, color: colors.rose),
+            Icon(AppIconsDuotone.trash, size: 46, color: colors.rose),
             const SizedBox(height: 18),
             Text(
               l10n.settingsResetDialogTitle,

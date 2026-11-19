@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
@@ -280,7 +280,7 @@ void main() {
     await _settle(tester);
     expect(find.text('GÜN KALDI'), findsOneWidget);
 
-    await tester.tap(find.byIcon(PhosphorIconsRegular.gear));
+    await tester.tap(find.byIcon(AppIconsRegular.gear));
     // Ekran 02'nin sonsuz-tekrarlı halka animasyonu yüzünden `pumpAndSettle`
     // kullanılamıyor (widget_test.dart'taki gerekçe); rota geçişi + ayar
     // akışının ilk yayını için birkaç tur pompalanıyor.

@@ -4,7 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
@@ -153,14 +153,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                       child: Column(
                         children: <Widget>[
                           _PermissionRow(
-                            icon: PhosphorIconsDuotone.bellRinging,
+                            icon: AppIconsDuotone.bellRinging,
                             title: l10n.onboardingPermissionNotificationTitle,
                             subtitle: l10n.onboardingPermissionNotificationSubtitle,
                             tint: _PermissionTint.accent,
                           ),
                           const SizedBox(height: 1),
                           _PermissionRow(
-                            icon: PhosphorIconsDuotone.alarm,
+                            icon: AppIconsDuotone.alarm,
                             title: l10n.onboardingPermissionAlarmTitle,
                             subtitle: l10n.onboardingPermissionAlarmSubtitle,
                             tint: _PermissionTint.mint,
@@ -232,7 +232,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                                       ),
                                     ),
                                     const SizedBox(width: 9),
-                                    Icon(PhosphorIconsRegular.arrowRight, size: 17, color: colors.ember),
+                                    Icon(AppIconsRegular.arrowRight, size: 17, color: colors.ember),
                                   ],
                                 ),
                               ),
@@ -388,7 +388,7 @@ class _FlameBadge extends StatelessWidget {
               ),
             ),
           ),
-          Icon(PhosphorIconsFill.flame, size: 56, color: colors.ember),
+          Icon(AppIconsFill.flame, size: 56, color: colors.ember),
         ],
       ),
     );

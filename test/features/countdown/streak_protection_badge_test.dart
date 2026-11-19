@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/core/router/app_router.dart';
@@ -83,7 +83,7 @@ Future<StreamController<List<PomodoroSession>>> _pumpCountdown(
 /// Rozetin opaklık katmanı — alev de sayı da bunun içinde.
 double _badgeOpacity(WidgetTester tester) {
   final Finder fade = find.ancestor(
-    of: find.byIcon(PhosphorIconsFill.flame),
+    of: find.byIcon(AppIconsFill.flame),
     matching: find.byType(AnimatedOpacity),
   );
   return tester.widget<AnimatedOpacity>(fade.first).opacity;
@@ -114,7 +114,7 @@ void main() {
     // gösteriyor (telafi günü sayıya eklenmiyor).
     expect(find.bySemanticsLabel('3 gün seri, korumada'), findsOneWidget);
     // Alev sönmedi, yalnızca soluklaştı.
-    expect(find.byIcon(PhosphorIconsFill.flame), findsOneWidget);
+    expect(find.byIcon(AppIconsFill.flame), findsOneWidget);
     expect(_badgeOpacity(tester), lessThan(1));
     expect(_badgeOpacity(tester), greaterThan(0));
     expect(find.textContaining('seri korumada'), findsOneWidget);

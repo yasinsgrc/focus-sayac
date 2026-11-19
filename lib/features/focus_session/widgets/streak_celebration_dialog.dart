@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
@@ -86,7 +86,7 @@ class _StreakCelebrationDialog extends StatelessWidget {
                       decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: tint)),
                       child: const SizedBox(width: 112, height: 112),
                     ),
-                    Icon(PhosphorIconsFill.flame, size: 52, color: tint),
+                    Icon(AppIconsFill.flame, size: 52, color: tint),
                   ],
                 ),
               ),

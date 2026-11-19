@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
@@ -348,7 +348,7 @@ class _WeeklyClosingCard extends ConsumerWidget {
       padding: const EdgeInsets.all(18),
       child: Row(
         children: <Widget>[
-          Icon(PhosphorIconsDuotone.calendarCheck, size: 22, color: colors.accent400),
+          Icon(AppIconsDuotone.calendarCheck, size: 22, color: colors.accent400),
           const SizedBox(width: 13),
           Expanded(
             child: Column(
@@ -467,7 +467,7 @@ class _ProductiveWindowCard extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Icon(PhosphorIconsDuotone.lightning, size: 22, color: colors.sky),
+          Icon(AppIconsDuotone.lightning, size: 22, color: colors.sky),
           const SizedBox(width: 13),
           Expanded(
             child: Text.rich(
