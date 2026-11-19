@@ -6,12 +6,16 @@ import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/widgets/app_toast.dart';
 import '../../domain/countdown/countdown_math.dart';
 import '../../domain/exams/exam_accent.dart';
 import '../../domain/exams/exam_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
+
+/// Sınav adının üst sınırı (H5) — geri sayım başlığı tek satırda kalsın.
+const int kExamNameMaxLength = 24;
 
 /// Ekran 11 — özel sınav ekleme. Prototip satır 402-433 birebir.
 class AddExamScreen extends ConsumerStatefulWidget {
@@ -62,16 +66,33 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
   Future<void> _save() async {
     final String name = _nameController.text.trim();
     if (name.isEmpty || _saving) return;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    // H6: tarih seçici bugünü kabul ediyor ve saat varsayılanı 10:00; öğleden
+    // sonra "bugün" seçen kullanıcı kaydeder kaydetmez "sınav geçti" ekranına
+    // düşüyordu.
+    if (!_dateUtc.isAfter(DateTime.now().toUtc())) {
+      showAppToast(context, message: l10n.addExamPastError, tone: AppToastTone.error);
+      return;
+    }
     setState(() => _saving = true);
-    final int id = await ref.read(examDaoProvider).insertUserExam(
-          name: name,
-          subtitle: _subtitleController.text.trim().isEmpty ? null : _subtitleController.text.trim(),
-          dateUtc: _dateUtc,
-          timeOfDay: _timeOfDayText,
-          accentRole: _accent,
-        );
-    await ref.read(activeExamSwitcherProvider).switchTo(id);
-    if (mounted) context.pop();
+    // H7: hata durumunda `_saving` true kalıp butonu öldürmesin.
+    try {
+      final int id = await ref.read(examDaoProvider).insertUserExam(
+            name: name,
+            subtitle: _subtitleController.text.trim().isEmpty ? null : _subtitleController.text.trim(),
+            dateUtc: _dateUtc,
+            timeOfDay: _timeOfDayText,
+            accentRole: _accent,
+          );
+      await ref.read(activeExamSwitcherProvider).switchTo(id);
+      if (mounted) context.pop();
+    } on Object {
+      if (mounted) {
+        showAppToast(context, message: l10n.addExamSaveError, tone: AppToastTone.error);
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -121,6 +142,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                         controller: _nameController,
                         hint: l10n.addExamNameHint,
                         focusedColor: colors.sky,
+                        maxLength: kExamNameMaxLength,
                         onChanged: (_) => setState(() {}),
                       ),
                       const SizedBox(height: 16),
@@ -294,12 +316,19 @@ class _FieldLabel extends StatelessWidget {
 }
 
 class _TextField extends StatelessWidget {
-  const _TextField({required this.controller, required this.hint, required this.focusedColor, this.onChanged});
+  const _TextField({
+    required this.controller,
+    required this.hint,
+    required this.focusedColor,
+    this.onChanged,
+    this.maxLength,
+  });
 
   final TextEditingController controller;
   final String hint;
   final Color focusedColor;
   final ValueChanged<String>? onChanged;
+  final int? maxLength;
 
   @override
   Widget build(BuildContext context) {
@@ -307,11 +336,14 @@ class _TextField extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: onChanged,
+      maxLength: maxLength,
       style: AppTypography.body(
           fontSize: AppTextSize.lg, weight: FontWeight.w500, color: colors.text),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: AppTypography.body(fontSize: AppTextSize.lg, color: colors.neutral600),
+        // Sayaç yazısı tasarımda yok; sınır sessizce uygulanıyor.
+        counterText: '',
         filled: true,
         fillColor: colors.surfaceCard,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

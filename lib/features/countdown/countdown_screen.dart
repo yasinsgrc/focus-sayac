@@ -425,30 +425,40 @@ class _CountdownBody extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: <Widget>[
-                              GestureDetector(
-                                onTap: () => showExamPickerSheet(context),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Text(l10n.countdownTarget,
-                                        style: AppTypography.kicker(
-                                            fontSize: AppTextSize.kicker, color: colors.neutral600)),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: <Widget>[
-                                        Text(
-                                          exam.name,
-                                          style: AppTypography.display(
-                                              fontSize: AppTextSize.titleLg, color: colors.text),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Icon(AppIconsRegular.caretDown, size: 14, color: colors.ember),
-                                      ],
-                                    ),
-                                  ],
+                              // H5: uzun ad (ya da sınır öncesi kaydedilmiş
+                              // bir ad) başlığı taşırmasın — sağdaki "+"
+                              // düğmesine yer bırakıp `…` ile kesiliyor.
+                              Flexible(
+                                child: GestureDetector(
+                                  onTap: () => showExamPickerSheet(context),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(l10n.countdownTarget,
+                                          style: AppTypography.kicker(
+                                              fontSize: AppTextSize.kicker, color: colors.neutral600)),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: <Widget>[
+                                          Flexible(
+                                            child: Text(
+                                              exam.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AppTypography.display(
+                                                  fontSize: AppTextSize.titleLg, color: colors.text),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Icon(AppIconsRegular.caretDown, size: 14, color: colors.ember),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
+                              const SizedBox(width: 12),
                               InkWell(
                                 onTap: () => context.push(RoutePaths.addExam),
                                 borderRadius: BorderRadius.circular(999),

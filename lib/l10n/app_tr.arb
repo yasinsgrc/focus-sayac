@@ -138,6 +138,8 @@
   },
   "addExamPreviewSuffix": " kaldı",
   "addExamSave": "KAYDET",
+  "addExamPastError": "Bu an geçmişte kaldı — ileri bir tarih ya da saat seç.",
+  "addExamSaveError": "Sınav kaydedilemedi, tekrar dene.",
 
   "focusCycleBadge": "ODAK {position}/4",
   "@focusCycleBadge": {
