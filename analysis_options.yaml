@@ -24,13 +24,14 @@ analyzer:
     - "**/*.gr.dart"
     # `flutter gen-l10n` çıktısı — diğer üretilmiş kodla aynı kural.
     - "lib/l10n/gen/**"
+    - build/**
+    - android/**
 
 linter:
   rules:
     always_declare_return_types: true
     avoid_dynamic_calls: true
     avoid_print: true
-    avoid_returning_null_for_future: true
     avoid_types_as_parameter_names: true
     cancel_subscriptions: true
     close_sinks: true

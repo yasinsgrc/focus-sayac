@@ -104,7 +104,7 @@ class _CountdownScreenState extends ConsumerState<CountdownScreen> with SingleTi
     // saniyede bir `setState` ile yeniden build + layout oluyordu (görünmeyen,
     // 25 dakika süren bir iş). Tikleyici aynı sinyale bağlanınca ikisi birlikte
     // duruyor, odak ekranı popladığında ikisi birlikte geri geliyor.
-    _setSecondTickerEnabled(TickerMode.of(context));
+    _setSecondTickerEnabled(TickerMode.valuesOf(context).enabled);
   }
 
   void _setSecondTickerEnabled(bool enabled) {
