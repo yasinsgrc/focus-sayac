@@ -127,6 +127,17 @@ class _RecordingNotifications extends NotificationService {
       <({DateTime endAtUtc, int breakMinutes})>[];
   int breakEndCancels = 0;
 
+  final List<int> focusEndMinutes = <int>[];
+
+  @override
+  Future<void> scheduleFocusSessionEnd({
+    required DateTime endAtUtc,
+    required int focusMinutes,
+    required int breakMinutes,
+  }) async {
+    focusEndMinutes.add(focusMinutes);
+  }
+
   @override
   Future<void> scheduleBreakEnd({required DateTime endAtUtc, required int breakMinutes}) async {
     breakEndSchedules.add((endAtUtc: endAtUtc, breakMinutes: breakMinutes));
@@ -230,6 +241,22 @@ void main() {
     final PomodoroPhase phase = container.read(pomodoroControllerProvider);
     expect(phase, isA<PomodoroBreakRunning>());
     expect((phase as PomodoroBreakRunning).extensionsUsed, kMaxBreakExtensions);
+  });
+
+  test('duraklatılıp sürdürülen seansın bildirimi seansın kendi süresini söylüyor', () async {
+    // H1 regresyonu: devam dalı `settings.focusMinutes` geçiyordu; 5 dakikalık
+    // ilk seans sürdürülünce bildirim "25 dakika odak bitti" diyordu.
+    final _RecordingNotifications notifications = _RecordingNotifications();
+    final ProviderContainer container =
+        await _buildContainer(focusMinutes: 25, notifications: notifications);
+    addTearDown(container.dispose);
+    final PomodoroController controller = container.read(pomodoroControllerProvider.notifier);
+
+    await controller.startFocus(minutesOverride: 5);
+    await controller.togglePause();
+    await controller.togglePause();
+
+    expect(notifications.focusEndMinutes, <int>[5, 5]);
   });
 
   test('mola başlarken bitiş bildirimi molanın planlanan bitiş anına kurulur', () async {

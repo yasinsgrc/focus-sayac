@@ -218,7 +218,7 @@ class PomodoroController extends Notifier<PomodoroPhase> {
           : settings.shortBreakMinutes;
       await _notifications.scheduleFocusSessionEnd(
         endAtUtc: virtualStart.add(Duration(seconds: current.plannedDurationSec)),
-        focusMinutes: settings.focusMinutes,
+        focusMinutes: current.plannedDurationSec ~/ 60,
         breakMinutes: breakMinutes,
       );
       await _notifications.showOngoingFocus(cyclePosition: current.cyclePosition);
