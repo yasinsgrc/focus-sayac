@@ -67,7 +67,11 @@ class BadgesScreen extends ConsumerWidget {
               ),
             ),
           ),
+          // R2/R3: kaydırma eskiden yalnızca ızgaradaydı; 360×720dp + %130
+          // yazıda başlık ve Meşalen kartı sabit kalıp ızgarayı ~120dp'lik bir
+          // şeride sıkıştırıyordu. Artık bütün sütun kayıyor.
           SafeArea(
+            child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(26, 6, 26, 0),
               child: Column(
@@ -129,9 +133,7 @@ class BadgesScreen extends ConsumerWidget {
                     child: const FlameAvatarCard(),
                   ),
                   const SizedBox(height: 22),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: LayoutBuilder(
+                  LayoutBuilder(
                         builder: (BuildContext context, BoxConstraints constraints) {
                           final double cardWidth = (constraints.maxWidth - 12) / 2;
                           return Wrap(
@@ -163,13 +165,12 @@ class BadgesScreen extends ConsumerWidget {
                           );
                         },
                       ),
-                    ),
-                  ),
                   // Yüzen çubuğun altında kalmasın diye son kartın altındaki
                   // boşluk çubuğun kapladığı alan kadar.
                   const SizedBox(height: kBottomNavReservedSpace),
                 ],
               ),
+            ),
             ),
           ),
           Positioned(

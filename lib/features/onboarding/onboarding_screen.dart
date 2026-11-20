@@ -116,7 +116,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
               stop: 0.64,
             ),
           ),
+          // R2/R3: 360×720dp'de normal yazı ölçeğinde bile 33px taşıyordu.
+          // Kaydırma yalnızca sığmadığında devreye giriyor; `minHeight` +
+          // `IntrinsicHeight` sayesinde uzun ekranda `Spacer` eskisi gibi
+          // düğmeleri alta itiyor.
           SafeArea(
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(30, 40, 30, 32),
               child: Column(
@@ -262,6 +271,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> with Ticker
                     ),
                   ),
                 ],
+              ),
+            ),
+                  ),
+                ),
               ),
             ),
           ),

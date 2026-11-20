@@ -478,8 +478,14 @@ class _CountdownBody extends ConsumerWidget {
                         const SizedBox(height: 20),
                         RiseIn(
                           delay: RiseIn.step,
+                          // R2: 360dp ekranda kullanılabilir genişlik 308;
+                          // sabit 316 kutu sıkışıp halkayı bozuyordu.
+                          // `scaleDown` dar ekranda kare kalarak orantılı
+                          // küçültüyor, genişte hiçbir şeyi değiştirmiyor.
                           child: Center(
-                            child: SizedBox(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: SizedBox(
                               width: 316,
                               height: 316,
                               child: Stack(
@@ -632,6 +638,7 @@ class _CountdownBody extends ConsumerWidget {
                                   ),
                                 ],
                               ),
+                            ),
                             ),
                           ),
                         ),

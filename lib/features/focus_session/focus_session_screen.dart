@@ -385,9 +385,7 @@ class _FocusBody extends ConsumerWidget {
       (true, false) => l10n.focusHintRunningNoNotification,
     };
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(26, 6, 26, 30),
+    return _ScrollableBody(
         child: Column(
           children: <Widget>[
             Row(
@@ -420,9 +418,7 @@ class _FocusBody extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 30),
-            SizedBox(
-              width: 330,
-              height: 330,
+            _RingBox(
               child: Stack(
                 alignment: Alignment.center,
                 children: <Widget>[
@@ -516,10 +512,54 @@ class _FocusBody extends ConsumerWidget {
             _FocusHintLine(text: hintLine, iconColor: hintIconColor),
           ],
         ),
-      ),
     );
   }
 
+}
+
+/// R2/R3: odak ve mola gövdeleri `Column` + `Spacer` ile sabit yükseklik
+/// varsayıyordu; 320×640dp + %130 yazıda 68px taşıyordu. Kaydırma yalnızca
+/// sığmadığında devreye giriyor; `minHeight` + `IntrinsicHeight` sayesinde
+/// uzun ekranda `Spacer` alt öğeleri eskisi gibi dibe itiyor.
+class _ScrollableBody extends StatelessWidget {
+  const _ScrollableBody({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(26, 6, 26, 30),
+                child: child,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// R2: 330'luk halka dar ekranda (320dp → 268 kullanılabilir) kare olmaktan
+/// çıkıyordu; `scaleDown` orantılı küçültüyor, genişte hiçbir şey değişmiyor.
+class _RingBox extends StatelessWidget {
+  const _RingBox({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: SizedBox(width: 330, height: 330, child: child),
+    );
+  }
 }
 
 /// Odak seansının doğal bitişi: dolu halka bir kez közden naneye dönüyor
@@ -736,9 +776,7 @@ class _BreakBody extends ConsumerWidget {
     // anından türüyor, `build` saniyede bir koştuğu için (bkz. `selectBreakTips`).
     final List<BreakTip> tips = selectBreakTips(breakStartedAtUtc: phase.startedAtUtc);
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(26, 6, 26, 30),
+    return _ScrollableBody(
         child: Column(
           children: <Widget>[
             Row(
@@ -781,9 +819,7 @@ class _BreakBody extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 36),
-            SizedBox(
-              width: 330,
-              height: 330,
+            _RingBox(
               child: Stack(
                 alignment: Alignment.center,
                 children: <Widget>[
@@ -890,7 +926,6 @@ class _BreakBody extends ConsumerWidget {
             // ekran açılıyor (SPEC.md §7.2), ekranda yer kaplamıyor.
           ],
         ),
-      ),
     );
   }
 }
