@@ -12,6 +12,7 @@ import '../../features/settings/settings_screen.dart';
 import '../../features/stats/stats_screen.dart';
 import '../../domain/story_card/story_card_text.dart';
 import '../../features/story_card/story_card_screen.dart';
+import '../../services/storage/app_database.dart';
 import '../theme/app_motion.dart';
 import 'route_paths.dart';
 
@@ -130,7 +131,7 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
       GoRoute(
         path: RoutePaths.addExam,
         pageBuilder: (BuildContext context, GoRouterState state) =>
-            _pushedPage(context, state, const AddExamScreen()),
+            _pushedPage(context, state, AddExamScreen(initialExam: state.extra as Exam?)),
       ),
       GoRoute(
         path: RoutePaths.focusSession,

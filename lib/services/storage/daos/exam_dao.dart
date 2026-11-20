@@ -77,6 +77,37 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
     );
   }
 
+  /// H4: yalnızca kullanıcı sınavı düzenlenir; preset satırına dokunmaz.
+  Future<void> updateUserExam({
+    required int id,
+    required String name,
+    required String? subtitle,
+    required DateTime dateUtc,
+    required String timeOfDay,
+    required ExamAccentRole accentRole,
+  }) async {
+    await (update(exams)..where((Exams e) => e.id.equals(id) & e.isPreset.equals(false))).write(
+      ExamsCompanion(
+        name: Value<String>(name),
+        subtitle: Value<String?>(subtitle),
+        dateUtc: Value<DateTime>(dateUtc),
+        timeOfDay: Value<String>(timeOfDay),
+        accentRole: Value<ExamAccentRole>(accentRole),
+      ),
+    );
+  }
+
+  /// H4: kullanıcı sınavını siler. Seanslar istatistikte kalsın diye
+  /// silinmez, yalnızca sınav bağlantıları boşaltılır.
+  Future<void> deleteUserExam(int id) async {
+    await transaction(() async {
+      final $PomodoroSessionsTable sessions = attachedDatabase.pomodoroSessions;
+      await (update(sessions)..where(($PomodoroSessionsTable s) => s.examId.equals(id)))
+          .write(const PomodoroSessionsCompanion(examId: Value<int?>(null)));
+      await (delete(exams)..where((Exams e) => e.id.equals(id) & e.isPreset.equals(false))).go();
+    });
+  }
+
   /// Uzak override'ın bir preset satırını güncellemesi ya da yeni bir preset
   /// eklemesi için tek giriş noktası — `ExamSourceService` bunu çağırır.
   /// Eşleme `key` üzerinden yapılır: uzak JSON sınavın adını değiştirdiğinde

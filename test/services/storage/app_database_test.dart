@@ -171,6 +171,69 @@ void main() {
       expect(inserted.source, ExamSourceType.remote);
       expect(inserted.isPreset, isTrue);
     });
+
+    test('updateUserExam rewrites a user exam but never a preset (H4)', () async {
+      final int id = await db.examDao.insertUserExam(
+        name: 'Ehliyet',
+        subtitle: null,
+        dateUtc: DateTime.utc(2027, 1, 1, 7),
+        timeOfDay: '10:00',
+        accentRole: ExamAccentRole.ember,
+      );
+      await db.examDao.updateUserExam(
+        id: id,
+        name: 'Ehliyet 2',
+        subtitle: 'tekrar',
+        dateUtc: DateTime.utc(2027, 2, 1, 11),
+        timeOfDay: '14:00',
+        accentRole: ExamAccentRole.mint,
+      );
+      final Exam updated = (await db.examDao.getExamById(id))!;
+      expect(updated.name, 'Ehliyet 2');
+      expect(updated.subtitle, 'tekrar');
+      expect(updated.dateUtc, DateTime.utc(2027, 2, 1, 11));
+      expect(updated.timeOfDay, '14:00');
+      expect(updated.accentRole, ExamAccentRole.mint);
+
+      final Exam preset = (await db.examDao.getPresetExams()).first;
+      await db.examDao.updateUserExam(
+        id: preset.id,
+        name: 'X',
+        subtitle: null,
+        dateUtc: DateTime.utc(2030),
+        timeOfDay: '00:00',
+        accentRole: ExamAccentRole.rose,
+      );
+      expect((await db.examDao.getExamById(preset.id))!.name, preset.name);
+    });
+
+    test('deleteUserExam keeps its sessions unlinked and ignores presets (H4)', () async {
+      final int id = await db.examDao.insertUserExam(
+        name: 'Ehliyet',
+        subtitle: null,
+        dateUtc: DateTime.utc(2027, 1, 1, 7),
+        timeOfDay: '10:00',
+        accentRole: ExamAccentRole.ember,
+      );
+      final int sessionId = await db.pomodoroSessionDao.startSession(
+        examId: id,
+        type: SessionType.focus,
+        startedAt: DateTime.utc(2026, 8, 22, 10),
+        plannedDurationSec: 25 * 60,
+      );
+
+      await db.examDao.deleteUserExam(id);
+
+      expect(await db.examDao.getExamById(id), null);
+      final PomodoroSession session = await (db.select(db.pomodoroSessions)
+            ..where(($PomodoroSessionsTable s) => s.id.equals(sessionId)))
+          .getSingle();
+      expect(session.examId, null);
+
+      final Exam preset = (await db.examDao.getPresetExams()).first;
+      await db.examDao.deleteUserExam(preset.id);
+      expect(await db.examDao.getExamById(preset.id), isA<Exam>());
+    });
   });
 
   group('PomodoroSessionDao', () {

@@ -140,6 +140,17 @@
   "addExamSave": "KAYDET",
   "addExamPastError": "Bu an geçmişte kaldı — ileri bir tarih ya da saat seç.",
   "addExamSaveError": "Sınav kaydedilemedi, tekrar dene.",
+  "editExamTitle": "SINAVI DÜZENLE",
+  "examActionEdit": "Düzenle",
+  "examActionDelete": "Sil",
+  "deleteExamDialogTitle": "SINAV SİLİNECEK",
+  "deleteExamDialogBody": "{name} listeden kaldırılır. Bu sınavda yaptığın odak seansları istatistiklerinde kalır.",
+  "@deleteExamDialogBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "deleteExamDialogConfirm": "Sınavı sil",
+  "deleteExamDone": "Sınav silindi.",
+  "deleteExamError": "Sınav silinemedi, tekrar dene.",
 
   "focusCycleBadge": "ODAK {position}/4",
   "@focusCycleBadge": {

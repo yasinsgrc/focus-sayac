@@ -11,6 +11,7 @@ import '../../domain/countdown/countdown_math.dart';
 import '../../domain/exams/exam_accent.dart';
 import '../../domain/exams/exam_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
+import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
 
@@ -19,7 +20,10 @@ const int kExamNameMaxLength = 24;
 
 /// Ekran 11 — özel sınav ekleme. Prototip satır 402-433 birebir.
 class AddExamScreen extends ConsumerStatefulWidget {
-  const AddExamScreen({super.key});
+  const AddExamScreen({super.key, this.initialExam});
+
+  /// H4: doluysa ekran düzenleme kipinde açılır ve bu satırı günceller.
+  final Exam? initialExam;
 
   @override
   ConsumerState<AddExamScreen> createState() => _AddExamScreenState();
@@ -32,6 +36,22 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
   TimeOfDay _time = const TimeOfDay(hour: 10, minute: 0);
   ExamAccentRole _accent = ExamAccentRole.ember;
   bool _saving = false;
+
+  bool get _isEdit => widget.initialExam != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final Exam? exam = widget.initialExam;
+    if (exam == null) return;
+    _nameController.text = exam.name;
+    _subtitleController.text = exam.subtitle ?? '';
+    // `_dateUtc`nin tersi: kayıt TR saatinden 3 saat geri alınarak yazılıyor.
+    final DateTime local = exam.dateUtc.toUtc().add(const Duration(hours: 3));
+    _date = DateTime(local.year, local.month, local.day);
+    _time = TimeOfDay(hour: local.hour, minute: local.minute);
+    _accent = exam.accentRole;
+  }
 
   @override
   void dispose() {
@@ -52,7 +72,9 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _date,
-      firstDate: DateTime.now(),
+      // Düzenlenen sınavın tarihi geçmiş olabilir; seçici `initialDate <
+      // firstDate` durumunda assert'e düşer. Geçmiş tarih kayıtta reddediliyor.
+      firstDate: _date.isBefore(DateTime.now()) ? _date : DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
     );
     if (picked != null) setState(() => _date = picked);
@@ -77,14 +99,29 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
     setState(() => _saving = true);
     // H7: hata durumunda `_saving` true kalıp butonu öldürmesin.
     try {
-      final int id = await ref.read(examDaoProvider).insertUserExam(
-            name: name,
-            subtitle: _subtitleController.text.trim().isEmpty ? null : _subtitleController.text.trim(),
-            dateUtc: _dateUtc,
-            timeOfDay: _timeOfDayText,
-            accentRole: _accent,
-          );
-      await ref.read(activeExamSwitcherProvider).switchTo(id);
+      final String? subtitle =
+          _subtitleController.text.trim().isEmpty ? null : _subtitleController.text.trim();
+      final Exam? editing = widget.initialExam;
+      if (editing != null) {
+        // Düzenleme seçili sınavı değiştirmez.
+        await ref.read(examDaoProvider).updateUserExam(
+              id: editing.id,
+              name: name,
+              subtitle: subtitle,
+              dateUtc: _dateUtc,
+              timeOfDay: _timeOfDayText,
+              accentRole: _accent,
+            );
+      } else {
+        final int id = await ref.read(examDaoProvider).insertUserExam(
+              name: name,
+              subtitle: subtitle,
+              dateUtc: _dateUtc,
+              timeOfDay: _timeOfDayText,
+              accentRole: _accent,
+            );
+        await ref.read(activeExamSwitcherProvider).switchTo(id);
+      }
       if (mounted) context.pop();
     } on Object {
       if (mounted) {
@@ -126,7 +163,7 @@ class _AddExamScreenState extends ConsumerState<AddExamScreen> {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  Text(l10n.addExamTitle,
+                  Text(_isEdit ? l10n.editExamTitle : l10n.addExamTitle,
                       style: AppTypography.display(fontSize: AppTextSize.titleLg, color: colors.text)),
                 ],
               ),
