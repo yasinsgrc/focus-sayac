@@ -53,9 +53,22 @@ class RecordingAdService extends AdService {
     return null;
   }
 
+  /// Ekrana çıkan interstitial sayısı. [interstitialRequests] **yüklemeleri**
+  /// sayar (ağ isteği); gösterim ayrı, çünkü yükleme moladayken yapılıyor.
+  int interstitialShows = 0;
+
   @override
-  Future<bool> requestInterstitial() async {
+  Future<bool> loadInterstitial() async {
     interstitialRequests++;
     return interstitialSucceeds;
   }
+
+  @override
+  Future<bool> presentInterstitial() async {
+    interstitialShows++;
+    return true;
+  }
+
+  @override
+  void discardInterstitial() {}
 }

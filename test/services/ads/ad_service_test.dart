@@ -11,7 +11,9 @@ import '../../support/recording_ad_service.dart';
 Future<int> _requestsAfterEveryEntryPoint(RecordingAdService service) async {
   await service.resolveBannerSize(360);
   await service.loadBanner(size: AdSize.banner, onLoaded: () {}, onFailed: () {});
-  await service.showInterstitial();
+  await service.preloadInterstitial();
+  await pumpEventQueue();
+  await service.showInterstitialIfReady();
   return service.totalRequests;
 }
 
@@ -69,7 +71,7 @@ void main() {
         await service.loadBanner(size: AdSize.banner, onLoaded: () {}, onFailed: () {}),
         isNull,
       );
-      expect(await service.showInterstitial(), isFalse);
+      expect(await service.showInterstitialIfReady(), isFalse);
     });
   });
 }

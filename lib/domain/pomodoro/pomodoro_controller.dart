@@ -419,7 +419,10 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     // başlangıcından döngü kapanışına ([_completeBreak]) alındı. Molanın ilk
     // saniyesi ürünün korumayı vaat ettiği andı ve tam ekran bir reklam onu
     // kesiyordu; kutlamanın (rozet/seri) sunulduğu an da burası, yani reklam
-    // hem molayı hem kutlamayı aynı anda basıyordu.
+    // hem molayı hem kutlamayı aynı anda basıyordu. Burada yalnızca
+    // **yükleniyor** (inceleme H2): kapanışta yüklemek reklamı yeni odak
+    // ekranının üstüne düşürebiliyordu.
+    await ref.read(interstitialManagerProvider).preloadForCycleEnd();
   }
 
   /// Haftalık kapanışı hedef pazarın penceresiyle yeniden kurar. Her odak
@@ -568,6 +571,7 @@ class PomodoroController extends Notifier<PomodoroPhase> {
     // istemi, üç seansta bir tekrar gelecek reklamdan önceliklidir.
     await ref.read(interstitialManagerProvider).maybeShowOnCycleComplete(
           otherPromptShown: reviewRequested,
+          canShowNow: () => state is PomodoroIdle,
         );
     await _haptic();
   }

@@ -29,6 +29,24 @@ Future<void> _completeFocusSessions(AppDatabase database, int count) async {
   }
 }
 
+/// Gerçek akışın sırası: mola başlarken ön yükleme, mola bitince gösterim.
+/// Ön yükleme SDK yüklemesini beklemeden döndüğü için arada olay kuyruğu
+/// boşaltılıyor.
+Future<bool> _closeCycle(
+  InterstitialManager manager, {
+  required bool otherPromptShown,
+  required DateTime now,
+  bool canShowNow = true,
+}) async {
+  await manager.preloadForCycleEnd();
+  await pumpEventQueue();
+  return manager.maybeShowOnCycleComplete(
+    otherPromptShown: otherPromptShown,
+    canShowNow: () => canShowNow,
+    now: now,
+  );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -61,14 +79,14 @@ void main() {
     final InterstitialManager manager = managerWith(adService);
 
     await _completeFocusSessions(database, 1);
-    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
 
     await _completeFocusSessions(database, 1);
-    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
 
     await _completeFocusSessions(database, 1);
-    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isTrue);
-    expect(adService.interstitialRequests, 1);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isTrue);
+    expect(adService.interstitialShows, 1);
   });
 
   // SPEC.md §7.2: "iki gösterim arası min. 180 sn".
@@ -77,16 +95,16 @@ void main() {
     final InterstitialManager manager = managerWith(adService);
 
     await _completeFocusSessions(database, 3);
-    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isTrue);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isTrue);
 
     await _completeFocusSessions(database, 3);
     final DateTime tooSoon = _now.add(const Duration(seconds: 179));
-    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: tooSoon), isFalse);
-    expect(adService.interstitialRequests, 1);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: tooSoon), isFalse);
+    expect(adService.interstitialShows, 1);
 
     final DateTime later = _now.add(const Duration(seconds: 181));
-    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: later), isTrue);
-    expect(adService.interstitialRequests, 2);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: later), isTrue);
+    expect(adService.interstitialShows, 2);
   });
 
   // SPEC.md §7.2: "başka bir tam ekran istemin üstüne asla binmez". Yeni
@@ -98,8 +116,8 @@ void main() {
 
     await _completeFocusSessions(database, 3);
 
-    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: true, now: _now), isFalse);
-    expect(adService.totalRequests, 0);
+    expect(await _closeCycle(manager, otherPromptShown: true, now: _now), isFalse);
+    expect(adService.interstitialShows, 0);
     // Bastırma pencereyi de harcamamalı: bir sonraki döngü gösterebilmeli.
     expect(prefs.getString(InterstitialManager.lastShownPrefsKey), isNull);
   });
@@ -112,7 +130,7 @@ void main() {
 
     await _completeFocusSessions(database, 3);
 
-    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
     expect(adService.totalRequests, 0);
   });
 
@@ -123,7 +141,7 @@ void main() {
 
     await _completeFocusSessions(database, 3);
 
-    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
     expect(adService.totalRequests, 0);
   });
 
@@ -132,9 +150,48 @@ void main() {
     final InterstitialManager manager = managerWith(adService);
 
     await _completeFocusSessions(database, 3);
-    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
     expect(adService.interstitialRequests, 1);
+    expect(adService.interstitialShows, 0);
     expect(prefs.getString(InterstitialManager.lastShownPrefsKey), isNull);
+  });
+
+  // İnceleme H2: gösterim anında yükleme yok — yüklenmemiş reklam o döngüde
+  // hiç çıkmıyor, geç yüklenip yanlış ekrana düşemiyor.
+  test('molada ön yükleme yapılmadıysa kapanışta istek de gösterim de yok', () async {
+    final RecordingAdService adService = RecordingAdService();
+    final InterstitialManager manager = managerWith(adService);
+
+    await _completeFocusSessions(database, 3);
+
+    expect(
+      await manager.maybeShowOnCycleComplete(otherPromptShown: false, canShowNow: () => true, now: _now),
+      isFalse,
+    );
+    expect(adService.totalRequests, 0);
+  });
+
+  // İnceleme H2: kapanışla gösterim arasında yeni odak başladıysa reklam odak
+  // ekranının üstüne düşmüyor (SPEC §7) ve pencere harcanmıyor.
+  test('gösterim anında faz idle değilse gösterilmiyor', () async {
+    final RecordingAdService adService = RecordingAdService();
+    final InterstitialManager manager = managerWith(adService);
+
+    await _completeFocusSessions(database, 3);
+
+    expect(await _closeCycle(manager, otherPromptShown: false, now: _now, canShowNow: false), isFalse);
+    expect(adService.interstitialShows, 0);
+    expect(prefs.getString(InterstitialManager.lastShownPrefsKey), isNull);
+  });
+
+  test('gösterim anı olmayacak molada ön yükleme yapılmıyor', () async {
+    final RecordingAdService adService = RecordingAdService();
+    final InterstitialManager manager = managerWith(adService);
+
+    await _completeFocusSessions(database, 2);
+    await manager.preloadForCycleEnd();
+
+    expect(adService.totalRequests, 0);
   });
 
   test('tamamlanmamış odak seansları sayıya girmiyor', () async {
@@ -150,7 +207,7 @@ void main() {
     );
     await database.pomodoroSessionDao.finishSession(id: cancelled, completed: false, endedAt: _now);
 
-    expect(await manager.maybeShowOnCycleComplete(otherPromptShown: false, now: _now), isFalse);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
     expect(adService.totalRequests, 0);
   });
 }

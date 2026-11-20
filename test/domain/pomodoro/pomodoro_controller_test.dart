@@ -450,7 +450,7 @@ void main() {
   // ritüelinin molasını — kesmiyor artık. Sayı üçüncü tamamlanışta seçiliyor
   // çünkü sıklık kuralı ("3 tamamlanan pomodoroda 1") tam orada ilk kez
   // tutuyor: eski kodda interstitial burada çıkardı.
-  test('üçüncü odak tamamlanıp mola başlarken interstitial isteği atılmıyor', () async {
+  test('üçüncü odak tamamlanıp mola başlarken interstitial gösterilmiyor, yalnızca yükleniyor', () async {
     final RecordingAdService adService = RecordingAdService();
     // Mola sıfırdan uzun: `tick()` odağı kapatıp molada duruyor, böylece
     // "mola başlangıcı" anı gözlemlenebiliyor.
@@ -473,10 +473,12 @@ void main() {
       }
     }
 
-    expect(adService.interstitialRequests, 0);
+    expect(adService.interstitialShows, 0);
+    // İnceleme H2: mola başında yalnızca **yükleniyor**, gösterilmiyor.
+    expect(adService.interstitialRequests, 1);
   });
 
-  test('mola bitip döngü kapanınca interstitial isteği atılıyor', () async {
+  test('mola bitip döngü kapanınca interstitial gösteriliyor', () async {
     final RecordingAdService adService = RecordingAdService();
     // Mola da sıfır: tek `tick()` hem odağı hem molayı kapatıp idle'a dönüyor
     // — kullanıcının geri sayıma döndüğü an.
@@ -489,10 +491,10 @@ void main() {
       await controller.tick();
       expect(container.read(pomodoroControllerProvider), isA<PomodoroIdle>());
       await _waitForSessionCount(container, cycle * 2);
-      if (cycle < 3) expect(adService.interstitialRequests, 0);
+      if (cycle < 3) expect(adService.interstitialShows, 0);
     }
 
-    expect(adService.interstitialRequests, 1);
+    expect(adService.interstitialShows, 1);
   });
 
   test('odak tamamlanışı dönüş bildirimini yeniden kuruyor', () async {

@@ -66,16 +66,19 @@ class InterstitialManager {
   /// koşulu gerekmiyor.
   ///
   /// Gösterildiyse `true`.
-  Future<bool> maybeShowOnCycleComplete({required bool otherPromptShown, DateTime? now}) async {
+  ///
+  /// [canShowNow] gösterimden hemen önce sorulur: döngü kapanışıyla gösterim
+  /// arasındaki okumalar sürerken kullanıcı yeni bir odak başlatmış olabilir
+  /// ve reklam odak ekranının üstüne düşmemeli (SPEC §7, inceleme H2).
+  /// Reklam burada **yüklenmez**; [preloadForCycleEnd] molada yüklemiş
+  /// olmalı, hazır değilse bu döngü reklamsız geçer.
+  Future<bool> maybeShowOnCycleComplete({
+    required bool otherPromptShown,
+    required bool Function() canShowNow,
+    DateTime? now,
+  }) async {
     if (otherPromptShown) return false;
-    if (!_flags.interstitialEnabled) return false;
-    // Kapı, sayaç okumalarından **önce**: premium/onaysız kullanıcıda hiçbir
-    // istek atılmadığı gibi boşuna DB de okunmuyor (SPEC §7 DoD).
-    if (!await _adService.canRequestAds()) return false;
-
-    final List<PomodoroSession> completed = await _sessionDao.getAllCompletedFocusSessions();
-    if (completed.isEmpty) return false;
-    if (completed.length % showEveryNCompletedFocusSessions != 0) return false;
+    if (!await _cycleEndIsEligible()) return false;
 
     final DateTime nowUtc = (now ?? DateTime.now()).toUtc();
     final String? lastShownIso = _prefs.getString(lastShownPrefsKey);
@@ -84,10 +87,30 @@ class InterstitialManager {
       if (nowUtc.difference(lastShown) < minIntervalBetweenShows) return false;
     }
 
-    final bool shown = await _adService.showInterstitial();
+    if (!canShowNow()) return false;
+    final bool shown = await _adService.showInterstitialIfReady();
     // Damga yalnızca gerçekten gösterildiyse atılıyor: yükleyemediğimiz bir
     // reklam 180 sn'lik pencereyi harcamamalı.
     if (shown) await _prefs.setString(lastShownPrefsKey, nowUtc.toIso8601String());
     return shown;
+  }
+
+  /// Mola başlarken (`PomodoroController._completeFocus`) çağrılır: bu
+  /// molanın kapanışı gösterim anı olacaksa reklamı **şimdiden**, arka planda
+  /// yükler. Mola ekranında reklam gösterilmiyor, yalnızca yükleniyor.
+  Future<void> preloadForCycleEnd() async {
+    if (!await _cycleEndIsEligible()) return;
+    await _adService.preloadInterstitial();
+  }
+
+  /// Uzak bayrak, reklam kapısı ve "3'te 1" sıklığı. Kapı sayaç
+  /// okumalarından **önce**: premium/onaysız kullanıcıda hiçbir istek
+  /// atılmadığı gibi boşuna DB de okunmuyor (SPEC §7 DoD).
+  Future<bool> _cycleEndIsEligible() async {
+    if (!_flags.interstitialEnabled) return false;
+    if (!await _adService.canRequestAds()) return false;
+    final List<PomodoroSession> completed = await _sessionDao.getAllCompletedFocusSessions();
+    if (completed.isEmpty) return false;
+    return completed.length % showEveryNCompletedFocusSessions == 0;
   }
 }

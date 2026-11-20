@@ -33,8 +33,8 @@ final Provider<AdService> adServiceProvider = Provider<AdService>((Ref ref) {
 /// gerekçe: iki çağıran (banner yuvası, `InterstitialManager`) var ve birinde
 /// kontrolü unutmak sessizce politika/DoD ihlali olurdu.
 ///
-/// SDK'ya dokunan üç metot ([requestBanner], [requestInterstitial],
-/// [requestBannerSize]) kapının **arkasında** ve ayrı duruyor: testler bunları
+/// SDK'ya dokunan metotlar ([requestBanner], [loadInterstitial],
+/// [presentInterstitial], [requestBannerSize]) kapının **arkasında** ve ayrı duruyor: testler bunları
 /// override edip "istek atıldı mı" sayabiliyor, böylece kapının kendisi
 /// (premium/onay/`disabled`) gerçek koduyla doğrulanıyor.
 class AdService {
@@ -100,11 +100,52 @@ class AdService {
     return requestBanner(size: size, onLoaded: onLoaded, onFailed: onFailed);
   }
 
-  /// Yükleyip gösterir; gösterildiyse `true`. Ne zaman çağrılacağının kuralı
-  /// burada değil `InterstitialManager`'da (SPEC §7.2 "kurallar tek yerde").
-  Future<bool> showInterstitial() async {
+  /// Interstitial'ı arka planda yüklemeye başlar ve yüklemenin bitmesini
+  /// **beklemez**. Ne zaman çağrılacağının kuralı `InterstitialManager`'da
+  /// (SPEC §7.2 "kurallar tek yerde").
+  ///
+  /// Yükleme gösterim anından ayrıldı (inceleme H2): gösterim anında yükleyince
+  /// reklam 10 sn'ye kadar gecikip kullanıcı çoktan odak ekranına geçmişken
+  /// açılabiliyordu. Taze bir reklam hazırsa ya da yükleme sürüyorsa yeni
+  /// istek atılmaz.
+  Future<void> preloadInterstitial() async {
+    if (_interstitialLoading) return;
+    if (_hasFreshInterstitial()) return;
+    if (!await canRequestAds()) return;
+    _interstitialLoading = true;
+    unawaited(() async {
+      try {
+        if (await loadInterstitial()) _interstitialLoadedAt = DateTime.now();
+      } finally {
+        _interstitialLoading = false;
+      }
+    }());
+  }
+
+  /// Önceden yüklenmiş reklamı gösterir; hazır reklam yoksa **yüklemeye
+  /// kalkmadan** `false` döner. Gösterildiyse `true`.
+  Future<bool> showInterstitialIfReady() async {
+    // Yükleme ile gösterim arasında premium alınmış olabilir.
     if (!await canRequestAds()) return false;
-    return requestInterstitial();
+    if (!_hasFreshInterstitial()) return false;
+    _interstitialLoadedAt = null;
+    return presentInterstitial();
+  }
+
+  /// AdMob, bir saatten eski yüklenmiş interstitial'ın gösterilmemesini
+  /// istiyor; mola en fazla bunun bir kesri sürdüğü için pay bırakıldı.
+  static const Duration interstitialMaxAge = Duration(minutes: 55);
+
+  DateTime? _interstitialLoadedAt;
+  bool _interstitialLoading = false;
+
+  bool _hasFreshInterstitial() {
+    final DateTime? loadedAt = _interstitialLoadedAt;
+    if (loadedAt == null) return false;
+    if (DateTime.now().difference(loadedAt) < interstitialMaxAge) return true;
+    _interstitialLoadedAt = null;
+    discardInterstitial();
+    return false;
   }
 
   @protected
@@ -148,7 +189,7 @@ class AdService {
 
   @protected
   @visibleForTesting
-  Future<bool> requestInterstitial() async {
+  Future<bool> loadInterstitial() async {
     final Completer<InterstitialAd?> loaded = Completer<InterstitialAd?>();
     final bool? started = await _guarded(() async {
       await InterstitialAd.load(
@@ -165,6 +206,19 @@ class AdService {
     final InterstitialAd? ad =
         await loaded.future.timeout(interstitialLoadTimeout, onTimeout: () => null);
     if (ad == null) return false;
+    await _readyInterstitial?.dispose();
+    _readyInterstitial = ad;
+    return true;
+  }
+
+  InterstitialAd? _readyInterstitial;
+
+  @protected
+  @visibleForTesting
+  Future<bool> presentInterstitial() async {
+    final InterstitialAd? ad = _readyInterstitial;
+    _readyInterstitial = null;
+    if (ad == null) return false;
     ad.fullScreenContentCallback = FullScreenContentCallback<InterstitialAd>(
       onAdDismissedFullScreenContent: (InterstitialAd ad) => ad.dispose(),
       onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) => ad.dispose(),
@@ -174,6 +228,14 @@ class AdService {
       return true;
     });
     return shown != null;
+  }
+
+  /// Bayatlamış (gösterilmeyecek) yüklü reklamı bırakır.
+  @protected
+  @visibleForTesting
+  void discardInterstitial() {
+    _readyInterstitial?.dispose();
+    _readyInterstitial = null;
   }
 
   /// Reklam, uygulamanın işleyişi için kritik değil: kanal hatası da eksik
