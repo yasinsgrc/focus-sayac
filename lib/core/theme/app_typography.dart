@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 /// FocusSayaç yazı tipi aileleri — ikisi de `assets/fonts` altında subset paketlenir.
 abstract final class AppFonts {
   /// Gösterim yüzü: başlık, sayaç, kicker.
-  static const String display = 'Space Grotesk';
+  static const String display = 'Poppins';
 
   /// Okuma yüzü: arayüz etiketi ve gövde metni.
-  static const String body = 'Inter';
+  static const String body = 'Poppins';
 }
 
 /// Uygulamanın **tek** boyut ölçeği. `AppTypography` çağrılarında ham sayı
@@ -85,8 +85,8 @@ abstract final class AppTextSize {
 ///
 /// **Aile seçimi role bağlı, boyuta değil.** Tek eksen var:
 ///
-/// - **Space Grotesk** → *gösterim*: [display], [counter], [kicker].
-/// - **Inter** → *okuma*: [label], [body].
+/// - **Poppins** (gösterim) → *gösterim*: [display], [counter], [kicker].
+/// - **Poppins** (okuma) → *okuma*: [label], [body].
 ///
 /// Bu kural, yerini aldığı "≥16px Space Grotesk / <16px Inter" eşiğinden daha
 /// dayanıklı: eşik, aynı boyutta iki aile yan yana gelince (Ayarlar'da satır

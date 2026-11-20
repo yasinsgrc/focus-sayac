@@ -15,7 +15,7 @@
         android:id="@+id/widget_flame_tag"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/michroma_regular"
+        android:fontFamily="@font/poppins_500"
         android:letterSpacing="0.26"
         android:text="@string/widget_flame_tag"
         android:textColor="@color/focus_ember"
@@ -37,7 +37,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
         android:ellipsize="end"
-        android:fontFamily="@font/space_grotesk_700"
+        android:fontFamily="@font/poppins_700"
         android:maxLines="1"
         android:textColor="@color/focus_text"
         android:textSize="15sp" />
@@ -57,7 +57,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="5dp"
         android:ellipsize="end"
-        android:fontFamily="@font/inter_500"
+        android:fontFamily="@font/poppins_500"
         android:maxLines="1"
         android:textColor="@color/focus_neutral_400"
         android:textSize="10sp" />

@@ -6,9 +6,9 @@ import androidx.core.content.res.ResourcesCompat
 import com.focussayac.focussayac.R
 
 /**
- * Bitmap icine cizilen metinlerin yazi tipleri. Uygulamanin uc fontluk
+ * Bitmap icine cizilen metinlerin yazi tipleri. Uygulamanin yazi tipi
  * sistemiyle ayni (lib/core/theme/app_typography.dart):
- * Space Grotesk = baslik/sayac, Michroma = kicker, Inter = govde.
+ * Hepsi Poppins (baslik, sayac, kicker, govde).
  *
  * RemoteViews TextView nesneleri fontu android:fontFamily ile dogrudan
  * alabiliyor; burasi yalnizca Canvas uzerine cizilen metinler icin.
@@ -21,14 +21,14 @@ object WidgetTypography {
     const val KICKER_LETTER_SPACING = 0.26f
 
     fun counter(context: Context): Typeface =
-        ResourcesCompat.getFont(context, R.font.space_grotesk_700) ?: Typeface.DEFAULT_BOLD
+        ResourcesCompat.getFont(context, R.font.poppins_700) ?: Typeface.DEFAULT_BOLD
 
     fun display(context: Context): Typeface =
-        ResourcesCompat.getFont(context, R.font.space_grotesk_500) ?: Typeface.DEFAULT
+        ResourcesCompat.getFont(context, R.font.poppins_500) ?: Typeface.DEFAULT
 
     fun kicker(context: Context): Typeface =
-        ResourcesCompat.getFont(context, R.font.michroma_regular) ?: Typeface.DEFAULT
+        ResourcesCompat.getFont(context, R.font.poppins_500) ?: Typeface.DEFAULT
 
     fun body(context: Context): Typeface =
-        ResourcesCompat.getFont(context, R.font.inter_500) ?: Typeface.DEFAULT
+        ResourcesCompat.getFont(context, R.font.poppins_500) ?: Typeface.DEFAULT
 }

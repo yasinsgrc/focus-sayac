@@ -120,10 +120,14 @@ void main() {
         reason: 'krom gradyanının durakları prototiple uyuşmuyor');
   });
 
-  test('gösterim ailesi prototipin --disp tanımı', () {
+  test('gösterim ailesi prototipin --disp tanımından bilinçli olarak ayrılıyor', () {
+    // Kullanıcı kararı (2026-11-20): tüm proje tek aile, Poppins. Prototipin
+    // `--disp`i hâlâ Space Grotesk.
     final RegExpMatch? disp = RegExp(r'--disp:"([^"]+)"').firstMatch(css);
     expect(disp, isNotNull, reason: 'prototipte --disp bulunamadı');
-    expect(AppFonts.display, disp!.group(1));
+    expect(disp!.group(1), 'Space Grotesk');
+    expect(AppFonts.display, 'Poppins');
+    expect(AppFonts.body, 'Poppins');
   });
 
   test('kicker ailesi prototipin --mono tanımından bilinçli olarak ayrılıyor', () {
