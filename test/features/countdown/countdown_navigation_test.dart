@@ -21,6 +21,7 @@ import 'package:focussayac/features/stats/stats_screen.dart';
 import 'package:focussayac/features/story_card/story_card_screen.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
+import 'package:focussayac/services/consent/consent_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
@@ -75,6 +76,7 @@ Future<void> _pumpApp(WidgetTester tester, {Map<String, Object> initialPrefs = c
         appDatabaseProvider.overrideWithValue(database),
         sharedPreferencesProvider.overrideWithValue(prefs),
         adServiceProvider.overrideWithValue(AdService.disabled()),
+      consentServiceProvider.overrideWithValue(ConsentService.disabled()),
         notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
         // Faz 10: test edilen akış Ekran 02'den başlıyor — onboarding'i
         // tamamlamış kullanıcının açılışı.

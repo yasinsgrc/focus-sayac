@@ -12,6 +12,12 @@ final Provider<ConsentService> consentServiceProvider = Provider<ConsentService>
   throw UnimplementedError('consentServiceProvider main.dart içinde override edilmeli.');
 });
 
+/// Ayarlardaki "Gizlilik seçenekleri" satırının görünürlüğü (H3). Form
+/// kapandıktan sonra `invalidate` edilerek tazelenir.
+final FutureProvider<bool> privacyOptionsRequiredProvider = FutureProvider<bool>((Ref ref) {
+  return ref.watch(consentServiceProvider).isPrivacyOptionsRequired();
+});
+
 /// UMP (User Messaging Platform) onay akışı — SPEC.md Ekran 01: "UMP Consent
 /// akışı burada, **ilk reklam isteğinden önce**". Yasal zorunluluk olduğu için
 /// reklamlar (Faz 11) gelmeden önce, onboarding'in bitişinde çalışır.
@@ -51,6 +57,36 @@ class ConsentService {
     );
     await updated.future;
     await ConsentForm.loadAndShowConsentFormIfRequired((FormError? error) {});
+  }
+
+  /// UMP şartı: AEA kullanıcısı onayını sonradan değiştirebilmeli. Ayarlar
+  /// "Gizlilik seçenekleri" satırını yalnızca bu `true` iken gösteriyor.
+  /// Servis kapalıyken ve kanal hatasında `false` — gösterilemeyecek bir
+  /// formun satırı olmamalı.
+  Future<bool> isPrivacyOptionsRequired() async {
+    final ConsentInformation? consentInformation = _consentInformation;
+    if (consentInformation == null) return false;
+    try {
+      return await consentInformation.getPrivacyOptionsRequirementStatus() ==
+          PrivacyOptionsRequirementStatus.required;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
+
+  /// Gizlilik seçenekleri formunu açar; hata sessizce geçilir (form
+  /// açılamazsa kullanıcı ayarlarda kalır, onay durumu değişmez).
+  Future<void> showPrivacyOptionsForm() async {
+    if (_consentInformation == null) return;
+    // Eklenti dinleyiciyi kanal çağrısı döndükten sonra çağırıyor; form
+    // kapanınca `await` de bitiyor.
+    try {
+      await ConsentForm.showPrivacyOptionsForm((FormError? error) {});
+    } on PlatformException {
+      return;
+    }
   }
 
   /// SPEC.md §7'nin yasal kapısı: UMP'ye göre reklam isteği atılabilir mi

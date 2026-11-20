@@ -13,6 +13,7 @@ import '../../domain/review/app_review_service.dart';
 import '../../domain/settings/app_data_reset_service.dart';
 import '../../domain/settings/settings_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
+import '../../services/consent/consent_service.dart';
 import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
@@ -321,6 +322,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       showCaret: true,
                       onTap: () => _showInfoDialog(title: l10n.settingsPrivacyTitle, body: l10n.settingsPrivacyBody),
                     ),
+                    // H3 — UMP şartı: AEA kullanıcısı onayını buradan geri
+                    // çekebilir. Satır yalnızca UMP "gerekli" dediğinde var.
+                    if (ref.watch(privacyOptionsRequiredProvider).value ?? false)
+                      _SettingsRow(
+                        icon: AppIconsDuotone.shieldCheck,
+                        iconColor: colors.accent400,
+                        label: l10n.settingsPrivacyOptions,
+                        value: '',
+                        valueColor: colors.neutral500,
+                        showCaret: true,
+                        onTap: _openPrivacyOptions,
+                      ),
                     _SettingsRow(
                       icon: AppIconsDuotone.trash,
                       iconColor: colors.rose,
@@ -374,6 +387,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       };
 
   static Color _onOffColor(bool enabled, AppColors colors) => enabled ? colors.mint : colors.neutral500;
+
+  Future<void> _openPrivacyOptions() async {
+    await ref.read(consentServiceProvider).showPrivacyOptionsForm();
+    if (mounted) ref.invalidate(privacyOptionsRequiredProvider);
+  }
 
   Future<void> _openStoreListing() async {
     final bool opened = await ref.read(appReviewServiceProvider).openStoreListing();

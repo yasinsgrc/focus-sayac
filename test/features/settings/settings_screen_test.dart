@@ -11,6 +11,7 @@ import 'package:focussayac/core/router/app_router.dart';
 import 'package:focussayac/features/settings/settings_screen.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
+import 'package:focussayac/services/consent/consent_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
@@ -45,12 +46,13 @@ Future<AppDatabase> _newDatabase(WidgetTester tester) {
   });
 }
 
-Widget _appWith(AppDatabase database, SharedPreferences prefs, Widget home) {
+Widget _appWith(AppDatabase database, SharedPreferences prefs, Widget home, {ConsentService? consent}) {
   return ProviderScope(
     overrides: [
       appDatabaseProvider.overrideWithValue(database),
       sharedPreferencesProvider.overrideWithValue(prefs),
       adServiceProvider.overrideWithValue(AdService.disabled()),
+      consentServiceProvider.overrideWithValue(consent ?? ConsentService.disabled()),
       notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
       // Faz 10: başlangıç rotası `onboardingCompleted` bayrağına bakıyor —
       // bu dosyanın testleri onboarding'i tamamlamış kullanıcıyı doğruluyor.
@@ -68,14 +70,14 @@ void _usePhoneSurface(WidgetTester tester) {
 }
 
 /// Ekran 07'yi tek başına (router olmadan) ayağa kaldırır.
-Future<AppDatabase> _pumpSettings(WidgetTester tester) async {
+Future<AppDatabase> _pumpSettings(WidgetTester tester, {ConsentService? consent}) async {
   _usePhoneSurface(tester);
   final AppDatabase database = await _newDatabase(tester);
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences prefs = await SharedPreferences.getInstance();
 
   await tester.pumpWidget(
-    _appWith(database, prefs, localizedTestApp(const SettingsScreen())),
+    _appWith(database, prefs, localizedTestApp(const SettingsScreen()), consent: consent),
   );
   await _settle(tester);
   return database;
@@ -94,6 +96,19 @@ Future<List<PomodoroSession>> _allSessions(WidgetTester tester, AppDatabase data
     tester,
     () => database.pomodoroSessionDao.getSessionsBetween(DateTime.utc(2000), DateTime.utc(2100)),
   );
+}
+
+/// UMP'nin "gizlilik seçenekleri gerekli" dediği AEA kullanıcısı (H3).
+class _PrivacyRequiredConsentService extends ConsentService {
+  _PrivacyRequiredConsentService() : super.disabled();
+
+  int formShown = 0;
+
+  @override
+  Future<bool> isPrivacyOptionsRequired() async => true;
+
+  @override
+  Future<void> showPrivacyOptionsForm() async => formShown++;
 }
 
 void main() {
@@ -357,6 +372,25 @@ void main() {
     expect(body, isNot(contains('kişisel veri toplamaz')));
     // Uzun metin `_InfoDialog`u taşırmıyor (kaydırılabilir gövde).
     expect(tester.takeException(), isNull);
+
+    await _disposeTree(tester);
+  });
+
+  testWidgets('UMP gerekli demiyorsa gizlilik seçenekleri satırı yok', (WidgetTester tester) async {
+    await _pumpSettings(tester);
+    expect(find.text('Reklam gizlilik seçenekleri'), findsNothing);
+    await _disposeTree(tester);
+  });
+
+  testWidgets('UMP gerekli diyorsa satır görünüyor ve formu açıyor', (WidgetTester tester) async {
+    final _PrivacyRequiredConsentService consent = _PrivacyRequiredConsentService();
+    await _pumpSettings(tester, consent: consent);
+
+    await tester.ensureVisible(find.text('Reklam gizlilik seçenekleri'));
+    await _settle(tester);
+    await tester.tap(find.text('Reklam gizlilik seçenekleri'));
+    await _settle(tester);
+    expect(consent.formShown, 1);
 
     await _disposeTree(tester);
   });

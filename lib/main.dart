@@ -112,6 +112,14 @@ Future<void> main() async {
       ),
     ),
   );
+  // H3: UMP onayı her açılışta tazelenmeli (Google şartı). Onboarding'i
+  // bitirmemiş kullanıcının onayı Ekran 01'de toplanıyor; burada yalnızca
+  // dönen kullanıcı. Onboarding çevrimdışı geçildiyse `canRequestAds` ilk
+  // bağlantılı açılışta böylece düzeliyor. `runApp`tan sonra: form gerekirse
+  // çizilmiş bir pencerenin üstünde açılıyor.
+  if (launchSettings.onboardingCompleted) {
+    unawaited(consentService.gatherConsent());
+  }
 }
 
 /// `AppSettings` → [NotificationPreferences] eşlemesinin tek yeri. Servis
