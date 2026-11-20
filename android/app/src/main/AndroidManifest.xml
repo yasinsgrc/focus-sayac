@@ -13,7 +13,7 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29"/>
     <application
-        android:label="FocusSayaç"
+        android:label="Odaq"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

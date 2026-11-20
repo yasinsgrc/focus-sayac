@@ -105,18 +105,18 @@ void main() {
   group('paylaşım metni', () {
     test('her şablonda tam cümle + mağaza adresi', () {
       // Kartta sayı (`big`) ve satır (`line1`) ayrı duruyor; paylaşımda
-      // "gün kaldı. focussayaç ile:" gibi yarım bir cümle çıkmamalı.
+      // "gün kaldı. Odaq ile:" gibi yarım bir cümle çıkmamalı.
       expect(
         buildStoryCardShareText(testL10n, _text(StoryCardTemplate.nightTorch)),
-        'Bugün 2 saat 15 dakika odaklandım. — focussayaç ile: $kPlayStoreUrl',
+        'Bugün 2 saat 15 dakika odaklandım. — Odaq ile: $kPlayStoreUrl',
       );
       expect(
         buildStoryCardShareText(testL10n, _text(StoryCardTemplate.minimal)),
-        "YKS 2027'ye 132 gün kaldı — focussayaç ile: $kPlayStoreUrl",
+        "YKS 2027'ye 132 gün kaldı — Odaq ile: $kPlayStoreUrl",
       );
       expect(
         buildStoryCardShareText(testL10n, _text(StoryCardTemplate.streak)),
-        '6 gün üst üste odaklandım. — focussayaç ile: $kPlayStoreUrl',
+        '6 gün üst üste odaklandım. — Odaq ile: $kPlayStoreUrl',
       );
     });
 
@@ -131,7 +131,7 @@ void main() {
         ),
       );
       // Kartın "—" ve "hedef seçilmedi." parçaları metne sızmamalı.
-      expect(noExam, 'Odaklanmaya devam ediyorum. — focussayaç ile: $kPlayStoreUrl');
+      expect(noExam, 'Odaklanmaya devam ediyorum. — Odaq ile: $kPlayStoreUrl');
 
       final String noStreak =
           buildStoryCardShareText(testL10n, _text(StoryCardTemplate.streak, streak: 0));

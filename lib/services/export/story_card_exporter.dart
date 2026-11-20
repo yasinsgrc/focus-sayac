@@ -31,7 +31,7 @@ class StoryCardExporter {
 
   /// Paylaşılan/kaydedilen dosyanın adı. `Gal.putImageBytes` adı uzantısız
   /// istediği için uzantı yalnızca paylaşımda ekleniyor.
-  static const String fileBaseName = 'focussayac-basari-karti';
+  static const String fileBaseName = 'odaq-basari-karti';
 
   /// [boundaryKey]'in gösterdiği `RepaintBoundary`yi tam **1080×1920** PNG'ye
   /// çevirir (SPEC.md Ekran 05 DoD).

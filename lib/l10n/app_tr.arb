@@ -1,7 +1,7 @@
 {
   "@@locale": "tr",
 
-  "appTitle": "FocusSayaç",
+  "appTitle": "Odaq",
   "commonClose": "Kapat",
   "commonEmptyValue": "—",
 
@@ -362,8 +362,8 @@
   "storyCardTemplateStreak": "SERİ",
   "storyCardShare": "PAYLAŞ",
   "storyCardSave": "Kaydet",
-  "storyCardBrandFooter": "focussayaç · Google Play",
-  "storyCardShareMessage": "{headline} — focussayaç ile: {url}",
+  "storyCardBrandFooter": "odaq · Google Play",
+  "storyCardShareMessage": "{headline} — Odaq ile: {url}",
   "@storyCardShareMessage": {
     "placeholders": {
       "headline": { "type": "String" },
@@ -639,10 +639,10 @@
   "settingsRateApp": "Uygulamayı değerlendir",
   "settingsAbout": "Hakkında",
   "settingsAboutTitle": "HAKKINDA",
-  "settingsAboutBody": "FocusSayaç, sınavına kalan günü ve odak sürelerini tek yerde tutan bağımsız bir çalışma aracıdır. ÖSYM, MEB veya resmî bir kurumla bağlantılı değildir; sınav tarihleri resmî takvimden doğrulanmalıdır.",
+  "settingsAboutBody": "Odaq, sınavına kalan günü ve odak sürelerini tek yerde tutan bağımsız bir çalışma aracıdır. ÖSYM, MEB veya resmî bir kurumla bağlantılı değildir; sınav tarihleri resmî takvimden doğrulanmalıdır.",
   "settingsPrivacy": "Gizlilik politikası",
   "settingsPrivacyTitle": "GİZLİLİK POLİTİKASI",
-  "settingsPrivacyBody": "FocusSayaç hesap açmanı istemez. Sınavların, odak geçmişin, rozetlerin ve ayarların yalnızca bu cihazda, uygulamanın kendi veritabanında saklanır; bunları hiçbir sunucuya göndermiyoruz. Uygulamayı kaldırdığında ya da \"Verileri sıfırla\"ya dokunduğunda silinirler.\n\nÜcretsiz sürümde Google AdMob reklamları gösterilir. AdMob, reklamı sunmak ve ölçmek için cihazının reklam kimliği gibi verileri işler; ilk açılışta sorulan onay ekranında kişiselleştirilmiş reklamı reddedersen yalnızca kişiselleştirilmemiş reklam istenir. Odak geçmişin, rozetlerin ve sınavların reklam ağına hiçbir durumda gönderilmez.\n\nTüm metin: focussayac.app/gizlilik",
+  "settingsPrivacyBody": "Odaq hesap açmanı istemez. Sınavların, odak geçmişin, rozetlerin ve ayarların yalnızca bu cihazda, uygulamanın kendi veritabanında saklanır; bunları hiçbir sunucuya göndermiyoruz. Uygulamayı kaldırdığında ya da \"Verileri sıfırla\"ya dokunduğunda silinirler.\n\nÜcretsiz sürümde Google AdMob reklamları gösterilir. AdMob, reklamı sunmak ve ölçmek için cihazının reklam kimliği gibi verileri işler; ilk açılışta sorulan onay ekranında kişiselleştirilmiş reklamı reddedersen yalnızca kişiselleştirilmemiş reklam istenir. Odak geçmişin, rozetlerin ve sınavların reklam ağına hiçbir durumda gönderilmez.\n\nTüm metin: focussayac.app/gizlilik",
   "settingsPrivacyOptions": "Reklam gizlilik seçenekleri",
   "settingsResetData": "Verileri sıfırla",
   "settingsDisclaimer": "Bağımsız bir çalışma aracıdır; ÖSYM, MEB veya resmî bir kurumla bağlantılı değildir.",

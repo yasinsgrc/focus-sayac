@@ -239,7 +239,7 @@ void main() {
     expect(find.text('1080 × 1920 PNG'), findsOneWidget);
     // Alt imza kartın içinde: Instagram paylaşım metnini yok saydığı için
     // linkin görselin kendisinde de durması gerekiyor.
-    expect(find.text('focussayaç · Google Play'), findsOneWidget);
+    expect(find.text('odaq · Google Play'), findsOneWidget);
 
     await _disposeTree(tester);
   });
@@ -258,7 +258,7 @@ void main() {
           shareHeadline: '6 gün üst üste odaklandım.',
         ),
       );
-      expect(find.text('focussayaç · Google Play'), findsOneWidget, reason: '$template');
+      expect(find.text('odaq · Google Play'), findsOneWidget, reason: '$template');
     }
 
     await _disposeTree(tester);
@@ -294,7 +294,7 @@ void main() {
     // Varsayılan şablon GECE MEŞALESİ — cümlesi tam, sonunda mağaza adresi.
     expect(exporter.sharedText, isNotNull);
     expect(exporter.sharedText, startsWith('Bugün '));
-    expect(exporter.sharedText, endsWith('focussayaç ile: $kPlayStoreUrl'));
+    expect(exporter.sharedText, endsWith('Odaq ile: $kPlayStoreUrl'));
 
     await _disposeTree(tester);
   });
