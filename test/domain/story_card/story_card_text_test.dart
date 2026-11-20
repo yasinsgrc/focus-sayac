@@ -141,7 +141,7 @@ void main() {
 
     test('mağaza adresindeki paket adı applicationId ile aynı', () {
       // `android/app/build.gradle.kts` içindeki `applicationId`.
-      expect(kPlayStoreUrl, endsWith('?id=com.focussayac.focussayac'));
+      expect(kPlayStoreUrl, endsWith('?id=com.app.odaq'));
     });
   });
 

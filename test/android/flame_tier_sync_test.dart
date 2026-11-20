@@ -12,7 +12,7 @@ import 'package:focussayac/domain/flame/flame_tier.dart';
 /// docs/superpowers/specs/2026-09-12-mesale-kademe-avatari-design.md, Riskler).
 void main() {
   const String kotlinPath =
-      'android/app/src/main/kotlin/com/focussayac/focussayac/widget/FlameTierLadder.kt';
+      'android/app/src/main/kotlin/com/app/odaq/widget/FlameTierLadder.kt';
 
   /// `FlameTier(index = 6, thresholdHours = 50, scale = 0.72f, emberBase = true, sparkCount = 2, haloOpacity = 0.0f)`
   /// satırlarını okur. Biçim değişirse test düşer — bu kasıtlı: satır düzeni

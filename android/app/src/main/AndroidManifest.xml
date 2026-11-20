@@ -142,7 +142,7 @@
             android:name=".widget.FocusWidgetRefreshReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.focussayac.focussayac.widget.ACTION_REFRESH" />
+                <action android:name="com.app.odaq.widget.ACTION_REFRESH" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.TIME_SET" />

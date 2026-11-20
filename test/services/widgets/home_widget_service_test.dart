@@ -71,7 +71,7 @@ void main() {
   test('saglayici adlari manifestteki paketle esler', () {
     // Ad bir harf bile kaysa `updateWidget` sessizce hicbir sey yapmaz;
     // widget ekranda bayat kalir ve hata da gorunmez.
-    expect(HomeWidgetService.androidWidgetPackage, 'com.focussayac.focussayac.widget');
+    expect(HomeWidgetService.androidWidgetPackage, 'com.app.odaq.widget');
     expect(HomeWidgetService.providerClassNames, hasLength(5));
   });
 

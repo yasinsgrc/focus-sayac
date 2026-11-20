@@ -1,0 +1,59 @@
+package com.app.odaq.widget
+
+import android.content.Context
+import androidx.annotation.ColorInt
+import com.app.odaq.R
+
+/**
+ * `lib/core/theme/app_colors.dart` tokenlarina Kotlin tarafindan erisim.
+ *
+ * Degerler burada tanimli DEGIL; kaynak `res/values/focus_colors.xml` (acik) ve
+ * `res/values-night/focus_colors.xml` (koyu). Hangisinin cozulecegine
+ * `context.getColor` cagrilirken widget host'unun yapilandirmasi karar veriyor,
+ * yani widget'lar **sistem** temasini izler - uygulama ici "Acik/Koyu" secimi
+ * buraya ulasmaz (Flutter tema agacinin disindayiz).
+ *
+ * `test/android/focus_palette_sync_test.dart` iki XML'i de Dart paletiyle
+ * karsilastirarak sapmayi yakalar.
+ */
+class FocusPalette(context: Context) {
+    @ColorInt val bg: Int = context.getColor(R.color.focus_bg)
+    @ColorInt val text: Int = context.getColor(R.color.focus_text)
+
+    @ColorInt val ember: Int = context.getColor(R.color.focus_ember)
+    @ColorInt val emberDim: Int = context.getColor(R.color.focus_ember_dim)
+
+    @ColorInt val sky: Int = context.getColor(R.color.focus_sky)
+
+    /** Tamamlanma rolu - halka widgetindeki "bugun kac pomodoro" yayi. */
+    @ColorInt val mint: Int = context.getColor(R.color.focus_mint)
+
+    @ColorInt val neutral300: Int = context.getColor(R.color.focus_neutral_300)
+    @ColorInt val neutral400: Int = context.getColor(R.color.focus_neutral_400)
+    @ColorInt val neutral500: Int = context.getColor(R.color.focus_neutral_500)
+    @ColorInt val neutral700: Int = context.getColor(R.color.focus_neutral_700)
+
+    @ColorInt val accent400: Int = context.getColor(R.color.focus_accent_400)
+
+    @ColorInt val divider: Int = context.getColor(R.color.focus_divider)
+
+    /**
+     * Halkanin izleri - ROADMAP madde 44. Rol esleme Ekran 02'nin painter'indan:
+     * dis tel ve emek izi [fillSubtle], zaman izi [hairline].
+     *
+     * Ikisi de temanin ustune binen alfa: koyuda beyaz, ACIKTA SIYAH. Once
+     * `RingRenderer`da duz hex olarak koyu temanin degerleri duruyordu, yani
+     * acik temada iz zemine karisiyordu.
+     */
+    @ColorInt val fillSubtle: Int = context.getColor(R.color.focus_fill_subtle)
+    @ColorInt val hairline: Int = context.getColor(R.color.focus_hairline)
+
+    /**
+     * Sinav secilmemisken kullanilan sakin vurgu. Accent moru, "izin/bilgi"
+     * rolunu tasidigi icin (SPEC 2 "Renk ROL tasir") notr durumun dogal rengi.
+     */
+    @ColorInt val neutralAccent: Int = accent400
+}
+
+/** dp -> px. Widget bitmap'leri piksel cinsinden cizilir. */
+fun Context.widgetPx(dp: Float): Float = dp * resources.displayMetrics.density

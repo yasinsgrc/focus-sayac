@@ -9,4 +9,4 @@ library;
 /// Uygulama yayımlanana kadar bu adres 404 döner; paylaşımın kendisi yine
 /// çalışır, yalnızca link henüz bir sayfaya gitmez.
 const String kPlayStoreUrl =
-    'https://play.google.com/store/apps/details?id=com.focussayac.focussayac';
+    'https://play.google.com/store/apps/details?id=com.app.odaq';

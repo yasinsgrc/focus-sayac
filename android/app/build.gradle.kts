@@ -20,7 +20,7 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.focussayac.focussayac"
+    namespace = "com.app.odaq"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -38,7 +38,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.focussayac.focussayac"
+        applicationId = "com.app.odaq"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode

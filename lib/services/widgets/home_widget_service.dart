@@ -12,7 +12,7 @@ class HomeWidgetService {
 
   /// Kotlin sağlayıcılarının paketi — `AndroidManifest.xml`'deki `receiver`
   /// adlarıyla birebir aynı olmak zorunda.
-  static const String androidWidgetPackage = 'com.focussayac.focussayac.widget';
+  static const String androidWidgetPackage = 'com.app.odaq.widget';
 
   /// Beş widget'ın sağlayıcı sınıfları. Yeni bir widget eklendiğinde bu liste
   /// ve manifest birlikte güncellenir.

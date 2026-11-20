@@ -5,8 +5,8 @@
   yalnizca STATIK basvurulardan izliyor; asagidaki ikisini "erisilemez" sayip
   APK'dan tamamen cikariyordu:
 
-      @com.focussayac.focussayac:drawable/ic_notification : reachable=false
-      @com.focussayac.focussayac:drawable/ic_splash_logo  : reachable=false
+      @com.app.odaq:drawable/ic_notification : reachable=false
+      @com.app.odaq:drawable/ic_splash_logo  : reachable=false
 
   `ic_notification` yalnizca calisma zamaninda ada gore araniyor -
   `flutter_local_notifications` durum cubugu ikonunu
