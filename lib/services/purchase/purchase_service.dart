@@ -21,14 +21,17 @@ final Provider<PurchaseService> purchaseServiceProvider = Provider<PurchaseServi
   return service;
 });
 
-/// SPEC.md §7.3: `pro_lifetime` akışı **tam kodlanır, UI pasif kalır**.
-/// "Bir sonraki sürümde tek satır değişiklikle açılır" gereği bu sınıfın
-/// eksiksiz olmasını istiyor: ürün sorgusu, satın alma, mağaza tarafından
-/// başlatılan/geri yüklenen işlemler ve `completePurchase`.
+/// SPEC.md §7.3: `pro_lifetime` tek seferlik managed product akışı (aktif).
+/// Ürün sorgusu, satın alma, mağaza tarafından başlatılan/geri yüklenen
+/// işlemler ve `completePurchase` burada; premium bayrağını yazan tek yol bu
+/// sınıf. Sunucu/makbuz doğrulaması yok, Play gerçeğin kaynağı.
 ///
-/// v1'de **hiçbir çağıranı yok** (ayarlardaki satır pasif). Açılacağı sürümde
-/// `main.dart` [start]'ı, ayarlardaki satır da [buyProLifetime]'ı çağırır;
-/// premium bayrağını yazan yol zaten burada ve testlidir.
+/// Çağıranlar: `main.dart` açılışta [start]'ı, ardından [restorePurchases]'ı
+/// çağırır (açılışı bloklamadan). Ayarlardaki "Reklamları kaldır" satırı
+/// [loadProLifetimeProduct] ve [buyProLifetime]'ı, "Satın almayı geri yükle"
+/// satırı [restorePurchases]'ı kullanır. Sonuçlar her durumda
+/// [handlePurchaseUpdates] üzerinden gelir; bayrak yalnızca verilir, geri
+/// alınmaz.
 class PurchaseService {
   PurchaseService({
     required AppSettingsDao appSettingsDao,

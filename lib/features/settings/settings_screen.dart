@@ -576,9 +576,10 @@ final FutureProvider<ProductDetails?> _proProductProvider = FutureProvider.autoD
   (Ref ref) => ref.watch(purchaseServiceProvider).loadProLifetimeProduct(),
 );
 
-/// Geri yüklemeden sonra hakkın veritabanına düşmesi için beklenen üst sınır.
-/// Sonuç `PurchaseService.handlePurchaseUpdates` üzerinden asenkron geliyor.
-const Duration kRestoreResultTimeout = Duration(seconds: 3);
+/// Geri yüklemeden sonra hakkın veritabanına düşmesi için beklenen süre.
+/// `restorePurchases` tamamlanma sinyali vermiyor; süre dolarsa kesin bir
+/// "bulunamadı" denmiyor, nötr mesaj gösteriliyor.
+const Duration kRestoreResultTimeout = Duration(seconds: 8);
 
 /// Testler satırları bu anahtarlarla buluyor.
 const Key kRemoveAdsRowKey = Key('remove-ads-row');
@@ -677,6 +678,12 @@ class _RestorePurchasesRowState extends ConsumerState<_RestorePurchasesRow> {
 
   Future<void> _restore() async {
     if (_pending) return;
+    final AppSettingsTableData current = await ref.read(appSettingsDaoProvider).getSettings();
+    if (!mounted) return;
+    if (current.isPremium) {
+      showAppToast(context, message: AppLocalizations.of(context).settingsRestoreAlreadyPro);
+      return;
+    }
     setState(() => _pending = true);
     bool restored = false;
     try {
@@ -696,8 +703,8 @@ class _RestorePurchasesRowState extends ConsumerState<_RestorePurchasesRow> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     showAppToast(
       context,
-      message: restored ? l10n.settingsRestoreSuccess : l10n.settingsRestoreNotFound,
-      tone: restored ? AppToastTone.success : AppToastTone.error,
+      message: restored ? l10n.settingsRestoreSuccess : l10n.settingsRestorePending,
+      tone: AppToastTone.success,
     );
   }
 

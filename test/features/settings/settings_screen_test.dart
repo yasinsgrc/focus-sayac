@@ -534,6 +534,24 @@ void main() {
   });
 
   group('Satın almayı geri yükle', () {
+    testWidgets('zaten premium ise doğrudan "Zaten Pro\'sun"', (WidgetTester tester) async {
+      late _FakePurchaseService purchase;
+      await _pumpSettings(
+        tester,
+        premium: true,
+        purchase: (AppDatabase db) => purchase = _FakePurchaseService(db),
+      );
+
+      await tester.ensureVisible(find.byKey(kRestorePurchasesRowKey));
+      await tester.tap(find.byKey(kRestorePurchasesRowKey));
+      await _settle(tester);
+
+      expect(purchase.restoreCalls, 0);
+      expect(find.text("Zaten Pro'sun"), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      await _disposeTree(tester);
+    });
+
     testWidgets('hak geri gelirse "Pro geri yüklendi"', (WidgetTester tester) async {
       late _FakePurchaseService purchase;
       await _pumpSettings(
@@ -551,7 +569,7 @@ void main() {
       await _disposeTree(tester);
     });
 
-    testWidgets('hak yoksa "Bu hesapta satın alma bulunamadı"', (WidgetTester tester) async {
+    testWidgets('zaman aşımında kesin olumsuz değil nötr mesaj', (WidgetTester tester) async {
       await _pumpSettings(tester);
 
       await tester.ensureVisible(find.byKey(kRestorePurchasesRowKey));
@@ -560,7 +578,8 @@ void main() {
       await tester.pump(kRestoreResultTimeout);
       await tester.pump();
 
-      expect(find.text('Bu hesapta satın alma bulunamadı'), findsOneWidget);
+      expect(find.text('Kontrol sürüyor, hakkın varsa birazdan görünecek.'), findsOneWidget);
+      expect(find.textContaining('bulunamadı'), findsNothing);
       await tester.pump(const Duration(seconds: 3));
       await _disposeTree(tester);
     });
