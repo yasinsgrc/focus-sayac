@@ -193,6 +193,27 @@ void main() {
     expect(sends(), isEmpty);
   });
 
+  // PROJE_INCELEME R1: hatırlatma yalnızca "bugünün 21:00'i" için kurulunca,
+  // ertesi gün uygulamayı hiç açmayan kullanıcıya — tam da serisi riskte
+  // olana — gitmiyordu. Bugün odak tamamlandıysa yarının 21:00'i önden
+  // kuruluyor; çalıştırma saatinden bağımsız olduğu için doğrudan test
+  // edilebiliyor.
+  test('bugün odak tamamlandıysa seri riski yarının 21:00ine kuruluyor', () async {
+    final NotificationService service = await serviceWith(notificationsEnabled: true);
+
+    await service.rescheduleStreakRiskReminder(completedToday: true, streak: 3);
+
+    expect(calls.where((MethodCall call) => call.method == 'zonedSchedule').map(_idOf), <int>[1003]);
+  });
+
+  test('seri yokken bugün tamamlansa da hatırlatma kurulmuyor', () async {
+    final NotificationService service = await serviceWith(notificationsEnabled: true);
+
+    await service.rescheduleStreakRiskReminder(completedToday: true, streak: 0);
+
+    expect(sends(), isEmpty);
+  });
+
   group('dönüş bildirimi', () {
     /// Dönüş bildiriminin kapısı `streakReminderEnabled`; testler iki anahtarı
     /// ayrı ayrı çevirebilsin diye dosyanın `serviceWith` yardımcısı yerine bu

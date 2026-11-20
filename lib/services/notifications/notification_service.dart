@@ -425,10 +425,10 @@ class NotificationService {
   /// tamamlanmış bir odak seansı yoksa **ve** güncel seri ≥1 ise. SPEC §1
   /// backend/cloud sync'i yasakladığı için koşul, geleceğe dönük tek bir
   /// arka plan işiyle değil, her yeniden değerlendirme noktasında (uygulama
-  /// açılışı + her odak tamamlanışı) yeniden hesaplanıp o günün 21:00'i
-  /// için tek seferlik kurulur/iptal edilir. Uygulama o gün hiç açılmazsa
-  /// bildirim kurulmaz — yerel, arka planı olmayan bir zamanlayıcının doğal
-  /// sınırı (Faz 6 kararı, DECISIONS.md).
+  /// açılışı + her odak tamamlanışı) yeniden hesaplanıp tek seferlik
+  /// kurulur/iptal edilir: bugün tamamlanmadıysa bugünün, tamamlandıysa
+  /// yarının 21:00'i. Böylece ertesi gün uygulama hiç açılmasa da bildirim
+  /// düşer.
   Future<void> rescheduleStreakRiskReminder({required bool completedToday, required int streak}) async {
     final FlutterLocalNotificationsPlugin? plugin = _plugin;
     if (plugin == null) return;
@@ -438,9 +438,14 @@ class NotificationService {
     await plugin.cancel(id: _streakRiskNotificationId);
     final NotificationPreferences? preferences = await _allowedPreferences();
     if (preferences == null || !preferences.streakReminderEnabled) return;
-    if (completedToday || streak < 1) return;
+    if (streak < 1) return;
     final tz.TZDateTime now = tz.TZDateTime.now(_location);
-    final tz.TZDateTime target = tz.TZDateTime(_location, now.year, now.month, now.day, 21);
+    // Bugün tamamlandıysa seri bugün için güvende; risk yarın. Yarının
+    // 21:00'i önden kurulur ki ertesi gün uygulamayı hiç açmayan kullanıcıya
+    // da gitsin (PROJE_INCELEME R1). Yarın bir odak tamamlanırsa bu çağrı
+    // yeniden yapılıp hedef bir gün daha ileri kayar.
+    final int dayOffset = completedToday ? 1 : 0;
+    final tz.TZDateTime target = tz.TZDateTime(_location, now.year, now.month, now.day + dayOffset, 21);
     if (!target.isAfter(now)) return;
     await _zonedSchedule(
       plugin,
