@@ -4165,3 +4165,7 @@ kötü bir deneyim.
 **Yeniden deneme.** Ekran her kurulduğunda bir istek. Timer, agresif retry ya
 da bağlantı dinleyicisi eklenmedi: kullanıcı geri sayıma döndüğünde yeni istek
 zaten atılıyor.
+
+## R8 — Paket adı `com.app.odaq`
+
+Paket adı `com.app.odaq`; Play Console'da bu adla rezerve edildi, eski belgelerdeki (`docs/superpowers/`, yukarıdaki Faz 1 notu) `com.focussayac.focussayac` geçmiş kayıttır.
