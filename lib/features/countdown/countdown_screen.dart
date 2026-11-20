@@ -33,6 +33,7 @@ import '../../domain/subjects/subject_catalog.dart';
 import '../../domain/subjects/subject_providers.dart';
 import '../../domain/time/duration_formatter.dart';
 import '../../l10n/gen/app_localizations.dart';
+import '../../services/ads/banner_ad_slot.dart';
 import '../../services/storage/app_database.dart';
 import 'widgets/countdown_ring_painter.dart';
 import 'widgets/exam_picker_sheet.dart';
@@ -906,6 +907,12 @@ class _CountdownBody extends ConsumerWidget {
               );
             },
           ),
+        ),
+        // SPEC.md §7.1: banner yalnızca Ekran 02. Yüklenene kadar sıfır
+        // yükseklik (DECISIONS R7).
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 26),
+          child: BannerAdSlot(),
         ),
         // Alt gezinme çubuğunun yeri, `BannerAdSlot`ın `bottomMargin`i yerine
         // burada ayrılıyor (ROADMAP madde 36; Ekran 06 aynısını madde 29'da

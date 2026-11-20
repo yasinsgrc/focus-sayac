@@ -4144,3 +4144,24 @@ kayboluyor. Bu doğru davranış, hata değil — düzeltilmeyecek.
 
 **Gelir etkisi.** Kişiselleştirilmiş reklam kapanıyor; daha düşük eCPM
 bilinçli olarak kabul edildi.
+
+## R7 — Banner yuvası yüklenene kadar sıfır yükseklik
+
+**Tespit.** SPEC §7.1'in eski kuralı ("yüklenemezse aynı yükseklikte
+`SizedBox` → layout zıplamaz") yuvanın reklam gelmese de 50 px ayırması
+demekti. İnternet kapalıyken geri sayım ekranının altında boş bir şerit
+kalıyor ve ekran bozuk görünüyordu.
+
+**Karar.** Banner yalnızca Ekran 02'de (8167243'te kaldırılmıştı, yalnızca
+orada geri geldi; Ekran 06 banner'sız). Yuva yüklenene kadar sıfır yükseklik;
+reklam gelince `AnimatedSize` ile 200 ms `easeOutCubic` açılıyor. Yükleme
+başarısızsa sessizce kapalı kalıyor — hata metni ya da yer tutucu yok.
+
+**Zıplama neden kabul edilebilir.** Yuva ekranın en altında, kaydırılan
+gövdenin altında; açılması üstteki içeriği yerinden oynatmıyor, yalnızca alt
+kenardan yükseliyor. Kalıcı boş şerit, kısa bir açılış animasyonundan daha
+kötü bir deneyim.
+
+**Yeniden deneme.** Ekran her kurulduğunda bir istek. Timer, agresif retry ya
+da bağlantı dinleyicisi eklenmedi: kullanıcı geri sayıma döndüğünde yeni istek
+zaten atılıyor.

@@ -16,6 +16,7 @@ class RecordingAdService extends AdService {
     bool consentAllowsAds = true,
     this.resolvedBannerSize,
     this.interstitialSucceeds = true,
+    this.bannerLoads = false,
   }) : super(
           readIsPremium: (() async => isPremium),
           readConsentAllowsAds: (() async => consentAllowsAds),
@@ -27,6 +28,10 @@ class RecordingAdService extends AdService {
   final AdSize? resolvedBannerSize;
 
   final bool interstitialSucceeds;
+
+  /// `true` ise banner yüklenmiş sayılır (`onLoaded`); varsayılan hâl
+  /// çevrimdışı/yükleme hatası (`onFailed`).
+  final bool bannerLoads;
 
   int bannerSizeRequests = 0;
   int bannerRequests = 0;
@@ -48,8 +53,8 @@ class RecordingAdService extends AdService {
   }) async {
     bannerRequests++;
     // Gerçek `BannerAd` widget testinde platform görünümü olmadan çizilemez;
-    // yuvanın "yüklenemedi" dalı zaten aynı yüksekliği korumak zorunda.
-    onFailed();
+    // `null` dönüyor, yuva yine de yüklenmiş hâlin yüksekliğini alıyor.
+    bannerLoads ? onLoaded() : onFailed();
     return null;
   }
 

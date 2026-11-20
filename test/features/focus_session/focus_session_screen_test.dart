@@ -17,6 +17,7 @@ import 'package:focussayac/features/focus_session/focus_session_screen.dart';
 import 'package:focussayac/features/focus_session/widgets/session_ring_painter.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
+import 'package:focussayac/services/ads/banner_ad_slot.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
@@ -331,6 +332,13 @@ void main() {
       ),
     );
 
+    expect(
+      find.descendant(
+        of: find.byType(FocusSessionScreen, skipOffstage: false),
+        matching: find.byType(BannerAdSlot, skipOffstage: false),
+      ),
+      findsNothing,
+    );
     // Prototipin `interstitial · 3 pomodoroda 1` yer tutucusu da kalktı;
     // gerçek interstitial ekranın üstünde değil, tam ekran açılıyor.
     expect(find.textContaining('interstitial', skipOffstage: false), findsNothing);

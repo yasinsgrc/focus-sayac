@@ -13,6 +13,7 @@ import 'package:focussayac/domain/pomodoro/pomodoro_stats_providers.dart';
 import 'package:focussayac/features/countdown/countdown_screen.dart';
 import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
+import 'package:focussayac/services/ads/banner_ad_slot.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
@@ -127,6 +128,15 @@ void main() {
         tester.getRect(find.byKey(kFocusCtaKey)).bottom;
     expect(gap, greaterThanOrEqualTo(0),
         reason: 'ODAKLAN kaydırmanın sonunda alt çubuğun arkasında kalıyor');
+
+    // Karşı kontrol — kusurun **mekanizması**: pay yuvaya geri bağlanırsa
+    // reklam kapalıyken yine yok olur. Reklamın istendiği hâl ayrıca
+    // ölçülmüyor; orada yuva kendi yüksekliğini de eklediği için ayrılan alan
+    // yalnızca **artıyor**, yani bu iddiayı geçen yerleşim orada da geçiyor.
+    // (Ayrı bir `pumpWidget` yukarıdaki drift tuzağını tetikliyor.)
+    final BannerAdSlot slot = tester.widget<BannerAdSlot>(find.byType(BannerAdSlot));
+    expect(slot.bottomMargin, 0,
+        reason: 'çubuğun payı yuvaya değil yerleşime ait olmalı');
 
     // Denetleyici burada **kapatılmıyor**: gerekçe
     // `streak_protection_badge_test.dart`'ta.

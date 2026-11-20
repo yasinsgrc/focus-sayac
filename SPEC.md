@@ -309,9 +309,12 @@ Zorunlu uygulama:
 ## 7. REKLAM & SATIN ALMA (prototipin dediği gibi)
 
 ### 7.1 Banner
-Yalnızca **Ekran 02 (Geri sayım)** ve **Ekran 06 (İstatistik)**, `AnchoredAdaptiveBannerAdSize`.
-Ekran 03'te (odak) hiç istenmez. Onboarding/Kart/Rozet ekranlarında yok.
-Yüklenemezse aynı yükseklikte `SizedBox` → layout zıplamaz. `isPremium` ise hiç istenmez.
+Yalnızca **Ekran 02 (Geri sayım)**, `AnchoredAdaptiveBannerAdSize`. Ekran 06 (İstatistik)
+banner'sız. Ekran 03'te (odak) hiç istenmez. Onboarding/Kart/Rozet ekranlarında yok.
+Yuva **yüklenene kadar sıfır yükseklik**: reklam gelmediyse, yüklenemediyse, çevrimdışıysa,
+premium ise ya da onay yoksa hiç yer kaplamaz. Yüklendiğinde `AnimatedSize` (200 ms,
+`easeOutCubic`) ile açılır. Hata/yer tutucu gösterilmez. Yeniden deneme yalnızca ekran yeniden
+kurulduğunda (timer/bağlantı dinleyicisi yok). `isPremium` ise hiç istenmez. Gerekçe: DECISIONS R7.
 
 ### 7.2 Interstitial
 Prototip Ekran 09'da `interstitial · 3 pomodoroda 1` yazıyor → **v1'de açık.**
