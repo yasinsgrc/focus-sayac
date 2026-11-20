@@ -40,7 +40,7 @@ android {
     defaultConfig {
         applicationId = "com.focussayac.focussayac"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
