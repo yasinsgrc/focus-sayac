@@ -70,6 +70,13 @@ class AdService {
   Future<void> initialize() async {
     if (!_enabled || _initialized) return;
     _initialized = true;
+    // LGS kitlesi 13–14 yaş: reklam içeriği PG ile sınırlı (R5). SDK'nın
+    // yapılandırmayı ilk istekten önce görmesi için başlatmadan önce.
+    await _guarded(
+      () => MobileAds.instance.updateRequestConfiguration(
+        RequestConfiguration(maxAdContentRating: MaxAdContentRating.pg),
+      ),
+    );
     await _guarded(() => MobileAds.instance.initialize());
   }
 
