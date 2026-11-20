@@ -49,9 +49,16 @@ class ConsentService {
     // her koşulda çağrıldığı için `Completer` ile beklenebilir hâle
     // getiriliyor. Hata dalı da `complete` ediyor — çağıran için "onay
     // tazelenemedi" ile "tazelendi, form gerekmiyor" aynı sonuca çıkıyor.
+    //
+    // Karma kitle (R6): rıza yaşı altı etiketi (TFUA) herkese. Yalnızca SDK'yı
+    // (`AdService.initialize`, `AgeRestrictedTreatment.teen`) etiketleyip
+    // burayı boş bırakmak, AEA'da rıza yaşı altındaki kullanıcıya yetişkin
+    // onay formu göstermek demekti. Yan etki: [isPrivacyOptionsRequired]
+    // artık `false` dönüyor ve Ayarlar'daki gizlilik seçenekleri satırı
+    // görünmüyor — beklenen davranış.
     final Completer<void> updated = Completer<void>();
     consentInformation.requestConsentInfoUpdate(
-      ConsentRequestParameters(),
+      ConsentRequestParameters(tagForUnderAgeOfConsent: true),
       updated.complete,
       (FormError error) => updated.complete(),
     );

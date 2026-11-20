@@ -72,9 +72,19 @@ class AdService {
     _initialized = true;
     // LGS kitlesi 13–14 yaş: reklam içeriği PG ile sınırlı (R5). SDK'nın
     // yapılandırmayı ilk istekten önce görmesi için başlatmadan önce.
+    //
+    // Karma kitle (R6): yaş ekranı yok, bu yüzden **tüm** kullanıcılar yaş
+    // kısıtlı muamele görüyor. `teen`, `child` değil — `child` COPPA (13 yaş
+    // altı) kapsamı, en küçük kitlemiz 13–14. Eski `tagForUnderAgeOfConsent`/
+    // `tagForChildDirectedTreatment` 9.1.0'da kullanımdan kalktı. UMP tarafı
+    // `ConsentService.gatherConsent`ta aynı kararla etiketleniyor; ikisi
+    // birlikte olmak zorunda.
     await _guarded(
       () => MobileAds.instance.updateRequestConfiguration(
-        RequestConfiguration(maxAdContentRating: MaxAdContentRating.pg),
+        RequestConfiguration(
+          maxAdContentRating: MaxAdContentRating.pg,
+          ageRestrictedTreatment: AgeRestrictedTreatment.teen,
+        ),
       ),
     );
     await _guarded(() => MobileAds.instance.initialize());

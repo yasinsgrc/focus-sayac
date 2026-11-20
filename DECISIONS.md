@@ -4109,3 +4109,38 @@ duruyor. Koyu temaya geçilince koyu kartın üstünde açık temanın koyu izle
 kaldı, uygulama açılıp widget tazelenince düzeldi. Madde 44'ten eski ve daha
 geniş: merkezdeki rakam da (`palette.text`) aynı durumda — yani bu kusur izler
 düz hex'ken de vardı, yalnızca izlerde görünmüyordu.
+
+## R6 — Karma kitle yaş kısıtlı muamele
+
+**Tespit.** Uygulama karma kitleye hitap ediyor: YKS/KPSS/ALES adayları
+yetişkin, LGS adayları 13–14 yaşında, yani reşit değil.
+
+**Play Families'in iki seçeneği.** Karma kitlede Google Play ya (1) nötr bir
+yaş ekranı ile reşit olmayanları ayırıp yalnızca onlara yaş kısıtlı muamele,
+ya da (2) **tüm** kullanıcılara yaş kısıtlı muamele istiyor. Prototipte yaş
+ekranı yok ve tasarım dondurulmuş; yeni bir ekran eklemek yerine ikincisi
+seçildi.
+
+**`teen`, `child` değil.** `google_mobile_ads` 9.1.0'da
+`RequestConfiguration.ageRestrictedTreatment: AgeRestrictedTreatment.teen`
+kullanılıyor (`AdService.initialize`). `child` COPPA kapsamı (13 yaş altı);
+en küçük kitlemiz 13–14 olduğu için doğru değer `teen`. R5'teki
+`maxAdContentRating: MaxAdContentRating.pg` aynen kalıyor.
+
+**Kullanımdan kalkan API kullanılmadı.** `RequestConfiguration`
+üzerindeki `tagForUnderAgeOfConsent` ve `tagForChildDirectedTreatment` 9.1.0'da
+deprecated; `flutter analyze` uyarı verirdi. Yerine `ageRestrictedTreatment`.
+UMP tarafındaki `ConsentRequestParameters.tagForUnderAgeOfConsent` ise hâlâ
+geçerli ve `ConsentService.gatherConsent`ta `true` veriliyor.
+
+**İkisi birlikte.** Yalnızca SDK'yı etiketleyip UMP'yi boş bırakmak, AEA'da
+rıza yaşı altındaki kullanıcıya yetişkin onay formu göstermek demekti. İki
+dosyanın yorumu birbirine atıf yapıyor.
+
+**Beklenen yan etki.** Yaş kısıtlı modda
+`ConsentService.isPrivacyOptionsRequired()` `false` dönüyor; Ayarlar ekranı
+"Gizlilik seçenekleri" satırını yalnızca `true` iken gösterdiği için satır
+kayboluyor. Bu doğru davranış, hata değil — düzeltilmeyecek.
+
+**Gelir etkisi.** Kişiselleştirilmiş reklam kapanıyor; daha düşük eCPM
+bilinçli olarak kabul edildi.
