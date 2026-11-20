@@ -14,7 +14,6 @@ import '../../domain/stats/subject_breakdown.dart';
 import '../../domain/stats/weekly_summary.dart';
 import '../../domain/time/duration_formatter.dart';
 import '../../l10n/gen/app_localizations.dart';
-import '../../services/ads/banner_ad_slot.dart';
 import 'widgets/monthly_heatmap_card.dart';
 import 'widgets/subject_breakdown_card.dart';
 import 'widgets/weekly_focus_bar_painter.dart';
@@ -72,11 +71,6 @@ class StatsScreen extends StatelessWidget {
                       );
                     },
                   ),
-                ),
-                // SPEC.md §7.1: banner yalnızca Ekran 02 ve Ekran 06.
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 26),
-                  child: BannerAdSlot(),
                 ),
                 // Alt gezinme çubuğunun yeri, `BannerAdSlot`ın `bottomMargin`i
                 // yerine burada ayrılıyor: yuva kapandığında (reklam onayı yok

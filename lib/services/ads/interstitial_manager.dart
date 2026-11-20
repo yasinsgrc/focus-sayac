@@ -2,8 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../remote/remote_flags.dart';
-import '../storage/app_database.dart';
-import '../storage/daos/pomodoro_session_dao.dart';
 import '../storage/storage_providers.dart';
 import 'ad_service.dart';
 
@@ -12,29 +10,31 @@ final Provider<InterstitialManager> interstitialManagerProvider =
   return InterstitialManager(
     adService: ref.watch(adServiceProvider),
     prefs: ref.watch(sharedPreferencesProvider),
-    sessionDao: ref.watch(pomodoroSessionDaoProvider),
     flags: ref.watch(remoteFlagsProvider),
   );
 });
 
 /// SPEC.md §7.2: interstitial kurallarının **tek** yeri. Kuralları çağırana
 /// (şu an tek çağıran `PomodoroController._completeBreak`) dağıtmamak bilinçli
-/// — "3'te 1" ile "180 sn" birbirinden bağımsız iki sayaç ve ikisini iki ayrı
+/// — "günde 2" ile "180 sn" birbirinden bağımsız iki sayaç ve ikisini iki ayrı
 /// yerde tutmak, ileride ikinci bir tetik noktası eklendiğinde sessizce iki
 /// kat reklam demek olurdu.
 class InterstitialManager {
   InterstitialManager({
     required AdService adService,
     required SharedPreferences prefs,
-    required PomodoroSessionDao sessionDao,
     required RemoteFlags flags,
   })  : _adService = adService,
         _prefs = prefs,
-        _sessionDao = sessionDao,
         _flags = flags;
 
-  /// "3 tamamlanan pomodoroda 1" (SPEC §7.2).
-  static const int showEveryNCompletedFocusSessions = 3;
+  /// Yerel takvim günü başına en çok gösterim. Sayaç gece 00:00'da (cihaz
+  /// saatiyle) sıfırlanır. İki gösterim ayrı döngü kapanışlarına düşer —
+  /// arka arkaya interstitial AdMob politikasına aykırı.
+  static const int maxShowsPerDay = 2;
+
+  /// Bugün kaç kez gösterildiği, `yyyy-mm-dd|sayı` biçiminde (yerel tarih).
+  static const String dailyCountPrefsKey = 'interstitial_daily_count_v1';
 
   /// "İki gösterim arası min. 180 sn" (SPEC §7.2).
   static const Duration minIntervalBetweenShows = Duration(seconds: 180);
@@ -48,7 +48,6 @@ class InterstitialManager {
 
   final AdService _adService;
   final SharedPreferences _prefs;
-  final PomodoroSessionDao _sessionDao;
   final RemoteFlags _flags;
 
   /// Odak–mola **döngüsü kapanıp** uygulama `idle`'a döndüğünde çağrılır
@@ -78,7 +77,7 @@ class InterstitialManager {
     DateTime? now,
   }) async {
     if (otherPromptShown) return false;
-    if (!await _cycleEndIsEligible()) return false;
+    if (!await _cycleEndIsEligible(now)) return false;
 
     final DateTime nowUtc = (now ?? DateTime.now()).toUtc();
     final String? lastShownIso = _prefs.getString(lastShownPrefsKey);
@@ -91,26 +90,40 @@ class InterstitialManager {
     final bool shown = await _adService.showInterstitialIfReady();
     // Damga yalnızca gerçekten gösterildiyse atılıyor: yükleyemediğimiz bir
     // reklam 180 sn'lik pencereyi harcamamalı.
-    if (shown) await _prefs.setString(lastShownPrefsKey, nowUtc.toIso8601String());
+    if (shown) {
+      await _prefs.setString(lastShownPrefsKey, nowUtc.toIso8601String());
+      final DateTime local = now ?? DateTime.now();
+      await _prefs.setString(dailyCountPrefsKey, '${_dayKey(local)}|${_shownToday(local) + 1}');
+    }
     return shown;
   }
 
   /// Mola başlarken (`PomodoroController._completeFocus`) çağrılır: bu
   /// molanın kapanışı gösterim anı olacaksa reklamı **şimdiden**, arka planda
   /// yükler. Mola ekranında reklam gösterilmiyor, yalnızca yükleniyor.
-  Future<void> preloadForCycleEnd() async {
-    if (!await _cycleEndIsEligible()) return;
+  Future<void> preloadForCycleEnd({DateTime? now}) async {
+    if (!await _cycleEndIsEligible(now)) return;
     await _adService.preloadInterstitial();
   }
 
-  /// Uzak bayrak, reklam kapısı ve "3'te 1" sıklığı. Kapı sayaç
-  /// okumalarından **önce**: premium/onaysız kullanıcıda hiçbir istek
-  /// atılmadığı gibi boşuna DB de okunmuyor (SPEC §7 DoD).
-  Future<bool> _cycleEndIsEligible() async {
+  /// Uzak bayrak, reklam kapısı ve günlük tavan. Kapı tavandan **önce**:
+  /// premium/onaysız kullanıcıda hiçbir istek atılmıyor (SPEC §7 DoD).
+  Future<bool> _cycleEndIsEligible(DateTime? now) async {
     if (!_flags.interstitialEnabled) return false;
     if (!await _adService.canRequestAds()) return false;
-    final List<PomodoroSession> completed = await _sessionDao.getAllCompletedFocusSessions();
-    if (completed.isEmpty) return false;
-    return completed.length % showEveryNCompletedFocusSessions == 0;
+    return _shownToday(now ?? DateTime.now()) < maxShowsPerDay;
+  }
+
+  int _shownToday(DateTime now) {
+    final String? raw = _prefs.getString(dailyCountPrefsKey);
+    if (raw == null) return 0;
+    final List<String> parts = raw.split('|');
+    if (parts.length != 2 || parts[0] != _dayKey(now)) return 0;
+    return int.tryParse(parts[1]) ?? 0;
+  }
+
+  static String _dayKey(DateTime t) {
+    final DateTime l = t.toLocal();
+    return '${l.year}-${l.month}-${l.day}';
   }
 }

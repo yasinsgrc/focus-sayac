@@ -57,7 +57,7 @@ Bilinen `--dart-define` anahtarları:
 | Anahtar | Varsayılan | Kaynak |
 | --- | --- | --- |
 | `ADMOB_BANNER_ANDROID` / `ADMOB_BANNER_IOS` | Google test birimi | `lib/services/ads/ad_unit_ids.dart` |
-| `ADMOB_INTERSTITIAL_ANDROID` / `ADMOB_INTERSTITIAL_IOS` | Google test birimi | aynı dosya |
+| `ADMOB_INTERSTITIAL_ANDROID` / `ADMOB_INTERSTITIAL_IOS` | Android release: Odaq birimi; diğerleri: Google test birimi | aynı dosya |
 | `EXAM_DATES_REMOTE_URL` | boş (ağa hiç çıkmaz) | `lib/services/storage/exam_source_service.dart` |
 
 AdMob **App ID**'si `--dart-define` ile verilemez, manifest'te olmak zorunda:

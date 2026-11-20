@@ -21,7 +21,7 @@ abstract final class AdUnitIds {
 
   static const String interstitialAndroid = String.fromEnvironment(
     'ADMOB_INTERSTITIAL_ANDROID',
-    defaultValue: 'ca-app-pub-3940256099942544/1033173712',
+    defaultValue: _interstitialAndroidTest,
   );
 
   static const String interstitialIos = String.fromEnvironment(
@@ -34,6 +34,16 @@ abstract final class AdUnitIds {
   static String get banner =>
       defaultTargetPlatform == TargetPlatform.iOS ? bannerIos : bannerAndroid;
 
-  static String get interstitial =>
-      defaultTargetPlatform == TargetPlatform.iOS ? interstitialIos : interstitialAndroid;
+  /// Odaq'ın gerçek "Döngü sonu" geçiş reklamı birimi (AdMob). Yalnızca
+  /// release derlemesinde kullanılır; debug/profil test birimiyle kalır.
+  static const String interstitialAndroidProduction = 'ca-app-pub-7880867934531229/7676652252';
+
+  static String get interstitial {
+    if (defaultTargetPlatform == TargetPlatform.iOS) return interstitialIos;
+    // `--dart-define` ile verilen değer her zaman öncelikli.
+    if (interstitialAndroid != _interstitialAndroidTest) return interstitialAndroid;
+    return kReleaseMode ? interstitialAndroidProduction : interstitialAndroid;
+  }
+
+  static const String _interstitialAndroidTest = 'ca-app-pub-3940256099942544/1033173712';
 }

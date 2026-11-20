@@ -43,17 +43,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- Google'ın resmî test App ID'si. Gerçek AdMob App ID yayından önce
-             buraya girilir; AdMob hesabı açılana kadar test kimliği kalıyor
-             ("kendi reklamına tıklama" trafiği üretmemek için). Reklam
-             BİRİMİ kimlikleri koda gömülü değil, `dart-define` bayrağıyla
-             geliyor
-             (`lib/services/ads/ad_unit_ids.dart`); App ID manifest'te olmak
-             zorunda olduğu için tek elle değişen değer bu satır.
-             Yayın adımları: docs/play/RELEASE.md -->
+        <!-- Odaq'ın gerçek AdMob App ID'si. Reklam BİRİMİ kimliği
+             `lib/services/ads/ad_unit_ids.dart`ta: debug/profil derlemeleri
+             Google'ın test birimini kullanır, yalnızca release gerçek birimi
+             ister ("kendi reklamına tıklama" trafiği üretmemek için). -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-7880867934531229~1064684431" />
         <receiver
             android:exported="false"
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />

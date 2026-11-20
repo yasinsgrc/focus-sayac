@@ -491,10 +491,9 @@ void main() {
       await controller.tick();
       expect(container.read(pomodoroControllerProvider), isA<PomodoroIdle>());
       await _waitForSessionCount(container, cycle * 2);
-      if (cycle < 3) expect(adService.interstitialShows, 0);
+      // Günün ilk döngüsü gösteriyor; sonrakiler 180 sn penceresinde.
+      expect(adService.interstitialShows, 1);
     }
-
-    expect(adService.interstitialShows, 1);
   });
 
   test('odak tamamlanışı dönüş bildirimini yeniden kuruyor', () async {

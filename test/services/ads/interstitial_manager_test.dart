@@ -1,33 +1,14 @@
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:focussayac/services/ads/interstitial_manager.dart';
 import 'package:focussayac/services/remote/remote_flags.dart';
-import 'package:focussayac/services/storage/app_database.dart';
-import 'package:focussayac/services/storage/storage_enums.dart';
 
 import '../../support/recording_ad_service.dart';
 
-/// Sabit bir "şimdi": 180 sn kuralı testin gerçek saatine bağlı kalmasın.
-final DateTime _now = DateTime.utc(2026, 3, 1, 20);
-
-Future<void> _completeFocusSessions(AppDatabase database, int count) async {
-  for (int i = 0; i < count; i++) {
-    final DateTime startedAt = _now.subtract(Duration(minutes: 30 * (count - i)));
-    final int id = await database.pomodoroSessionDao.startSession(
-      examId: null,
-      type: SessionType.focus,
-      startedAt: startedAt,
-      plannedDurationSec: 25 * 60,
-    );
-    await database.pomodoroSessionDao.finishSession(
-      id: id,
-      completed: true,
-      endedAt: startedAt.add(const Duration(minutes: 25)),
-    );
-  }
-}
+/// Sabit bir "şimdi" (yerel saat): günlük tavan ve 180 sn kuralı testin
+/// gerçek saatine bağlı kalmasın.
+final DateTime _now = DateTime(2026, 3, 1, 20);
 
 /// Gerçek akışın sırası: mola başlarken ön yükleme, mola bitince gösterim.
 /// Ön yükleme SDK yüklemesini beklemeden döndüğü için arada olay kuyruğu
@@ -38,7 +19,7 @@ Future<bool> _closeCycle(
   required DateTime now,
   bool canShowNow = true,
 }) async {
-  await manager.preloadForCycleEnd();
+  await manager.preloadForCycleEnd(now: now);
   await pumpEventQueue();
   return manager.maybeShowOnCycleComplete(
     otherPromptShown: otherPromptShown,
@@ -50,43 +31,55 @@ Future<bool> _closeCycle(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late AppDatabase database;
   late SharedPreferences prefs;
 
   InterstitialManager managerWith(RecordingAdService adService) {
     return InterstitialManager(
       adService: adService,
       prefs: prefs,
-      sessionDao: database.pomodoroSessionDao,
       flags: RemoteFlags(prefs),
     );
   }
 
   setUp(() async {
-    database = AppDatabase.forTesting(NativeDatabase.memory());
-    await database.appSettingsDao.getSettings();
     SharedPreferences.setMockInitialValues(<String, Object>{});
     prefs = await SharedPreferences.getInstance();
   });
 
-  tearDown(() async {
-    await database.close();
-  });
-
-  // SPEC.md §7.2: "3 tamamlanan pomodoroda 1".
-  test('ilk iki döngüde gösterilmiyor, 3. tamamlanan pomodoroda gösteriliyor', () async {
+  test('günde en çok 2 gösterim, ayrı döngülerde', () async {
     final RecordingAdService adService = RecordingAdService();
     final InterstitialManager manager = managerWith(adService);
 
-    await _completeFocusSessions(database, 1);
-    expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
-
-    await _completeFocusSessions(database, 1);
-    expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
-
-    await _completeFocusSessions(database, 1);
     expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isTrue);
-    expect(adService.interstitialShows, 1);
+    final DateTime second = _now.add(const Duration(minutes: 30));
+    expect(await _closeCycle(manager, otherPromptShown: false, now: second), isTrue);
+    final DateTime third = _now.add(const Duration(minutes: 60));
+    expect(await _closeCycle(manager, otherPromptShown: false, now: third), isFalse);
+    expect(adService.interstitialShows, 2);
+  });
+
+  test('tavan dolunca o gün ön yükleme de yapılmıyor', () async {
+    final RecordingAdService adService = RecordingAdService();
+    final InterstitialManager manager = managerWith(adService);
+
+    await _closeCycle(manager, otherPromptShown: false, now: _now);
+    await _closeCycle(manager, otherPromptShown: false, now: _now.add(const Duration(minutes: 30)));
+    final int requests = adService.totalRequests;
+
+    await manager.preloadForCycleEnd(now: _now.add(const Duration(minutes: 60)));
+    expect(adService.totalRequests, requests);
+  });
+
+  test('sayaç gece 00:00da sıfırlanıyor', () async {
+    final RecordingAdService adService = RecordingAdService();
+    final InterstitialManager manager = managerWith(adService);
+    final DateTime lateNight = DateTime(2026, 3, 1, 23, 50);
+
+    expect(await _closeCycle(manager, otherPromptShown: false, now: lateNight.subtract(const Duration(hours: 1))), isTrue);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: lateNight), isTrue);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: DateTime(2026, 3, 1, 23, 59, 59)), isFalse);
+    expect(await _closeCycle(manager, otherPromptShown: false, now: DateTime(2026, 3, 2, 0, 1)), isTrue);
+    expect(adService.interstitialShows, 3);
   });
 
   // SPEC.md §7.2: "iki gösterim arası min. 180 sn".
@@ -94,10 +87,8 @@ void main() {
     final RecordingAdService adService = RecordingAdService();
     final InterstitialManager manager = managerWith(adService);
 
-    await _completeFocusSessions(database, 3);
     expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isTrue);
 
-    await _completeFocusSessions(database, 3);
     final DateTime tooSoon = _now.add(const Duration(seconds: 179));
     expect(await _closeCycle(manager, otherPromptShown: false, now: tooSoon), isFalse);
     expect(adService.interstitialShows, 1);
@@ -114,8 +105,6 @@ void main() {
     final RecordingAdService adService = RecordingAdService();
     final InterstitialManager manager = managerWith(adService);
 
-    await _completeFocusSessions(database, 3);
-
     expect(await _closeCycle(manager, otherPromptShown: true, now: _now), isFalse);
     expect(adService.interstitialShows, 0);
     // Bastırma pencereyi de harcamamalı: bir sonraki döngü gösterebilmeli.
@@ -128,8 +117,6 @@ void main() {
     final InterstitialManager manager = managerWith(adService);
     await RemoteFlags(prefs).setInterstitialEnabled(false);
 
-    await _completeFocusSessions(database, 3);
-
     expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
     expect(adService.totalRequests, 0);
   });
@@ -139,8 +126,6 @@ void main() {
     final RecordingAdService adService = RecordingAdService(isPremium: true);
     final InterstitialManager manager = managerWith(adService);
 
-    await _completeFocusSessions(database, 3);
-
     expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
     expect(adService.totalRequests, 0);
   });
@@ -149,7 +134,6 @@ void main() {
     final RecordingAdService adService = RecordingAdService(interstitialSucceeds: false);
     final InterstitialManager manager = managerWith(adService);
 
-    await _completeFocusSessions(database, 3);
     expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
     expect(adService.interstitialRequests, 1);
     expect(adService.interstitialShows, 0);
@@ -161,8 +145,6 @@ void main() {
   test('molada ön yükleme yapılmadıysa kapanışta istek de gösterim de yok', () async {
     final RecordingAdService adService = RecordingAdService();
     final InterstitialManager manager = managerWith(adService);
-
-    await _completeFocusSessions(database, 3);
 
     expect(
       await manager.maybeShowOnCycleComplete(otherPromptShown: false, canShowNow: () => true, now: _now),
@@ -177,37 +159,8 @@ void main() {
     final RecordingAdService adService = RecordingAdService();
     final InterstitialManager manager = managerWith(adService);
 
-    await _completeFocusSessions(database, 3);
-
     expect(await _closeCycle(manager, otherPromptShown: false, now: _now, canShowNow: false), isFalse);
     expect(adService.interstitialShows, 0);
     expect(prefs.getString(InterstitialManager.lastShownPrefsKey), isNull);
-  });
-
-  test('gösterim anı olmayacak molada ön yükleme yapılmıyor', () async {
-    final RecordingAdService adService = RecordingAdService();
-    final InterstitialManager manager = managerWith(adService);
-
-    await _completeFocusSessions(database, 2);
-    await manager.preloadForCycleEnd();
-
-    expect(adService.totalRequests, 0);
-  });
-
-  test('tamamlanmamış odak seansları sayıya girmiyor', () async {
-    final RecordingAdService adService = RecordingAdService();
-    final InterstitialManager manager = managerWith(adService);
-
-    await _completeFocusSessions(database, 2);
-    final int cancelled = await database.pomodoroSessionDao.startSession(
-      examId: null,
-      type: SessionType.focus,
-      startedAt: _now.subtract(const Duration(minutes: 10)),
-      plannedDurationSec: 25 * 60,
-    );
-    await database.pomodoroSessionDao.finishSession(id: cancelled, completed: false, endedAt: _now);
-
-    expect(await _closeCycle(manager, otherPromptShown: false, now: _now), isFalse);
-    expect(adService.totalRequests, 0);
   });
 }
