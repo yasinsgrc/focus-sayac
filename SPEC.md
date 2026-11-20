@@ -331,9 +331,12 @@ değiştirmiyor. Molayı `ODAĞA DÖN` ile erken bitirmek reklam çıkarmaz: o d
 niyetidir ve değerlendirme istemi de aynı gerekçeyle orada tetiklenmiyor.
 
 ### 7.3 Satın alma
-Prototip "Reklamları kaldır · **yakında**" gösteriyor → v1'de UI **pasif**.
-`purchase_service.dart` ve `pro_lifetime` ürün akışı **tam kodlanır**, satır pasif görünür.
-Bir sonraki sürümde tek satır değişiklikle açılır. `isPremium == true` iken hiçbir reklam isteği atılmaz.
+`pro_lifetime` tek seferlik managed product, **aktif**. Açılışta `PurchaseService.start()` ve
+ardından `restorePurchases()` (açılışı bloklamaz). Ayarlardaki "Reklamları kaldır" satırı:
+premium → "PRO ✓" (pasif) · ürün yüklenmedi → gizli · hazır → etiket + `ProductDetails.price`
+(mağazanın yerel biçimi, fiyat koda yazılmaz) · istek gönderilirken spinner. "Satın almayı geri
+yükle" satırı sonucu bildirir. Sunucu/makbuz doğrulaması yok, Play gerçeğin kaynağı; `isPremium`
+hiçbir koşulda geri alınmaz. `isPremium == true` iken hiçbir reklam isteği atılmaz.
 
 ---
 

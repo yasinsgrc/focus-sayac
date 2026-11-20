@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
+import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/purchase/purchase_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 
@@ -28,6 +29,10 @@ class _FakeInAppPurchase implements InAppPurchase {
 
   bool available = true;
   bool restoreCalled = false;
+
+  /// Hesapta önceden satın alınmış işlemler; `restorePurchases` bunları
+  /// akışa `restored` olarak yayınlar (Play'in davranışı).
+  final List<PurchaseDetails> owned = <PurchaseDetails>[];
   PurchaseParam? boughtParam;
 
   @override
@@ -66,6 +71,7 @@ class _FakeInAppPurchase implements InAppPurchase {
   @override
   Future<void> restorePurchases({String? applicationUserName}) async {
     restoreCalled = true;
+    if (owned.isNotEmpty) controller.add(List<PurchaseDetails>.of(owned));
   }
 
   @override
@@ -198,5 +204,47 @@ void main() {
     await service.restorePurchases();
 
     expect(iap.restoreCalled, isTrue);
+  });
+
+  Future<void> drainStream() async {
+    for (int i = 0; i < 8; i++) {
+      await Future<void>.delayed(Duration.zero);
+    }
+  }
+
+  test('restorePurchases sonrası restored durumu premium veriyor', () async {
+    iap.owned.add(_purchase(kProLifetimeProductId, PurchaseStatus.restored));
+    await service.start();
+
+    await service.restorePurchases();
+    await drainStream();
+
+    expect(await isPremium(), isTrue);
+    expect(iap.completedPurchases, hasLength(1));
+  });
+
+  test('hesapta satın alma yoksa geri yükleme premium vermiyor', () async {
+    await service.start();
+
+    await service.restorePurchases();
+    await drainStream();
+
+    expect(await isPremium(), isFalse);
+  });
+
+  // SPEC.md §7.3: satın almanın yazdığı bayrak reklam kapısını kapatıyor —
+  // banner da geçiş reklamı da `AdService.canRequestAds`ten geçiyor.
+  test('satın alma sonrası AdService hiçbir reklam istemiyor', () async {
+    final AdService adService = AdService(
+      readIsPremium: () async => (await database.appSettingsDao.getSettings()).isPremium,
+      readConsentAllowsAds: () async => true,
+    );
+    expect(await adService.canRequestAds(), isTrue);
+
+    await service.handlePurchaseUpdates(<PurchaseDetails>[
+      _purchase(kProLifetimeProductId, PurchaseStatus.purchased),
+    ]);
+
+    expect(await adService.canRequestAds(), isFalse);
   });
 }

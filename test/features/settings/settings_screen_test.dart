@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:focussayac/core/icons/app_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +16,7 @@ import 'package:focussayac/main.dart';
 import 'package:focussayac/services/ads/ad_service.dart';
 import 'package:focussayac/services/consent/consent_service.dart';
 import 'package:focussayac/services/notifications/notification_service.dart';
+import 'package:focussayac/services/purchase/purchase_service.dart';
 import 'package:focussayac/services/storage/app_database.dart';
 import 'package:focussayac/services/storage/storage_enums.dart';
 import 'package:focussayac/services/storage/storage_providers.dart';
@@ -46,7 +50,13 @@ Future<AppDatabase> _newDatabase(WidgetTester tester) {
   });
 }
 
-Widget _appWith(AppDatabase database, SharedPreferences prefs, Widget home, {ConsentService? consent}) {
+Widget _appWith(
+  AppDatabase database,
+  SharedPreferences prefs,
+  Widget home, {
+  ConsentService? consent,
+  PurchaseService? purchase,
+}) {
   return ProviderScope(
     overrides: [
       appDatabaseProvider.overrideWithValue(database),
@@ -54,6 +64,7 @@ Widget _appWith(AppDatabase database, SharedPreferences prefs, Widget home, {Con
       adServiceProvider.overrideWithValue(AdService.disabled()),
       consentServiceProvider.overrideWithValue(consent ?? ConsentService.disabled()),
       notificationServiceProvider.overrideWithValue(NotificationService.disabled()),
+      purchaseServiceProvider.overrideWithValue(purchase ?? _FakePurchaseService(database)),
       // Faz 10: başlangıç rotası `onboardingCompleted` bayrağına bakıyor —
       // bu dosyanın testleri onboarding'i tamamlamış kullanıcıyı doğruluyor.
       onboardingCompletedAtLaunchProvider.overrideWithValue(true),
@@ -70,14 +81,32 @@ void _usePhoneSurface(WidgetTester tester) {
 }
 
 /// Ekran 07'yi tek başına (router olmadan) ayağa kaldırır.
-Future<AppDatabase> _pumpSettings(WidgetTester tester, {ConsentService? consent}) async {
+Future<AppDatabase> _pumpSettings(
+  WidgetTester tester, {
+  ConsentService? consent,
+  PurchaseService Function(AppDatabase database)? purchase,
+  bool premium = false,
+}) async {
   _usePhoneSurface(tester);
   final AppDatabase database = await _newDatabase(tester);
+  if (premium) {
+    final AppDatabase db = database;
+    await _read(
+      tester,
+      () => db.appSettingsDao.updateSettings(const AppSettingsTableCompanion(isPremium: Value<bool>(true))),
+    );
+  }
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences prefs = await SharedPreferences.getInstance();
 
   await tester.pumpWidget(
-    _appWith(database, prefs, localizedTestApp(const SettingsScreen()), consent: consent),
+    _appWith(
+      database,
+      prefs,
+      localizedTestApp(const SettingsScreen()),
+      consent: consent,
+      purchase: purchase?.call(database),
+    ),
   );
   await _settle(tester);
   return database;
@@ -110,6 +139,56 @@ class _PrivacyRequiredConsentService extends ConsentService {
   @override
   Future<void> showPrivacyOptionsForm() async => formShown++;
 }
+
+/// `InAppPurchase.instance` testte billing bağlantısı açmaya çalışıyor;
+/// sahte servis mağazaya hiç dokunmuyor.
+class _NoStore implements InAppPurchase {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Mağaza kanalı olmadan ayarlar satırlarının durumlarını süren sahte
+/// servis. Varsayılanı "mağaza yok" (ürün `null`).
+class _FakePurchaseService extends PurchaseService {
+  _FakePurchaseService(this.database, {this.product, this.ownedOnRestore = false})
+      : super(appSettingsDao: database.appSettingsDao, inAppPurchase: _NoStore());
+
+  final AppDatabase database;
+  final ProductDetails? product;
+  final bool ownedOnRestore;
+
+  /// Tamamlanana kadar satın alma isteği "gönderiliyor" durumunda kalır.
+  Completer<bool>? buyGate;
+  int buyCalls = 0;
+  int restoreCalls = 0;
+
+  @override
+  Future<ProductDetails?> loadProLifetimeProduct() async => product;
+
+  @override
+  Future<bool> buyProLifetime() {
+    buyCalls++;
+    return buyGate?.future ?? Future<bool>.value(true);
+  }
+
+  @override
+  Future<void> restorePurchases() async {
+    restoreCalls++;
+    if (ownedOnRestore) {
+      await database.appSettingsDao.updateSettings(const AppSettingsTableCompanion(isPremium: Value<bool>(true)));
+    }
+  }
+}
+
+/// Mağazanın biçimlediği fiyat metni; ekran bunu olduğu gibi göstermeli.
+final ProductDetails _proProduct = ProductDetails(
+  id: kProLifetimeProductId,
+  title: 'Reklamsız',
+  description: 'Kalıcı reklamsız sürüm',
+  price: 'TRY 12.34',
+  rawPrice: 12.34,
+  currencyCode: 'TRY',
+);
 
 void main() {
   testWidgets('süre slider\'ı değişince ayar veritabanına yazılıyor', (WidgetTester tester) async {
@@ -393,5 +472,97 @@ void main() {
     expect(consent.formShown, 1);
 
     await _disposeTree(tester);
+  });
+
+  group('Reklamları kaldır satırı', () {
+    testWidgets('ürün yüklenmediyse satır gizli', (WidgetTester tester) async {
+      await _pumpSettings(tester);
+      expect(find.text('Reklamları kaldır'), findsNothing);
+      await _disposeTree(tester);
+    });
+
+    testWidgets('ürün hazırsa etiket ve mağazanın fiyatı', (WidgetTester tester) async {
+      await _pumpSettings(tester, purchase: (AppDatabase db) => _FakePurchaseService(db, product: _proProduct));
+      expect(find.text('Reklamları kaldır'), findsOneWidget);
+      expect(find.text('TRY 12.34'), findsOneWidget);
+      await _disposeTree(tester);
+    });
+
+    testWidgets('istek gönderilirken spinner, çift dokunuş engelli', (WidgetTester tester) async {
+      late _FakePurchaseService purchase;
+      await _pumpSettings(
+        tester,
+        purchase: (AppDatabase db) =>
+            purchase = _FakePurchaseService(db, product: _proProduct)..buyGate = Completer<bool>(),
+      );
+
+      await tester.ensureVisible(find.byKey(kRemoveAdsRowKey));
+      await tester.tap(find.byKey(kRemoveAdsRowKey));
+      await tester.pump();
+      expect(
+        find.descendant(of: find.byKey(kRemoveAdsRowKey), matching: find.byType(CircularProgressIndicator)),
+        findsOneWidget,
+      );
+      expect(find.text('TRY 12.34'), findsNothing);
+
+      await tester.tap(find.byKey(kRemoveAdsRowKey));
+      await tester.pump();
+      expect(purchase.buyCalls, 1);
+
+      purchase.buyGate!.complete(true);
+      await _settle(tester);
+      expect(find.text('TRY 12.34'), findsOneWidget);
+      await _disposeTree(tester);
+    });
+
+    testWidgets('premium ise PRO ve satır pasif', (WidgetTester tester) async {
+      late _FakePurchaseService purchase;
+      await _pumpSettings(
+        tester,
+        premium: true,
+        purchase: (AppDatabase db) => purchase = _FakePurchaseService(db, product: _proProduct),
+      );
+
+      expect(find.text('PRO'), findsOneWidget);
+      expect(find.text('TRY 12.34'), findsNothing);
+      await tester.ensureVisible(find.byKey(kRemoveAdsRowKey));
+      await tester.tap(find.byKey(kRemoveAdsRowKey));
+      await tester.pump();
+      expect(purchase.buyCalls, 0);
+      await _disposeTree(tester);
+    });
+  });
+
+  group('Satın almayı geri yükle', () {
+    testWidgets('hak geri gelirse "Pro geri yüklendi"', (WidgetTester tester) async {
+      late _FakePurchaseService purchase;
+      await _pumpSettings(
+        tester,
+        purchase: (AppDatabase db) => purchase = _FakePurchaseService(db, ownedOnRestore: true),
+      );
+
+      await tester.ensureVisible(find.byKey(kRestorePurchasesRowKey));
+      await tester.tap(find.byKey(kRestorePurchasesRowKey));
+      await _settle(tester);
+
+      expect(purchase.restoreCalls, 1);
+      expect(find.text('Pro geri yüklendi'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      await _disposeTree(tester);
+    });
+
+    testWidgets('hak yoksa "Bu hesapta satın alma bulunamadı"', (WidgetTester tester) async {
+      await _pumpSettings(tester);
+
+      await tester.ensureVisible(find.byKey(kRestorePurchasesRowKey));
+      await tester.tap(find.byKey(kRestorePurchasesRowKey));
+      await _settle(tester);
+      await tester.pump(kRestoreResultTimeout);
+      await tester.pump();
+
+      expect(find.text('Bu hesapta satın alma bulunamadı'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      await _disposeTree(tester);
+    });
   });
 }

@@ -19,6 +19,7 @@ import 'services/ads/ad_service.dart';
 import 'services/consent/consent_service.dart';
 import 'services/notifications/notification_launch_handler.dart';
 import 'services/notifications/notification_service.dart';
+import 'services/purchase/purchase_service.dart';
 import 'services/storage/app_database.dart';
 import 'services/storage/exam_source_service.dart';
 import 'services/storage/storage_enums.dart';
@@ -79,6 +80,15 @@ Future<void> main() async {
     readConsentAllowsAds: consentService.canRequestAds,
   );
   unawaited(adService.initialize());
+  // SPEC.md §7.3: satın alma akışı açılışta dinlenmeli — mağaza tarafından
+  // başlatılan ve önceki oturumdan tamamlanmamış işlemler buradan geliyor
+  // (eklentinin şartı). Ardından geri yükleme, cihaz değiştiren kullanıcının
+  // hakkını sessizce geri verir. Açılışı bloklamıyor.
+  final PurchaseService purchaseService = PurchaseService(appSettingsDao: database.appSettingsDao);
+  unawaited(() async {
+    await purchaseService.start();
+    await purchaseService.restorePurchases();
+  }());
   // Başlangıç rotasının (Ekran 01 mi Ekran 02 mi) senkron bilmesi gereken tek
   // değer; `appSettingsDaoProvider` yerine `database` doğrudan okunuyor çünkü
   // Riverpod ağacı henüz kurulmadı (`_rescheduleStreakRiskReminder` ile aynı
@@ -92,6 +102,7 @@ Future<void> main() async {
         notificationServiceProvider.overrideWithValue(notificationService),
         consentServiceProvider.overrideWithValue(consentService),
         adServiceProvider.overrideWithValue(adService),
+        purchaseServiceProvider.overrideWithValue(purchaseService),
         onboardingCompletedAtLaunchProvider.overrideWithValue(launchSettings.onboardingCompleted),
         themeModeAtLaunchProvider.overrideWithValue(launchSettings.themeMode),
       ],

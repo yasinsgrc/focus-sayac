@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:focussayac/core/icons/app_icons.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -14,6 +15,7 @@ import '../../domain/settings/app_data_reset_service.dart';
 import '../../domain/settings/settings_providers.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/consent/consent_service.dart';
+import '../../services/purchase/purchase_service.dart';
 import '../../services/storage/app_database.dart';
 import '../../services/storage/storage_enums.dart';
 import '../../services/storage/storage_providers.dart';
@@ -350,6 +352,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 10),
           RiseIn(delay: RiseIn.step * 3, child: _RemoveAdsRow(colors: colors)),
+          const SizedBox(height: 10),
+          RiseIn(delay: RiseIn.step * 3, child: _RestorePurchasesRow(colors: colors)),
           const SizedBox(height: 12),
           RiseIn(
             delay: RiseIn.step * 4,
@@ -566,41 +570,226 @@ class _SettingsRow extends StatelessWidget {
   }
 }
 
-/// SPEC §7.3 — satın alma akışı Faz 11'de kodlanacak, satır o zamana kadar
-/// prototipteki gibi **pasif** görünüyor ("yakında" rozetiyle).
-class _RemoveAdsRow extends StatelessWidget {
+/// `pro_lifetime` ürün bilgisi. Mağaza yoksa / ülke desteklemiyorsa `null`
+/// ve "Reklamları kaldır" satırı gizlenir.
+final FutureProvider<ProductDetails?> _proProductProvider = FutureProvider.autoDispose<ProductDetails?>(
+  (Ref ref) => ref.watch(purchaseServiceProvider).loadProLifetimeProduct(),
+);
+
+/// Geri yüklemeden sonra hakkın veritabanına düşmesi için beklenen üst sınır.
+/// Sonuç `PurchaseService.handlePurchaseUpdates` üzerinden asenkron geliyor.
+const Duration kRestoreResultTimeout = Duration(seconds: 3);
+
+/// Testler satırları bu anahtarlarla buluyor.
+const Key kRemoveAdsRowKey = Key('remove-ads-row');
+const Key kRestorePurchasesRowKey = Key('restore-purchases-row');
+
+/// SPEC §7.3 — "Reklamları kaldır". Durumlar: premium → "PRO ✓" (pasif);
+/// ürün yok → gizli; ürün hazır → etiket + mağazanın yerel fiyatı; istek
+/// gönderilirken spinner (çift dokunuş engelli). Fiyat koda yazılmıyor,
+/// `ProductDetails.price` Play'in yerel biçimli metni.
+class _RemoveAdsRow extends ConsumerStatefulWidget {
   const _RemoveAdsRow({required this.colors});
 
   final AppColors colors;
 
   @override
+  ConsumerState<_RemoveAdsRow> createState() => _RemoveAdsRowState();
+}
+
+class _RemoveAdsRowState extends ConsumerState<_RemoveAdsRow> {
+  bool _pending = false;
+
+  Future<void> _buy() async {
+    if (_pending) return;
+    setState(() => _pending = true);
+    try {
+      // Sonuç akıştan gelir ve `isPremium`i yazar; burada yalnızca isteğin
+      // gönderilmesi bekleniyor.
+      await ref.read(purchaseServiceProvider).buyProLifetime();
+    } finally {
+      if (mounted) setState(() => _pending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppColors colors = widget.colors;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool isPremium = ref.watch(appSettingsProvider).value?.isPremium ?? false;
+    if (isPremium) {
+      return _PurchaseRowFrame(
+        key: kRemoveAdsRowKey,
+        colors: colors,
+        label: l10n.settingsRemoveAds,
+        labelColor: colors.neutral400,
+        trailing: _Pill(
+          colors: colors,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                l10n.settingsProActive,
+                style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.mint),
+              ),
+              const SizedBox(width: 4),
+              // "✓" Poppins subset'inde yok; metin olarak yazılsa sessizce
+              // Roboto'ya düşerdi. Phosphor'un check glifi kullanılıyor.
+              Icon(AppIconsRegular.check, size: 11, color: colors.mint),
+            ],
+          ),
+        ),
+      );
+    }
+    final ProductDetails? product = ref.watch(_proProductProvider).value;
+    if (product == null) return const SizedBox.shrink(key: kRemoveAdsRowKey);
+    return _PurchaseRowFrame(
+      key: kRemoveAdsRowKey,
+      colors: colors,
+      label: l10n.settingsRemoveAds,
+      labelColor: colors.text,
+      onTap: _pending ? null : _buy,
+      trailing: _pending
+          ? _RowSpinner(colors: colors)
+          : _Pill(
+              colors: colors,
+              child: Text(
+                product.price,
+                style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.ember),
+              ),
+            ),
+    );
+  }
+}
+
+/// Cihaz değiştiren kullanıcı için "Satın almayı geri yükle".
+class _RestorePurchasesRow extends ConsumerStatefulWidget {
+  const _RestorePurchasesRow({required this.colors});
+
+  final AppColors colors;
+
+  @override
+  ConsumerState<_RestorePurchasesRow> createState() => _RestorePurchasesRowState();
+}
+
+class _RestorePurchasesRowState extends ConsumerState<_RestorePurchasesRow> {
+  bool _pending = false;
+
+  Future<void> _restore() async {
+    if (_pending) return;
+    setState(() => _pending = true);
+    bool restored = false;
+    try {
+      await ref.read(purchaseServiceProvider).restorePurchases();
+      // Geri yüklenen işlem akıştan asenkron düşüyor; bayrağın yazılması
+      // kısa bir süre bekleniyor.
+      restored = await ref
+          .read(appSettingsDaoProvider)
+          .watchSettings()
+          .map((AppSettingsTableData settings) => settings.isPremium)
+          .firstWhere((bool premium) => premium, orElse: () => false)
+          .timeout(kRestoreResultTimeout, onTimeout: () => false);
+    } finally {
+      if (mounted) setState(() => _pending = false);
+    }
+    if (!mounted) return;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    showAppToast(
+      context,
+      message: restored ? l10n.settingsRestoreSuccess : l10n.settingsRestoreNotFound,
+      tone: restored ? AppToastTone.success : AppToastTone.error,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppColors colors = widget.colors;
+    return _PurchaseRowFrame(
+      key: kRestorePurchasesRowKey,
+      colors: colors,
+      icon: AppIconsRegular.downloadSimple,
+      label: AppLocalizations.of(context).settingsRestorePurchases,
+      labelColor: colors.text,
+      onTap: _pending ? null : _restore,
+      trailing: _pending ? _RowSpinner(colors: colors) : null,
+    );
+  }
+}
+
+/// Prototipteki "Reklamları kaldır" satırının çerçevesi; geri yükleme satırı
+/// da aynı görsel dili kullanıyor.
+class _PurchaseRowFrame extends StatelessWidget {
+  const _PurchaseRowFrame({
+    super.key,
+    required this.colors,
+    required this.label,
+    required this.labelColor,
+    this.icon = AppIconsDuotone.sealCheck,
+    this.trailing,
+    this.onTap,
+  });
+
+  final AppColors colors;
+  final String label;
+  final Color labelColor;
+  final IconData icon;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final BorderRadius radius = BorderRadius.circular(24);
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+          decoration: BoxDecoration(borderRadius: radius, border: Border.all(color: colors.borderStrong)),
+          child: Row(
+            children: <Widget>[
+              Icon(icon, size: 21, color: colors.ember.withValues(alpha: 0.75)),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Text(label, style: AppTypography.label(fontSize: AppTextSize.md, color: labelColor)),
+              ),
+              ?trailing,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.colors, required this.child});
+
+  final AppColors colors;
+  final Widget child;
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colors.borderStrong),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(AppIconsDuotone.sealCheck, size: 21, color: colors.ember.withValues(alpha: 0.75)),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Text(
-              AppLocalizations.of(context).settingsRemoveAds,
-              style: AppTypography.label(fontSize: AppTextSize.md, color: colors.neutral400),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(color: colors.fillFaint, borderRadius: BorderRadius.circular(999)),
-            child: Text(
-              AppLocalizations.of(context).settingsComingSoon,
-              style: AppTypography.kicker(fontSize: AppTextSize.kicker, color: colors.neutral500),
-            ),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(color: colors.fillFaint, borderRadius: BorderRadius.circular(999)),
+      child: child,
+    );
+  }
+}
+
+class _RowSpinner extends StatelessWidget {
+  const _RowSpinner({required this.colors});
+
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 16,
+      height: 16,
+      child: CircularProgressIndicator(strokeWidth: 2, color: colors.ember),
     );
   }
 }
